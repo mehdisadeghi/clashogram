@@ -6,7 +6,7 @@ import json
 import shelve
 import requests
 
-POLL_INTERVAL = 10
+POLL_INTERVAL = 1
 
 @click.command()
 @click.option('--coc-token', help='CoC API token. Reads COC_API_TOKEN env var.', envvar='COC_API_TOKEN')
@@ -22,7 +22,7 @@ def main(coc_token, clan_tag, bot_token, channel_name):
 
 def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
     """Send war news to telegram channel."""
-    with shelve.open('warlog.db') as db:
+    with shelve.open('warlog.db', writeback=True) as db:
         telegram_updater = TelegramUpdater(db, bot_token, channel_name)
         while True:
             wardata = get_currentwar(coc_token, clan_tag)
@@ -64,6 +64,10 @@ class TelegramUpdater(object):
         else:
             print("Current war status is uknown. We stay quiet.")
 
+    def get_war_id(self):
+        return "{0}{1}".format(self.latest_wardata['clan']['tag'],
+                               self.latest_wardata['preparationStartTime'])
+
     def is_in_preparation(self):
         print("state is %s" % self.latest_wardata['state'])
         return self.latest_wardata['state'] == 'inPreparation'
@@ -76,10 +80,6 @@ class TelegramUpdater(object):
     
     def is_preparation_msg_sent(self):
         return self.db[self.get_war_id()].get('preparation_msg_sent', False)
-
-    def get_war_id(self):
-        return "{0}{1}".format(self.latest_wardata['clan']['tag'],
-                               self.latest_wardata['preparationStartTime'])
 
     def create_preparation_msg(self):
         return 'preparation msg'
@@ -111,13 +111,12 @@ class TelegramUpdater(object):
     def is_war_over_msg_sent(self):
         return self.db[self.get_war_id()].get('war_over_msg_sent', False)
 
-    def create_war_ove_msg(self):
+    def create_war_over_msg(self):
         return 'war over message'
 
     def send(self, msg):
         endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?parse_mode={mode}&chat_id=@{channel_name}&text={text}".format(bot_token=self.bot_token, mode='Markdown', channel_name=self.channel_name, text=msg)
-        res = requests.post(endpoint)
-        print(res)
+        requests.post(endpoint)
 
 
 if __name__ == '__main__':

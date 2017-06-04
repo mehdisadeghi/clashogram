@@ -34,6 +34,8 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
         telegram_updater = TelegramUpdater(db, bot_token, channel_name)
         while True:
             wardata = get_currentwar(coc_token, clan_tag)
+            #with open('sample.json', 'r') as f:
+            #    wardata = json.loads(f.read())
             telegram_updater.update(wardata)
             save_wardata(wardata)
             time.sleep(POLL_INTERVAL)
@@ -92,7 +94,7 @@ class TelegramUpdater(object):
     def populate_warinfo(self, wardata):
         self.latest_wardata = wardata
         if self.get_war_id() not in self.db:
-            self.db[self.get_war_id()] = {}
+            self.initialize_war_entry()
         if self.is_new_war(wardata):
             for member in wardata['clan']['members']:
                 self.clan_members[member['tag']] = member
@@ -100,6 +102,13 @@ class TelegramUpdater(object):
             for opponent in wardata['opponent']['members']:
                 self.opponent_members[opponent['tag']] = opponent
                 self.players[opponent['tag']] = opponent
+
+    def initialize_war_entry(self):
+        initial_db = {}
+        initial_db['opponents_by_mapposition'] = {}
+        for member in self.latest_wardata['opponent']['members']:
+            initial_db['opponents_by_mapposition'][member['mapPosition']] = {'stars': 0}
+        self.db[self.get_war_id()] = initial_db
 
     def is_new_war(self, wardata):
         return self.create_war_id(wardata) in self.db
@@ -173,43 +182,55 @@ class TelegramUpdater(object):
         for attack in attacker['attacks']:
             if not self.is_attack_msg_sent(attack):
                 msg = self.create_clan_attack_msg(attacker, attack)
+                self.save_clan_attack_score(attacker, attack)
                 self.send(msg)
                 self.db[self.get_war_id()][self.get_attack_id(attack)] = True
+
+    def save_clan_attack_score(self, attacker, attack):
+        stars = self.db[self.get_war_id()]['opponents_by_mapposition'][attacker['mapPosition']]['stars']
+        if attack['stars'] > stars:
+            self.db[self.get_war_id()]['opponents_by_mapposition'][attacker['mapPosition']]['stars'] = attack['stars']
 
     def is_attack_msg_sent(self, attack):
         attack_id = self.get_attack_id(attack)
         return self.db[self.get_war_id()].get(attack_id, False)
 
     def create_clan_attack_msg(self, member, attack):
-        msg_template = """{top_imoji} {title}
-کلن {ourclan} در برابر کلن {opponentclan}
-تگ {ourtag} در برابر {opponenttag}
-مهاجم:{attacker_name}تاون {attacker_thlevel} رده {attacker_map_position}
-در مصاف
-مدافع:{defender_name}تاون {defender_thlevel} رده {defender_map_position}
-ستاره‌های قبلی:{previous_stars}ستاره‌های جدید:{new_stars}
-درصد تخریب: {destruction_percentage}%
+        msg_template = """<pre>{top_imoji} کلن {ourclan} مقابل {opponentclan}
+مهاجم: {attacker_name: <15} تاون {attacker_thlevel} رده {attacker_map_position}
+مدافع: {defender_name: <15} تاون {defender_thlevel} رده {defender_map_position}
+نتیجه: {stars}
+تخریب: {destruction_percentage}%
+{war_info}
+</pre>"""
 
-شاد باشید! {final_emoji}
-"""
         defender = self.get_player_info(attack['defenderTag'])
         msg = msg_template.format(top_imoji='\U0001F535',
-                                  title='گزارش حمله! \U0001F692',
                                   ourclan=self.latest_wardata['clan']['name'],
                                   opponentclan=self.latest_wardata['opponent']['name'],
-                                  ourtag=self.latest_wardata['clan']['tag'],
-                                  opponenttag=self.latest_wardata['opponent']['tag'],
                                   attacker_name=member['name'],
                                   attacker_thlevel=member['townhallLevel'],
                                   attacker_map_position=member['mapPosition'],
                                   defender_name=defender['name'],
                                   defender_thlevel=defender['townhallLevel'],
                                   defender_map_position=defender['mapPosition'],
-                                  previous_stars='?',
-                                  new_stars=attack['stars'],
+                                  stars=attack['stars'] * '⭐',
                                   destruction_percentage=attack['destructionPercentage'],
-                                  final_emoji='\U0001F6E1')
+                                  war_info=self.create_war_info_msg())
         return msg
+
+    def create_war_info_msg(self):
+        return "{clan_stars} ⭐ | {top_three}".format(clan_stars=self.latest_wardata['clan']['stars'],
+                                                      top_three=self.create_top_three_msg())
+
+    def create_top_three_msg(self):
+        # Check opponent's first three map positions for three star
+        is_first_done = self.db[self.get_war_id()]['opponents_by_mapposition'][1]['stars'] == 3
+        is_second_done = self.db[self.get_war_id()]['opponents_by_mapposition'][2]['stars'] == 3
+        is_third_done = self.db[self.get_war_id()]['opponents_by_mapposition'][3]['stars'] == 3
+        return "{}{}{}".format('✅' if is_first_done else '❌',
+                               '✅' if is_second_done else '❌',
+                               '✅' if is_third_done else '❌')
 
     def get_player_info(self, tag):
         if tag not in self.players:
@@ -275,8 +296,7 @@ class TelegramUpdater(object):
         return 'war over message'
 
     def send(self, msg):
-        print(msg)
-        endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?parse_mode={mode}&chat_id=@{channel_name}&text={text}".format(bot_token=self.bot_token, mode='Markdown', channel_name=self.channel_name, text=requests.utils.quote(msg))
+        endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?parse_mode={mode}&chat_id=@{channel_name}&text={text}".format(bot_token=self.bot_token, mode='HTML', channel_name=self.channel_name, text=requests.utils.quote(msg))
         requests.post(endpoint)
 
 

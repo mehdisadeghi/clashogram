@@ -253,34 +253,26 @@ class TelegramUpdater(object):
                 self.db[self.get_war_id()][self.get_attack_id(attack)] = True
 
     def create_opponent_attack_msg(self, member, attack):
-        msg_template = """{top_imoji} {title}
-کلن {ourclan} در برابر کلن {opponentclan}
-تگ {ourtag} در برابر {opponenttag}
-مهاجم:{attacker_name}تاون {attacker_thlevel} رده {attacker_map_position}
-در مصاف
-مدافع:{defender_name}تاون {defender_thlevel} رده {defender_map_position}
-ستاره‌های قبلی:{previous_stars}ستاره‌های جدید:{new_stars}
-درصد تخریب: {destruction_percentage}%
-
-شاد باشید! {final_emoji}
-"""
+        msg_template = """<pre>{top_imoji} کلن {ourclan} مقابل {opponentclan}
+مهاجم: {attacker_name: <15} تاون {attacker_thlevel} رده {attacker_map_position}
+مدافع: {defender_name: <15} تاون {defender_thlevel} رده {defender_map_position}
+نتیجه: {stars}
+تخریب: {destruction_percentage}%
+{war_info}
+</pre>"""
         defender = self.get_player_info(attack['defenderTag'])
         msg = msg_template.format(top_imoji='\U0001F534',
-                                  title='کلن زیر آتش! \U0001F691',
                                   ourclan=self.latest_wardata['clan']['name'],
                                   opponentclan=self.latest_wardata['opponent']['name'],
-                                  ourtag=self.latest_wardata['clan']['tag'],
-                                  opponenttag=self.latest_wardata['opponent']['tag'],
                                   attacker_name=member['name'],
                                   attacker_thlevel=member['townhallLevel'],
                                   attacker_map_position=member['mapPosition'],
                                   defender_name=defender['name'],
                                   defender_thlevel=defender['townhallLevel'],
                                   defender_map_position=defender['mapPosition'],
-                                  previous_stars='?',
-                                  new_stars=attack['stars'],
+                                  stars=attack['stars'] * '⭐',
                                   destruction_percentage=attack['destructionPercentage'],
-                                  final_emoji='\U0001F6E1')
+                                  war_info=self.create_war_info_msg())
         return msg
 
     def is_war_over(self):

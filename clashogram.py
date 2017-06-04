@@ -34,7 +34,6 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
         telegram_updater = TelegramUpdater(db, bot_token, channel_name)
         while True:
             wardata = get_currentwar(coc_token, clan_tag)
-            print(wardata['state'])
             telegram_updater.update(wardata)
             save_wardata(wardata)
             time.sleep(POLL_INTERVAL)
@@ -137,14 +136,14 @@ class TelegramUpdater(object):
                                   opponentclan=self.latest_wardata['opponent']['name'],
                                   ourtag=self.latest_wardata['clan']['tag'],
                                   opponenttag=self.latest_wardata['opponent']['tag'],
-                                  start=self.format_time(self.latest_wardata['endTime']),
+                                  start=self.format_time(self.latest_wardata['startTime']),
                                   final_emoji='\U0001F6E1')
         return msg
 
     def format_time(self, timestamp):
         utc_time = dateutil_parse(timestamp, fuzzy=True)
         tehran_time = utc_time.replace(tzinfo=pytz.timezone("Asia/Tehran"))
-        fmt = jdatetime.datetime.fromgregorian(datetime=tehran_time).strftime("%a, %d %b %Y %H:%M:%S")
+        fmt = jdatetime.datetime.fromgregorian(datetime=tehran_time).strftime("%a، %d %b %Y %H:%M:%S")
         return convert_to_persian_numbers(fmt)
 
     def is_in_war(self):
@@ -288,4 +287,3 @@ def convert_to_persian_numbers(text):
 
 if __name__ == '__main__':
     main()
-

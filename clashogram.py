@@ -1,12 +1,14 @@
+#!/usr/bin/env python
 """clashogram - Clash of Clans war moniting for telegram channels."""
 import os
 import time
-import click
 import json
 import shelve
-import requests
-import jdatetime
 import locale
+
+import jdatetime
+import requests
+import click
 import pytz
 from dateutil.parser import parse as dateutil_parse
 
@@ -15,12 +17,12 @@ locale.setlocale(locale.LC_ALL, "fa_IR")
 POLL_INTERVAL = 1
 
 @click.command()
-@click.option('--coc-token', help='CoC API token. Reads COC_API_TOKEN env var.', envvar='COC_API_TOKEN')
-@click.option('--clan-tag', help='Tag of clan without hash. Reads COC_CLAN_TAG env var.',envvar='COC_CLAN_TAG')
+@click.option('--coc-token', help='CoC API token. Reads COC_API_TOKEN env var.', envvar='COC_API_TOKEN', prompt=True)
+@click.option('--clan-tag', help='Tag of clan without hash. Reads COC_CLAN_TAG env var.',envvar='COC_CLAN_TAG', prompt=True)
 @click.option('--bot-token', help='Telegram bot token. The bot must be admin on the channel. Reads TELEGRAM_BOT_TOKEN env var.',
-              envvar='TELEGRAM_BOT_TOKEN')
-@click.option('--channel-name', help='Name of telegram channel for updates. Reads TELEGRAM_CHANNEL env var.',
-              envvar='TELEGRAM_CHANNEL')
+              envvar='TELEGRAM_BOT_TOKEN', prompt=True)
+@click.option('--channel-name', help='Name of telegram channel for updates. Reads TELEGRAM_CHANNEL env var.',   
+              envvar='TELEGRAM_CHANNEL', prompt=True)
 def main(coc_token, clan_tag, bot_token, channel_name):
     """Publish war updates to a telegram channel."""
     monitor_currentwar(coc_token, clan_tag, bot_token, channel_name)
@@ -181,15 +183,15 @@ class TelegramUpdater(object):
 
     def create_clan_attack_msg(self, member, attack):
         msg_template = """{top_imoji} {title}
-کلن {ourclan}\tدر برابر\tکلن {opponentclan}
-تگ {ourtag}\tدر برابر\t{opponenttag}
-مهاجم:\t{attacker_name}\tتاون {attacker_thlevel} رده {attacker_map_position}
+کلن {ourclan} در برابر کلن {opponentclan}
+تگ {ourtag} در برابر {opponenttag}
+مهاجم:{attacker_name}تاون {attacker_thlevel} رده {attacker_map_position}
 در مصاف
-مدافع:\t{defender_name}\tتاون ${defender_thlevel} رده {defender_map_position}
-ستاره‌های قبلی:\t{previous_stars}\tستاره‌های جدید:\t{new_stars}
+مدافع:{defender_name}تاون {defender_thlevel} رده {defender_map_position}
+ستاره‌های قبلی:{previous_stars}ستاره‌های جدید:{new_stars}
 درصد تخریب: {destruction_percentage}%
 
-شاد باشید!\t {final_emoji}
+شاد باشید! {final_emoji}
 """
         defender = self.get_player_info(attack['defenderTag'])
         msg = msg_template.format(top_imoji='\U0001F535',
@@ -229,15 +231,15 @@ class TelegramUpdater(object):
 
     def create_opponent_attack_msg(self, member, attack):
         msg_template = """{top_imoji} {title}
-کلن {ourclan}\tدر برابر\tکلن {opponentclan}
-تگ {ourtag}\tدر برابر\t{opponenttag}
-مهاجم:\t{attacker_name}\tتاون {attacker_thlevel} رده {attacker_map_position}
+کلن {ourclan} در برابر کلن {opponentclan}
+تگ {ourtag} در برابر {opponenttag}
+مهاجم:{attacker_name}تاون {attacker_thlevel} رده {attacker_map_position}
 در مصاف
-مدافع:\t{defender_name}\tتاون ${defender_thlevel} رده {defender_map_position}
-ستاره‌های قبلی:\t{previous_stars}\tستاره‌های جدید:\t{new_stars}
+مدافع:{defender_name}تاون {defender_thlevel} رده {defender_map_position}
+ستاره‌های قبلی:{previous_stars}ستاره‌های جدید:{new_stars}
 درصد تخریب: {destruction_percentage}%
 
-شاد باشید!\t {final_emoji}
+شاد باشید! {final_emoji}
 """
         defender = self.get_player_info(attack['defenderTag'])
         msg = msg_template.format(top_imoji='\U0001F534',
@@ -276,7 +278,6 @@ class TelegramUpdater(object):
     def send(self, msg):
         print(msg)
         endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?parse_mode={mode}&chat_id=@{channel_name}&text={text}".format(bot_token=self.bot_token, mode='Markdown', channel_name=self.channel_name, text=requests.utils.quote(msg))
-        print(endpoint)
         requests.post(endpoint)
 
 
@@ -286,9 +287,5 @@ def convert_to_persian_numbers(text):
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except Exception as error:
-        print(error)
-        raise(error)
+    main()
 

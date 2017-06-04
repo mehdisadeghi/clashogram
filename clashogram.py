@@ -293,7 +293,44 @@ class TelegramUpdater(object):
         return self.db[self.get_war_id()].get('war_over_msg_sent', False)
 
     def create_war_over_msg(self):
-        return 'war over message'
+        msg_template = """<pre>{win_or_lose_title}
+کلن {ourclan: <15} لول {ourlevel: <2} تخریب {descruction}% ⭐ {stars}
+کلن {opponentclan: <15} لول {their_level: <2} تخریب {their_descruction}% ⭐{their_stars}
+{war_info}
+</pre>"""
+
+        msg = msg_template.format(win_or_lose_title=self.create_win_or_lose_title(),
+                                  ourclan=self.latest_wardata['clan']['name'],
+                                  descruction=self.latest_wardata['clan']['destructionPercentage'],
+                                  ourlevel=self.latest_wardata['clan']['clanLevel'],
+                                  opponentclan=self.latest_wardata['opponent']['name'],
+                                  their_descruction=self.latest_wardata['opponent']['destructionPercentage'],
+                                  their_level=self.latest_wardata['opponent']['clanLevel'],
+                                  stars=self.latest_wardata['clan']['stars'],
+                                  their_stars=self.latest_wardata['opponent']['stars'],
+                                  their_destruction=self.latest_wardata['opponent']['destructionPercentage'],
+                                  war_info=self.create_war_info_msg())
+        return msg
+
+    def create_win_or_lose_title(self):
+        if self.did_we_win():
+            return '\U0001F389 بردیم!'
+        elif self.is_draw():
+            return '🏳 مساوی کردیم.'
+        else:
+            return '💩 ریدیم!'
+
+    def did_we_win(self):
+        if self.latest_wardata['clan']['stars'] > self.latest_wardata['opponent']['stars']:
+            return True
+        elif self.latest_wardata['clan']['stars'] == self.latest_wardata['opponent']['stars'] and\
+             self.latest_wardata['clan']['destructionPercentage'] > self.latest_wardata['opponent']['destructionPercentage']:
+            return True
+        else:
+            return False
+
+    def is_draw(self):
+        return self.latest_wardata['clan']['stars'] == self.latest_wardata['opponent']['stars'] and self.latest_wardata['clan']['destructionPercentage'] == self.latest_wardata['opponent']['destructionPercentage']
 
     def send(self, msg):
         endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?parse_mode={mode}&chat_id=@{channel_name}&text={text}".format(bot_token=self.bot_token, mode='HTML', channel_name=self.channel_name, text=requests.utils.quote(msg))

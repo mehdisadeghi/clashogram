@@ -107,7 +107,10 @@ class TelegramUpdater(object):
         initial_db = {}
         initial_db['opponents_by_mapposition'] = {}
         for member in self.latest_wardata['opponent']['members']:
-            initial_db['opponents_by_mapposition'][member['mapPosition']] = {'stars': 0}
+            stars = 0
+            if 'bestOpponentAttack' in member:
+                stars = member['bestOpponentAttack']['stars']
+            initial_db['opponents_by_mapposition'][member['mapPosition']] = {'stars': stars}
         self.db[self.get_war_id()] = initial_db
 
     def is_new_war(self, wardata):
@@ -225,12 +228,12 @@ class TelegramUpdater(object):
 
     def create_top_three_msg(self):
         # Check opponent's first three map positions for three star
-        is_first_done = self.db[self.get_war_id()]['opponents_by_mapposition'][1]['stars'] == 3
-        is_second_done = self.db[self.get_war_id()]['opponents_by_mapposition'][2]['stars'] == 3
-        is_third_done = self.db[self.get_war_id()]['opponents_by_mapposition'][3]['stars'] == 3
-        return "{}{}{}".format('✅' if is_first_done else '❌',
-                               '✅' if is_second_done else '❌',
-                               '✅' if is_third_done else '❌')
+        s1 = self.db[self.get_war_id()]['opponents_by_mapposition'][1]['stars']
+        s2 = self.db[self.get_war_id()]['opponents_by_mapposition'][2]['stars']
+        s3 = self.db[self.get_war_id()]['opponents_by_mapposition'][3]['stars']
+        return "{}{}{}".format('✅' if s1 == 3 else '❌',
+                               '✅' if s2 == 3 else '❌',
+                               '✅' if s3 == 3 else '❌')
 
     def get_player_info(self, tag):
         if tag not in self.players:

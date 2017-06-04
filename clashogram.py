@@ -45,7 +45,7 @@ def get_currentwar(coc_token, clan_tag):
     endpoint = get_currentwar_endpoint(clan_tag)
     res = requests.get(endpoint, headers={'Authorization': 'Bearer %s' % coc_token})
     if res.status_code == requests.codes.ok:
-        return json.loads(res.content)
+        return json.loads(res.content.decode('utf-8'))
     else:
         raise Exception('Error calling CoC API: %s' % res)
 

@@ -290,7 +290,7 @@ class TelegramUpdater(object):
     def create_war_over_msg(self):
         msg_template = """<pre>{win_or_lose_title}
 کلن {ourclan: <15} لول {ourlevel: <2} تخریب {descruction}% ⭐ {stars}
-کلن {opponentclan: <15} لول {their_level: <2} تخریب {their_descruction}% ⭐{their_stars}
+کلن {opponentclan: <15} لول {their_level: <2} تخریب {their_descruction}% ⭐ {their_stars}
 {war_info}
 </pre>"""
 

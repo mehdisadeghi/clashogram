@@ -14,7 +14,7 @@ from dateutil.parser import parse as dateutil_parse
 
 locale.setlocale(locale.LC_ALL, "fa_IR")
 
-POLL_INTERVAL = 1
+POLL_INTERVAL = 2
 
 @click.command()
 @click.option('--coc-token', help='CoC API token. Reads COC_API_TOKEN env var.', envvar='COC_API_TOKEN', prompt=True)

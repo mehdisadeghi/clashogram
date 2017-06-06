@@ -174,20 +174,36 @@ class TelegramUpdater(object):
         return 'war start message'
 
     def send_attack_msgs(self):
-        for member in self.clan_members.values():
-            if 'attacks' in member:
-                self.send_clan_attack_msg(member)
-        for opponent in self.opponent_members.values():
-            if 'attacks' in opponent:
-                self.send_opponent_attack_msg(opponent)
+        ordered_attacks = {}
+        for player in self.players.values():
+            for attack in self.get_player_attacks(player):
+                ordered_attacks[attack['order']] = (player, attack)
+
+        for order, items in sorted(ordered_attacks.items()):
+            player, attack = items
+            self.send_single_attack_msg(player, attack)
+
+    def send_single_attack_msg(self, player, attack):
+        if self.is_clan_member(player):
+            self.send_clan_attack_msg(player, attack)
+        else:
+            self.send_opponent_attack_msg(player, attack)
+
+    def is_clan_member(self, player):
+        return player['tag'] in self.clan_members
+
+    def get_player_attacks(self, player):
+        if 'attacks' in player:
+            return  player['attacks']
+        else:
+            return []
     
-    def send_clan_attack_msg(self, attacker):
-        for attack in attacker['attacks']:
-            if not self.is_attack_msg_sent(attack):
-                msg = self.create_clan_attack_msg(attacker, attack)
-                self.save_clan_attack_score(attacker, attack)
-                self.send(msg)
-                self.db[self.get_war_id()][self.get_attack_id(attack)] = True
+    def send_clan_attack_msg(self, attacker, attack):
+        if not self.is_attack_msg_sent(attack):
+            msg = self.create_clan_attack_msg(attacker, attack)
+            self.save_clan_attack_score(attacker, attack)
+            self.send(msg)
+            self.db[self.get_war_id()][self.get_attack_id(attack)] = True
 
     def save_clan_attack_score(self, attacker, attack):
         stars = self.db[self.get_war_id()]['opponents_by_mapposition'][attacker['mapPosition']]['stars']
@@ -241,16 +257,14 @@ class TelegramUpdater(object):
         return self.players[tag]
 
     def get_attack_id(self, attack):
-        return "attack{}{}".format(attack['attackerTag'][1:],
-    
+        return "attack{}{}".format(attack['attackerTag'][1:],    
                                    attack['defenderTag'][1:])
 
-    def send_opponent_attack_msg(self, attacker):
-        for attack in attacker['attacks']:
-            if not self.is_attack_msg_sent(attack):
-                msg = self.create_opponent_attack_msg(attacker, attack)
-                self.send(msg)
-                self.db[self.get_war_id()][self.get_attack_id(attack)] = True
+    def send_opponent_attack_msg(self, attacker, attack):
+        if not self.is_attack_msg_sent(attack):
+            msg = self.create_opponent_attack_msg(attacker, attack)
+            self.send(msg)
+            self.db[self.get_war_id()][self.get_attack_id(attack)] = True
 
     def create_opponent_attack_msg(self, member, attack):
         msg_template = """<pre>{top_imoji} کلن {ourclan} مقابل {opponentclan}

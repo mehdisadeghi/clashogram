@@ -171,7 +171,7 @@ class TelegramUpdater(object):
         return self.db[self.get_war_id()].get('war_msg_sent', False)
 
     def create_war_msg(self):
-        return 'war start message'
+        return 'جنگ قبیله شروع شد!'
 
     def send_attack_msgs(self):
         ordered_attacks = {}

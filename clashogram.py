@@ -33,12 +33,16 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
     with shelve.open('warlog.db', writeback=True) as db:
         telegram_updater = TelegramUpdater(db, bot_token, channel_name)
         while True:
-            wardata = get_currentwar(coc_token, clan_tag)
-            #with open('sample.json', 'r') as f:
-            #    wardata = json.loads(f.read())
-            telegram_updater.update(wardata)
-            save_wardata(wardata)
-            time.sleep(POLL_INTERVAL)
+            try:
+                wardata = get_currentwar(coc_token, clan_tag)
+                #with open('sample.json', 'r') as f:
+                #    wardata = json.loads(f.read())
+                telegram_updater.update(wardata)
+                save_wardata(wardata)
+                time.sleep(POLL_INTERVAL)
+            except:
+                telegram_updater.send("Server Error. Please contact the maintainer.")
+                raise
 
 
 def get_currentwar(coc_token, clan_tag):

@@ -154,7 +154,7 @@ class TelegramUpdater(object):
 
     def format_time(self, timestamp):
         utc_time = dateutil_parse(timestamp, fuzzy=True)
-        tehran_time = utc_time.replace(tzinfo=pytz.timezone("Asia/Tehran"))
+        tehran_time = utc_time.astimezone(pytz.timezone("Asia/Tehran"))
         fmt = jdatetime.datetime.fromgregorian(datetime=tehran_time).strftime("%a، %d %b %Y %H:%M:%S")
         return convert_to_persian_numbers(fmt)
 

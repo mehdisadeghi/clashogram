@@ -41,7 +41,7 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
                 save_wardata(wardata)
                 time.sleep(POLL_INTERVAL)
             except:
-                telegram_updater.send("Server Error. Please contact the maintainer.")
+                telegram_updater.send("☠️ 😵 رئیس سرور ترکیده. با آدمتون تماس بگیرید درستش کنه.")
                 raise
 
 

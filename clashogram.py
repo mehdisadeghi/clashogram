@@ -144,6 +144,7 @@ class TelegramUpdater(object):
 کلن {ourclan} در برابر کلن {opponentclan}
 تگ {ourtag} در برابر {opponenttag}
 جنگ قبیله {start} شروع خواهد شد.
+این وار {war_size} تائی است.
 شاد باشید! {final_emoji}
 """
         msg = msg_template.format(top_imoji='\U0001F3C1',
@@ -153,6 +154,7 @@ class TelegramUpdater(object):
                                   ourtag=self.latest_wardata['clan']['tag'],
                                   opponenttag=self.latest_wardata['opponent']['tag'],
                                   start=self.format_time(self.latest_wardata['startTime']),
+                                  war_size=self.latest_wardata['teamSize'],
                                   final_emoji='\U0001F6E1')
         return msg
 

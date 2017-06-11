@@ -3,6 +3,7 @@ Description=Clashogram Bot Server
 After=network.target
 
 [Service]
+WorkingDirectory=/home/mehdi/clashogram/
 EnvironmentFile=-/etc/default/clashogram
 ExecStart=/home/mehdi/coc/bin/python /home/mehdi/clashogram/clashogram.py
 Restart=on-failure

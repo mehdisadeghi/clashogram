@@ -243,9 +243,18 @@ class TelegramUpdater(object):
         return msg
 
     def create_war_info_msg(self):
-        return "{clan_stars} ⭐ {opponent_stars} | {top_three}".format(clan_stars=self.latest_wardata['clan']['stars'],
-                                                                       opponent_stars=self.latest_wardata['opponent']['stars'],
-                                                                       top_three=self.create_top_three_msg())
+        clan_stars = self.latest_wardata['clan']['stars'],
+        opponent_stars=self.latest_wardata['opponent']['stars'],
+        if clan_stars == opponent_stars:
+            template = "{clan_stars} ⭐ {opponent_stars} | {clan_destruction} % {opponent_destruction} | {top_three}"
+        else:
+            template = "{clan_stars} ⭐ {opponent_stars} | {top_three}"
+        return template.format(
+            clan_stars=self.latest_wardata['clan']['stars'],
+            clan_destruction=self.latest_wardata['clan']['destructionPercentage'],
+            opponent_stars=self.latest_wardata['opponent']['stars'],
+            opponent_destruction=self.latest_wardata['opponent']['destructionPercentage'],
+            top_three=self.create_top_three_msg())
 
     def create_top_three_msg(self):
         # Check opponent's first three map positions for three star

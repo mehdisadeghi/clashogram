@@ -222,8 +222,8 @@ class TelegramUpdater(object):
 
     def create_clan_attack_msg(self, member, attack):
         msg_template = """<pre>{top_imoji} کلن {ourclan} مقابل {opponentclan}
-مهاجم: {attacker_name: <15} تاون {attacker_thlevel: <2} رده {attacker_map_position}
-مدافع: {defender_name: <15} تاون {defender_thlevel: <2} رده {defender_map_position}
+مهاجم: {attacker_name: <15} ت {attacker_thlevel: <2} ر {attacker_map_position}
+مدافع: {defender_name: <15} ت {defender_thlevel: <2} ر {defender_map_position}
 نتیجه: {stars}
 تخریب: {destruction_percentage}%
 {war_info}
@@ -282,8 +282,8 @@ class TelegramUpdater(object):
 
     def create_opponent_attack_msg(self, member, attack):
         msg_template = """<pre>{top_imoji} کلن {ourclan} مقابل {opponentclan}
-مهاجم: {attacker_name: <15} تاون {attacker_thlevel: <2} رده {attacker_map_position}
-مدافع: {defender_name: <15} تاون {defender_thlevel: <2} رده {defender_map_position}
+مهاجم: {attacker_name: <15} ت {attacker_thlevel: <2} ر {attacker_map_position}
+مدافع: {defender_name: <15} ت {defender_thlevel: <2} ر {defender_map_position}
 نتیجه: {stars}
 تخریب: {destruction_percentage}%
 {war_info}

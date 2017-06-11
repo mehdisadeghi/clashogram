@@ -245,8 +245,8 @@ class TelegramUpdater(object):
         return msg
 
     def create_war_info_msg(self):
-        template = """{clan_attack_count}/{total} ⚡ {opponent_attack_count}/{total}
-"{clan_stars}/{clan_destruction:.2f}% ⭐ {opponent_stars}/{opponent_destruction:.2f}%"""
+        template = """▪ {clan_attack_count: <2}/{total} ⚡ {clan_stars} ⭐ {clan_destruction:.2f}%
+▪ {opponent_attack_count: <2}/{total} ⚡ {opponent_stars} ⭐ {opponent_destruction:.2f}%"""
         return template.format(
             total=self.latest_wardata['teamSize'] * 2,
             clan_attack_count=self.latest_wardata['clan']['attacks'],

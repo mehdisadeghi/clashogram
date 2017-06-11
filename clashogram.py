@@ -30,7 +30,7 @@ def main(coc_token, clan_tag, bot_token, channel_name):
 
 def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
     """Send war news to telegram channel."""
-    with shelve.open('warlog.db', writeback=True) as db:
+    with shelve.open('warlog', writeback=True) as db:
         telegram_updater = TelegramUpdater(db, bot_token, channel_name)
         while True:
             try:

@@ -362,10 +362,10 @@ class TelegramUpdater(object):
         return self.latest_wardata['clan']['stars'] == self.latest_wardata['opponent']['stars'] and self.latest_wardata['clan']['destructionPercentage'] == self.latest_wardata['opponent']['destructionPercentage']
 
     def reset(self):
+        self.latest_wardata = None
         self.clan_members = {}
         self.opponent_members = {}
         self.players = {}
-
 
     def send(self, msg):
         endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?parse_mode={mode}&chat_id=@{channel_name}&text={text}".format(bot_token=self.bot_token, mode='HTML', channel_name=self.channel_name, text=requests.utils.quote(msg))

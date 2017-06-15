@@ -86,7 +86,8 @@ class TelegramUpdater(object):
 
     def update(self, wardata):
         if wardata['state'] == 'notInWar':
-            self.send_war_over_msg()
+            if not self.is_war_over_msg_sent(wardata):
+                self.send_war_over_msg()
             self.reset()
             return
 
@@ -370,13 +371,13 @@ class TelegramUpdater(object):
         return self.latest_wardata['state'] == 'warEnded'
 
     def send_war_over_msg(self):
-        if not self.is_war_over_msg_sent():
+        if not self.is_war_over_msg_sent(self.latest_wardata):
             msg = self.create_war_over_msg()
             self.send(msg)
             self.db[self.get_war_id()]['war_over_msg_sent'] = True
 
-    def is_war_over_msg_sent(self):
-        return self.db[self.get_war_id()].get('war_over_msg_sent', False)
+    def is_war_over_msg_sent(self, wardata):
+        return self.db[self.create_war_id(wardata)].get('war_over_msg_sent', False)
 
     def create_war_over_msg(self):
         msg_template = """<pre>{win_or_lose_title}

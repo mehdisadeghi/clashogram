@@ -82,6 +82,7 @@ class TelegramUpdater(object):
         self.clan_members = {}
         self.opponent_members = {}
         self.players = {}
+        self.ordered_attacks = None
 
     def update(self, wardata):
         if wardata['state'] == 'notInWar':
@@ -103,6 +104,7 @@ class TelegramUpdater(object):
 
     def populate_warinfo(self, wardata):
         self.latest_wardata = wardata
+        self.ordered_attacks = self.get_ordered_attacks()
         if self.get_war_id() not in self.db:
             self.initialize_war_entry()
         if self.is_new_war(wardata):
@@ -112,6 +114,13 @@ class TelegramUpdater(object):
             for opponent in wardata['opponent']['members']:
                 self.opponent_members[opponent['tag']] = opponent
                 self.players[opponent['tag']] = opponent
+
+    def get_ordered_attacks(self):
+        ordered_attacks = {}
+        for player in self.players.values():
+            for attack in self.get_player_attacks(player):
+                ordered_attacks[attack['order']] = (player, attack)
+        return ordered_attacks
 
     def initialize_war_entry(self):
         initial_db = {}
@@ -186,12 +195,7 @@ class TelegramUpdater(object):
         return 'جنگ قبیله شروع شد!'
 
     def send_attack_msgs(self):
-        ordered_attacks = {}
-        for player in self.players.values():
-            for attack in self.get_player_attacks(player):
-                ordered_attacks[attack['order']] = (player, attack)
-
-        for order, items in sorted(ordered_attacks.items()):
+        for order, items in sorted(self.ordered_attacks.items()):
             player, attack = items
             self.send_single_attack_msg(player, attack)
 
@@ -249,6 +253,60 @@ class TelegramUpdater(object):
                                   destruction_percentage=attack['destructionPercentage'],
                                   war_info=self.create_war_info_msg())
         return msg
+
+    def calculate_war_stats_sofar(self, attack_order=None):
+        """CoC data is updated every 10 minutes and reflects stats after the last attack.
+        We have to calculate the necesssary info for the previous ones"""
+        info = {}
+        info['clan_destruction'] = 0
+        info['op_destruction'] = 0
+        info['clan_stars'] = 0
+        info['op_stars'] = 0
+        info['clan_used_attacks'] = 0
+        info['op_used_attacks'] = 0
+        if not attack_order:
+            attack_order = len(self.ordered_attacks)
+        for order in range(1, attack_order + 1):
+            player, attack = self.ordered_attacks[order]
+            if self.is_clan_member(player):
+                info['clan_destruction'] += self.get_attack_new_destruction(attack)
+                info['clan_stars'] += self.get_attack_new_stars(attack)
+                info['clan_used_attacks'] += 1
+            else:
+                info['op_destruction'] += self.get_attack_new_destruction(attack)
+                info['op_stars'] += self.get_attack_new_stars(attack)
+                info['op_used_attacks'] += 1
+        info['op_destruction'] /= self.latest_wardata['teamSize']
+        info['clan_destruction'] /= self.latest_wardata['teamSize']
+        return info
+
+    def get_attack_new_destruction(self, attack):
+        if attack['destructionPercentage'] > self.get_best_attack_destruction(attack):
+            return attack['destructionPercentage']
+        else:
+            return 0
+
+    def get_best_attack_destruction(self, attack):
+        defender = self.get_player_info(attack['defenderTag'])
+        if 'bestOpponentAttack' in defender and defender['bestOpponentAttack']['attackerTag'] != attack['attackerTag']:
+            return defender['bestOpponentAttack']['destructionPercentage']
+        else:
+            return 0
+
+    def get_attack_new_stars(self, attack):
+        existing_stars = self.get_best_attack_stars(attack)
+        stars = attack['stars'] - existing_stars
+        if stars > 0:
+            return stars
+        else:
+            return 0
+
+    def get_best_attack_stars(self, attack):
+        defender = self.get_player_info(attack['defenderTag'])
+        if 'bestOpponentAttack' in defender and defender['bestOpponentAttack']['attackerTag'] != attack['attackerTag']:
+            return defender['bestOpponentAttack']['stars']
+        else:
+            return 0
 
     def create_war_info_msg(self):
         template = """▪ {clan_attack_count: <2}/{total} ⭐ {clan_stars: <3} ⚡ {clan_destruction:.2f}%
@@ -366,6 +424,7 @@ class TelegramUpdater(object):
         self.clan_members = {}
         self.opponent_members = {}
         self.players = {}
+        self.ordered_attacks = None
 
     def send(self, msg):
         endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?parse_mode={mode}&chat_id=@{channel_name}&text={text}".format(bot_token=self.bot_token, mode='HTML', channel_name=self.channel_name, text=requests.utils.quote(msg))

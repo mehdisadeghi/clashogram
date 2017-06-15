@@ -124,12 +124,6 @@ class TelegramUpdater(object):
 
     def initialize_war_entry(self):
         initial_db = {}
-        initial_db['opponents_by_mapposition'] = {}
-        for member in self.latest_wardata['opponent']['members']:
-            stars = 0
-            if 'bestOpponentAttack' in member:
-                stars = member['bestOpponentAttack']['stars']
-            initial_db['opponents_by_mapposition'][member['mapPosition']] = {'stars': stars}
         self.db[self.get_war_id()] = initial_db
 
     def is_new_war(self, wardata):
@@ -217,14 +211,8 @@ class TelegramUpdater(object):
     def send_clan_attack_msg(self, attacker, attack):
         if not self.is_attack_msg_sent(attack):
             msg = self.create_clan_attack_msg(attacker, attack)
-            self.save_clan_attack_score(attacker, attack)
             self.send(msg)
             self.db[self.get_war_id()][self.get_attack_id(attack)] = True
-
-    def save_clan_attack_score(self, attacker, attack):
-        stars = self.db[self.get_war_id()]['opponents_by_mapposition'][attacker['mapPosition']]['stars']
-        if attack['stars'] > stars:
-            self.db[self.get_war_id()]['opponents_by_mapposition'][attacker['mapPosition']]['stars'] = attack['stars']
 
     def is_attack_msg_sent(self, attack):
         attack_id = self.get_attack_id(attack)

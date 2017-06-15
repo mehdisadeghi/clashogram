@@ -219,7 +219,7 @@ class TelegramUpdater(object):
         return self.db[self.get_war_id()].get(attack_id, False)
 
     def create_clan_attack_msg(self, member, attack):
-        msg_template = """<pre>{top_imoji} کلن {ourclan} مقابل {opponentclan}
+        msg_template = """<pre>{top_imoji} {order} کلن {ourclan} مقابل {opponentclan}
 مهاجم: {attacker_name: <15} ت {attacker_thlevel: <2} ر {attacker_map_position}
 مدافع: {defender_name: <15} ت {defender_thlevel: <2} ر {defender_map_position}
 نتیجه: {stars}
@@ -228,7 +228,8 @@ class TelegramUpdater(object):
 </pre>"""
 
         defender = self.get_player_info(attack['defenderTag'])
-        msg = msg_template.format(top_imoji='\U0001F535',
+        msg = msg_template.format(order=attack['order'],
+                                  top_imoji='\U0001F535',
                                   ourclan=self.latest_wardata['clan']['name'],
                                   opponentclan=self.latest_wardata['opponent']['name'],
                                   attacker_name=member['name'],
@@ -333,7 +334,7 @@ class TelegramUpdater(object):
             self.db[self.get_war_id()][self.get_attack_id(attack)] = True
 
     def create_opponent_attack_msg(self, member, attack):
-        msg_template = """<pre>{top_imoji} کلن {ourclan} مقابل {opponentclan}
+        msg_template = """<pre>{top_imoji} {order} کلن {ourclan} مقابل {opponentclan}
 مهاجم: {attacker_name: <15} ت {attacker_thlevel: <2} ر {attacker_map_position}
 مدافع: {defender_name: <15} ت {defender_thlevel: <2} ر {defender_map_position}
 نتیجه: {stars}
@@ -341,7 +342,8 @@ class TelegramUpdater(object):
 {war_info}
 </pre>"""
         defender = self.get_player_info(attack['defenderTag'])
-        msg = msg_template.format(top_imoji='\U0001F534',
+        msg = msg_template.format(order=attack['order'],
+                                  top_imoji='\U0001F534',
                                   ourclan=self.latest_wardata['clan']['name'],
                                   opponentclan=self.latest_wardata['opponent']['name'],
                                   attacker_name=member['name'],

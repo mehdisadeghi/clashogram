@@ -277,8 +277,8 @@ class TelegramUpdater(object):
         return info
 
     def get_attack_new_destruction(self, attack):
-        if attack['destructionPercentage'] > self.get_best_attack_destruction(attack):
-            return attack['destructionPercentage']
+        if attack['destructionPercentage'] > self.get_best_attack_destruction_upto(attack):
+            return attack['destructionPercentage'] - self.get_best_attack_destruction_upto(attack)
         else:
             return 0
 
@@ -289,6 +289,14 @@ class TelegramUpdater(object):
         else:
             return 0
 
+    def get_best_attack_destruction_upto(self, in_attack):
+        best_score = 0
+        for order in range(1, in_attack['order'] + 1):
+            player, attack = self.ordered_attacks[order]
+            if attack['defenderTag'] == in_attack['defenderTag'] and attack['destructionPercentage'] > best_score and attack['attackerTag'] != in_attack['attackerTag']:
+                best_score = attack['destructionPercentage']
+        return best_score
+
     def get_attack_new_stars(self, attack):
         existing_stars = self.get_best_attack_stars_upto(attack)
         stars = attack['stars'] - existing_stars
@@ -297,15 +305,7 @@ class TelegramUpdater(object):
         else:
             return 0
 
-    def get_best_attack_stars(self, attack):
-        defender = self.get_player_info(attack['defenderTag'])
-        if 'bestOpponentAttack' in defender and defender['bestOpponentAttack']['attackerTag'] != attack['attackerTag']:
-            return defender['bestOpponentAttack']['stars']
-        else:
-            return 0
-
     def get_best_attack_stars_upto(self, in_attack):
-        defender = self.get_player_info(in_attack['defenderTag'])
         best_score = 0
         for order in range(1, in_attack['order'] + 1):
             player, attack = self.ordered_attacks[order]

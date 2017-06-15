@@ -85,6 +85,8 @@ class TelegramUpdater(object):
 
     def update(self, wardata):
         if wardata['state'] == 'notInWar':
+            self.send_war_over_msg()
+            self.reset()
             return
 
         self.populate_warinfo(wardata)

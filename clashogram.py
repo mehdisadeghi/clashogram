@@ -40,6 +40,9 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
                 telegram_updater.update(wardata)
                 save_wardata(wardata)
                 time.sleep(POLL_INTERVAL)
+            except (KeyboardInterrupt, SystemExit):
+                db.close()
+                raise
             except:
                 telegram_updater.send("☠️ 😵 رئیس من ترکیدم! با آدمتون تماس بگیرید بیاد درستم کنه. قربان شما، ربات. 🤖")
                 db.close()

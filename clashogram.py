@@ -238,10 +238,17 @@ class TelegramUpdater(object):
                                   defender_name=defender['name'],
                                   defender_thlevel=defender['townhallLevel'],
                                   defender_map_position=defender['mapPosition'],
-                                  stars=attack['stars'] * '⭐',
+                                  stars=self.format_star_msg(attack),
                                   destruction_percentage=attack['destructionPercentage'],
-                                  war_info=self.create_war_info_msg())
+                                  war_info=self.create_war_info_msg(attack_order=attack['order']))
         return msg
+
+    def format_star_msg(self, attack):
+        new_stars = self.get_attack_new_stars(attack)
+        old_stars = self.get_best_attack_stars_upto(attack)
+        cookies = old_stars * '🍪'
+        stars = new_stars * '⭐'
+        return cookies + stars
 
     def calculate_war_stats_sofar(self, attack_order=None):
         """CoC data is updated every 10 minutes and reflects stats after the last attack.
@@ -283,7 +290,7 @@ class TelegramUpdater(object):
             return 0
 
     def get_attack_new_stars(self, attack):
-        existing_stars = self.get_best_attack_stars(attack)
+        existing_stars = self.get_best_attack_stars_upto(attack)
         stars = attack['stars'] - existing_stars
         if stars > 0:
             return stars
@@ -297,26 +304,27 @@ class TelegramUpdater(object):
         else:
             return 0
 
-    def create_war_info_msg(self):
+    def get_best_attack_stars_upto(self, in_attack):
+        defender = self.get_player_info(in_attack['defenderTag'])
+        best_score = 0
+        for order in range(1, in_attack['order'] + 1):
+            player, attack = self.ordered_attacks[order]
+            if attack['defenderTag'] == in_attack['defenderTag'] and attack['stars'] > best_score and attack['attackerTag'] != in_attack['attackerTag']:
+                best_score = attack['stars']
+        return best_score
+
+    def create_war_info_msg(self, attack_order=None):
+        war_stats = self.calculate_war_stats_sofar(attack_order=attack_order)
         template = """▪ {clan_attack_count: <2}/{total} ⭐ {clan_stars: <3} ⚡ {clan_destruction:.2f}%
 ▪ {opponent_attack_count: <2}/{total} ⭐ {opponent_stars: <3} ⚡ {opponent_destruction:.2f}%"""
         return template.format(
             total=self.latest_wardata['teamSize'] * 2,
-            clan_attack_count=self.latest_wardata['clan']['attacks'],
-            opponent_attack_count=self.latest_wardata['opponent']['attacks'],
-            clan_stars=self.latest_wardata['clan']['stars'],
-            clan_destruction=self.latest_wardata['clan']['destructionPercentage'],
-            opponent_stars=self.latest_wardata['opponent']['stars'],
-            opponent_destruction=self.latest_wardata['opponent']['destructionPercentage'])
-
-    def create_top_three_msg(self):
-        # Check opponent's first three map positions for three star
-        s1 = self.db[self.get_war_id()]['opponents_by_mapposition'][1]['stars']
-        s2 = self.db[self.get_war_id()]['opponents_by_mapposition'][2]['stars']
-        s3 = self.db[self.get_war_id()]['opponents_by_mapposition'][3]['stars']
-        return "{}{}{}".format('✅' if s1 == 3 else '❌',
-                               '✅' if s2 == 3 else '❌',
-                               '✅' if s3 == 3 else '❌')
+            clan_attack_count=war_stats['clan_used_attacks'],
+            opponent_attack_count=war_stats['op_used_attacks'],
+            clan_stars=war_stats['clan_stars'],
+            clan_destruction=war_stats['clan_destruction'],
+            opponent_stars=war_stats['op_stars'],
+            opponent_destruction=war_stats['op_destruction'])
 
     def get_player_info(self, tag):
         if tag not in self.players:
@@ -352,9 +360,9 @@ class TelegramUpdater(object):
                                   defender_name=defender['name'],
                                   defender_thlevel=defender['townhallLevel'],
                                   defender_map_position=defender['mapPosition'],
-                                  stars=attack['stars'] * '⭐',
+                                  stars=self.format_star_msg(attack),
                                   destruction_percentage=attack['destructionPercentage'],
-                                  war_info=self.create_war_info_msg())
+                                  war_info=self.create_war_info_msg(attack_order=attack['order']))
         return msg
 
     def is_war_over(self):

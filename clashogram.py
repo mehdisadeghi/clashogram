@@ -133,8 +133,9 @@ class TelegramUpdater(object):
         return self.create_war_id(self.latest_wardata)
 
     def create_war_id(self, wardata):
-        return "{0}{1}".format(wardata['clan']['tag'],
-                               wardata['preparationStartTime'])
+        return "{0}{1}{2}".format(wardata['clan']['tag'],
+                                  wardata['opponent']['tag'],
+                                  wardata['preparationStartTime'])
 
     def is_in_preparation(self):
         return self.latest_wardata['state'] == 'preparation'

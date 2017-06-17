@@ -247,8 +247,7 @@ class TelegramUpdater(object):
 
     def format_star_msg(self, attack):
         new_stars = self.get_attack_new_stars(attack)
-        old_stars = self.get_best_attack_stars_upto(attack)
-        cookies = old_stars * '🍪'
+        cookies = (attack['stars'] - new_stars) * '🍪'
         stars = new_stars * '⭐'
         return cookies + stars
 

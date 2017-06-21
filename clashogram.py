@@ -36,8 +36,7 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
         while True:
             try:
                 wardata = get_currentwar(coc_token, clan_tag)
-                #with open('sample.json', 'r') as f:
-                #    wardata = json.loads(f.read())
+                save_latest_data(wardata, telegram_updater)
                 telegram_updater.update(wardata)
                 save_wardata(wardata)
                 time.sleep(POLL_INTERVAL)
@@ -75,6 +74,14 @@ def save_wardata(wardata):
         path = os.path.join('warlog', war_id)
         json.dump(wardata, open(path, 'w'), ensure_ascii=False)
     
+
+def save_latest_data(wardata, telegram_updater):
+    if wardata:
+        json.dump(wardata, open('latest_downloaded_wardata.json', 'w'), ensure_ascii=False)
+    if telegram_updater and telegram_updater.latest_wardata:
+        json.dump(telegram_updater.latest_wardata, open('latest_inmemory_wardata.json', 'w'), ensure_ascii=False)
+
+
 
 class TelegramUpdater(object):
     def __init__(self, db, bot_token, channel_name):

@@ -11,6 +11,7 @@ import requests
 import click
 import pytz
 from dateutil.parser import parse as dateutil_parse
+from requests.adapters import HTTPAdapter
 
 locale.setlocale(locale.LC_ALL, "fa_IR")
 
@@ -50,8 +51,10 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
 
 
 def get_currentwar(coc_token, clan_tag):
+    s = requests.Session()
+    s.mount('https://api.clashofclans.com', HTTPAdapter(max_retries=5))
     endpoint = get_currentwar_endpoint(clan_tag)
-    res = requests.get(endpoint, headers={'Authorization': 'Bearer %s' % coc_token})
+    res = s.get(endpoint, headers={'Authorization': 'Bearer %s' % coc_token})
     if res.status_code == requests.codes.ok:
         return json.loads(res.content.decode('utf-8'))
     else:

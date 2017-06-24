@@ -273,7 +273,7 @@ class TelegramUpdater(object):
         info['clan_used_attacks'] = 0
         info['op_used_attacks'] = 0
         if not attack_order:
-            attack_order = len(self.ordered_attacks)
+            return self.get_latest_war_stats()
         for order in range(1, attack_order + 1):
             player, attack = self.ordered_attacks[order]
             if self.is_clan_member(player):
@@ -287,6 +287,14 @@ class TelegramUpdater(object):
         info['op_destruction'] /= self.latest_wardata['teamSize']
         info['clan_destruction'] /= self.latest_wardata['teamSize']
         return info
+
+    def get_latest_war_stats(self):
+        return {'clan_destruction': self.latest_wardata['clan']['destructionPercentage'],
+                'op_destruction': self.latest_wardata['opponent']['destructionPercentage'],
+                'clan_stars': self.latest_wardata['clan']['stars'],
+                'op_stars': self.latest_wardata['opponent']['stars'],
+                'clan_used_attacks': self.latest_wardata['clan']['attacks'],
+                'op_used_attacks': self.latest_wardata['opponent']['attacks'],}
 
     def get_attack_new_destruction(self, attack):
         if attack['destructionPercentage'] > self.get_best_attack_destruction_upto(attack):

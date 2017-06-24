@@ -108,6 +108,7 @@ class TelegramUpdater(object):
             self.send_war_msg()
             self.send_attack_msgs()
         elif self.is_war_over():
+            self.send_attack_msgs()
             self.send_war_over_msg()
             self.reset()
         else:

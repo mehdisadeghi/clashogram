@@ -409,7 +409,7 @@ class TelegramUpdater(object):
         elif self.is_draw():
             return '🏳 مساوی کردیم.'
         else:
-            return '💩 ریدیم!'
+            return '💩 باختیم رئیس!'
 
     def did_we_win(self):
         if self.latest_wardata['clan']['stars'] > self.latest_wardata['opponent']['stars']:

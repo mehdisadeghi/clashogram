@@ -162,17 +162,18 @@ class TelegramUpdater(object):
         return self.db[self.get_war_id()].get('preparation_msg_sent', False)
 
     def create_preparation_msg(self):
-        msg_template = """{top_imoji} {title}
-کلن {ourclan} در برابر کلن {opponentclan}
-تگ {ourtag} در برابر {opponenttag}
-جنگ قبیله {start} شروع خواهد شد.
-این وار {war_size} تائی است.
+        msg_template = """{top_imoji} وار {war_size} ‌تائی در راه است!
+️ کلن {ourclan: <15} لول {ourlevel: <2}
+️ کلن {opponentclan: <15} لول {theirlevel: <2}
+بازی {start} شروع می‌شود.
 شاد باشید! {final_emoji}
 """
+
         msg = msg_template.format(top_imoji='\U0001F3C1',
-                                  title='جنگ  در راه است!',
                                   ourclan=self.latest_wardata['clan']['name'],
+                                  ourlevel=self.latest_wardata['clan']['clanLevel'],
                                   opponentclan=self.latest_wardata['opponent']['name'],
+                                  theirlevel=self.latest_wardata['opponent']['clanLevel'],
                                   ourtag=self.latest_wardata['clan']['tag'],
                                   opponenttag=self.latest_wardata['opponent']['tag'],
                                   start=self.format_time(self.latest_wardata['startTime']),

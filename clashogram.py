@@ -38,7 +38,6 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
                 wardata = get_currentwar(coc_token, clan_tag)
                 save_latest_data(wardata, telegram_updater)
                 telegram_updater.update(wardata)
-                save_wardata(wardata)
                 time.sleep(POLL_INTERVAL)
             except (KeyboardInterrupt, SystemExit):
                 db.close()
@@ -77,6 +76,7 @@ def save_wardata(wardata):
 
 def save_latest_data(wardata, telegram_updater):
     if wardata:
+        save_wardata(wardata)
         json.dump(wardata, open('latest_downloaded_wardata.json', 'w'), ensure_ascii=False)
     if telegram_updater and telegram_updater.latest_wardata:
         json.dump(telegram_updater.latest_wardata, open('latest_inmemory_wardata.json', 'w'), ensure_ascii=False)
@@ -208,10 +208,11 @@ class TelegramUpdater(object):
             self.send_single_attack_msg(player, attack)
 
     def send_single_attack_msg(self, player, attack):
+        war_stats = self.calculate_war_stats_sofar(attack['order'])
         if self.is_clan_member(player):
-            self.send_clan_attack_msg(player, attack)
+            self.send_clan_attack_msg(player, attack, war_stats)
         else:
-            self.send_opponent_attack_msg(player, attack)
+            self.send_opponent_attack_msg(player, attack, war_stats)
 
     def is_clan_member(self, player):
         return player['tag'] in self.clan_members
@@ -222,9 +223,9 @@ class TelegramUpdater(object):
         else:
             return []
     
-    def send_clan_attack_msg(self, attacker, attack):
+    def send_clan_attack_msg(self, attacker, attack, war_stats):
         if not self.is_attack_msg_sent(attack):
-            msg = self.create_clan_attack_msg(attacker, attack)
+            msg = self.create_clan_attack_msg(attacker, attack, war_stats)
             self.send(msg)
             self.db[self.get_war_id()][self.get_attack_id(attack)] = True
 
@@ -232,7 +233,7 @@ class TelegramUpdater(object):
         attack_id = self.get_attack_id(attack)
         return self.db[self.get_war_id()].get(attack_id, False)
 
-    def create_clan_attack_msg(self, member, attack):
+    def     create_clan_attack_msg(self, member, attack, war_stats):
         msg_template = """<pre>{top_imoji} {order} کلن {ourclan} مقابل {opponentclan}
 مهاجم: {attacker_name: <15} ت {attacker_thlevel: <2} ر {attacker_map_position}
 مدافع: {defender_name: <15} ت {defender_thlevel: <2} ر {defender_map_position}
@@ -254,7 +255,7 @@ class TelegramUpdater(object):
                                   defender_map_position=defender['mapPosition'],
                                   stars=self.format_star_msg(attack),
                                   destruction_percentage=attack['destructionPercentage'],
-                                  war_info=self.create_war_info_msg(attack_order=attack['order']))
+                                  war_info=self.create_war_info_msg(war_stats))
         return msg
 
     def format_star_msg(self, attack):
@@ -263,7 +264,7 @@ class TelegramUpdater(object):
         stars = new_stars * '⭐'
         return cookies + stars
 
-    def calculate_war_stats_sofar(self, attack_order=None):
+    def calculate_war_stats_sofar(self, attack_order):
         """CoC data is updated every 10 minutes and reflects stats after the last attack.
         We have to calculate the necesssary info for the previous ones"""
         info = {}
@@ -273,8 +274,6 @@ class TelegramUpdater(object):
         info['op_stars'] = 0
         info['clan_used_attacks'] = 0
         info['op_used_attacks'] = 0
-        if not attack_order:
-            return self.get_latest_war_stats()
         for order in range(1, attack_order + 1):
             player, attack = self.ordered_attacks[order]
             if self.is_clan_member(player):
@@ -334,8 +333,7 @@ class TelegramUpdater(object):
                 best_score = attack['stars']
         return best_score
 
-    def create_war_info_msg(self, attack_order=None):
-        war_stats = self.calculate_war_stats_sofar(attack_order=attack_order)
+    def create_war_info_msg(self, war_stats):
         template = """▪ {clan_attack_count: <2}/{total} ⭐ {clan_stars: <3} ⚡ {clan_destruction:.2f}%
 ▪ {opponent_attack_count: <2}/{total} ⭐ {opponent_stars: <3} ⚡ {opponent_destruction:.2f}%"""
         return template.format(
@@ -356,13 +354,13 @@ class TelegramUpdater(object):
         return "attack{}{}".format(attack['attackerTag'][1:],    
                                    attack['defenderTag'][1:])
 
-    def send_opponent_attack_msg(self, attacker, attack):
+    def send_opponent_attack_msg(self, attacker, attack, war_stats):
         if not self.is_attack_msg_sent(attack):
-            msg = self.create_opponent_attack_msg(attacker, attack)
+            msg = self.create_opponent_attack_msg(attacker, attack, war_stats)
             self.send(msg)
             self.db[self.get_war_id()][self.get_attack_id(attack)] = True
 
-    def create_opponent_attack_msg(self, member, attack):
+    def create_opponent_attack_msg(self, member, attack, war_stats):
         msg_template = """<pre>{top_imoji} {order} کلن {ourclan} مقابل {opponentclan}
 مهاجم: {attacker_name: <15} ت {attacker_thlevel: <2} ر {attacker_map_position}
 مدافع: {defender_name: <15} ت {defender_thlevel: <2} ر {defender_map_position}
@@ -383,7 +381,7 @@ class TelegramUpdater(object):
                                   defender_map_position=defender['mapPosition'],
                                   stars=self.format_star_msg(attack),
                                   destruction_percentage=attack['destructionPercentage'],
-                                  war_info=self.create_war_info_msg(attack_order=attack['order']))
+                                  war_info=self.create_war_info_msg(war_stats))
         return msg
 
     def is_war_over(self):
@@ -410,7 +408,7 @@ class TelegramUpdater(object):
                                   ourlevel=self.latest_wardata['clan']['clanLevel'],
                                   opponentclan=self.latest_wardata['opponent']['name'],
                                   theirlevel=self.latest_wardata['opponent']['clanLevel'],
-                                  war_info=self.create_war_info_msg())
+                                  war_info=self.create_war_info_msg(self.get_latest_war_stats()))
         return msg
 
     def create_win_or_lose_title(self):

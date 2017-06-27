@@ -227,13 +227,18 @@ class TelegramUpdater(object):
         if not self.is_attack_msg_sent(attack):
             msg = self.create_clan_attack_msg(attacker, attack, war_stats)
             self.send(msg)
+            if war_stats['clan_destruction'] == 100:
+                self.send(self.create_clan_full_destruction_msg(player, attack, war_stats))
             self.db[self.get_war_id()][self.get_attack_id(attack)] = True
+
+    def create_clan_full_destruction_msg(self, attacker, attack, war_stats):
+        return '⚪️رئیس فول زدیمشون!'
 
     def is_attack_msg_sent(self, attack):
         attack_id = self.get_attack_id(attack)
         return self.db[self.get_war_id()].get(attack_id, False)
 
-    def     create_clan_attack_msg(self, member, attack, war_stats):
+    def create_clan_attack_msg(self, member, attack, war_stats):
         msg_template = """<pre>{top_imoji} {order} کلن {ourclan} مقابل {opponentclan}
 مهاجم: {attacker_name: <15} ت {attacker_thlevel: <2} ر {attacker_map_position}
 مدافع: {defender_name: <15} ت {defender_thlevel: <2} ر {defender_map_position}
@@ -358,6 +363,8 @@ class TelegramUpdater(object):
         if not self.is_attack_msg_sent(attack):
             msg = self.create_opponent_attack_msg(attacker, attack, war_stats)
             self.send(msg)
+            if war_stats['op_destruction'] == 100:
+                self.send(self.create_opponent_full_destruction_msg(player, attack, war_stats))
             self.db[self.get_war_id()][self.get_attack_id(attack)] = True
 
     def create_opponent_attack_msg(self, member, attack, war_stats):
@@ -383,6 +390,10 @@ class TelegramUpdater(object):
                                   destruction_percentage=attack['destructionPercentage'],
                                   war_info=self.create_war_info_msg(war_stats))
         return msg
+
+
+    def create_opponent_full_destruction_msg(self, attacker, attack, war_stats):
+        return '⚫️رئیس فول خوردیم!'
 
     def is_war_over(self):
         return self.latest_wardata['state'] == 'warEnded'

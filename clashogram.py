@@ -163,8 +163,8 @@ class TelegramUpdater(object):
 
     def create_preparation_msg(self):
         msg_template = """{top_imoji} وار {war_size} ‌تائی در راه است!
-️ کلن {ourclan: <15} لول {ourlevel: <2}
-️ کلن {opponentclan: <15} لول {theirlevel: <2}
+<pre>▫️️️ کلن {ourclan: <15} لول {ourlevel: <2}
+▪️️ کلن {opponentclan: <15} لول {theirlevel: <2}</pre>
 بازی {start} شروع می‌شود.
 شاد باشید! {final_emoji}
 """

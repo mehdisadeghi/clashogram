@@ -116,7 +116,6 @@ class TelegramUpdater(object):
 
     def populate_warinfo(self, wardata):
         self.latest_wardata = wardata
-        self.ordered_attacks = self.get_ordered_attacks()
         if self.get_war_id() not in self.db:
             self.initialize_war_entry()
         if self.is_new_war(wardata):
@@ -126,6 +125,7 @@ class TelegramUpdater(object):
             for opponent in wardata['opponent']['members']:
                 self.opponent_members[opponent['tag']] = opponent
                 self.players[opponent['tag']] = opponent
+        self.ordered_attacks = self.get_ordered_attacks()
 
     def get_ordered_attacks(self):
         ordered_attacks = {}

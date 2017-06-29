@@ -15,7 +15,7 @@ from requests.adapters import HTTPAdapter
 
 locale.setlocale(locale.LC_ALL, "fa_IR")
 
-POLL_INTERVAL = 2
+POLL_INTERVAL = 60
 
 @click.command()
 @click.option('--coc-token', help='CoC API token. Reads COC_API_TOKEN env var.', envvar='COC_API_TOKEN', prompt=True)

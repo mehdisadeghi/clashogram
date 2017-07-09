@@ -33,7 +33,8 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
     """Send war news to telegram channel."""
     with shelve.open('warlog.db', writeback=True) as db:
         coc_api = CoCAPI(coc_token)
-        telegram_updater = TelegramUpdater(db, bot_token, channel_name)
+        telegram_notifier = TelegramNotifier(bot_token, channel_name)
+        telegram_updater = TelegramUpdater(db, coc_api, telegram_notifier)
         while True:
             try:
                 wardata = coc_api.get_currentwar(clan_tag)
@@ -77,6 +78,20 @@ class CoCAPI(object):
                 clan_tag=requests.utils.quote('#%s' % clan_tag))
 
 
+class TelegramNotifier(object):
+    def __init__(self, bot_token, channel_name):
+        self.bot_token = bot_token
+        self.channel_name = channel_name
+
+    def send(self, msg):
+        endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?parse_mode={mode}&chat_id=@{channel_name}&text={text}".format(
+            bot_token=self.bot_token,
+            mode='HTML',
+            channel_name=self.channel_name,
+            text=requests.utils.quote(msg))
+        requests.post(endpoint)
+
+
 def save_wardata(wardata):
     if wardata['state'] != 'notInWar':
         war_id = "{0}{1}".format(wardata['clan']['tag'][1:],
@@ -97,10 +112,11 @@ def save_latest_data(wardata, telegram_updater):
 
 
 class TelegramUpdater(object):
-    def __init__(self, db, bot_token, channel_name):
+    def __init__(self, db, coc_api, telegram_notifier):
         self.db = db
-        self.bot_token = bot_token
-        self.channel_name = channel_name
+        self.coc_api = coc_api
+        self.telegram_notifier = telegram_notifier
+
         self.latest_wardata = None
         self.clan_members = {}
         self.opponent_members = {}
@@ -181,7 +197,7 @@ class TelegramUpdater(object):
 بازی {start} شروع می‌شود.
 شاد باشید! {final_emoji}
 """
-        clan_extra_info = self.get_clan_extra_info(self.latest_wardata['clan']['tag'])
+        #clan_extra_info = self.get_clan_extra_info(self.latest_wardata['clan']['tag'])
 
         msg = msg_template.format(top_imoji='\U0001F3C1',
                                   ourclan=self.latest_wardata['clan']['name'],
@@ -467,8 +483,7 @@ class TelegramUpdater(object):
         self.ordered_attacks = None
 
     def send(self, msg):
-        endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?parse_mode={mode}&chat_id=@{channel_name}&text={text}".format(bot_token=self.bot_token, mode='HTML', channel_name=self.channel_name, text=requests.utils.quote(msg))
-        requests.post(endpoint)
+        self.telegram_notifier.send(msg)
 
 
 def convert_to_persian_numbers(text):

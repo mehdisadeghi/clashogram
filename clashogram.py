@@ -75,7 +75,7 @@ class CoCAPI(object):
 
     def get_claninfo_endpoint(self, clan_tag):
         return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
-                clan_tag=requests.utils.quote('#%s' % clan_tag))
+                clan_tag=requests.utils.quote(clan_tag))
 
 
 class TelegramNotifier(object):
@@ -192,12 +192,13 @@ class TelegramUpdater(object):
 
     def create_preparation_msg(self):
         msg_template = """{top_imoji} وار {war_size} ‌تائی در راه است!
-<pre>▫️️️ کلن {ourclan: <15} لول {ourlevel: <2}
-▪️️ کلن {opponentclan: <15} لول {theirlevel: <2}</pre>
+<pre>▫️ کلن {ourclan: <15} ل {ourlevel: <2} +{clanwinstreak} {clanloc}{clanflag}
+▪️ کلن {opponentclan: <15} ل {theirlevel: <2} +{opwinstreak} {oploc}{opflag}</pre>
 بازی {start} شروع می‌شود.
 شاد باشید! {final_emoji}
 """
-        #clan_extra_info = self.get_clan_extra_info(self.latest_wardata['clan']['tag'])
+        clan_extra_info = self.get_clan_extra_info(self.latest_wardata['clan']['tag'])
+        op_extra_info = self.get_clan_extra_info(self.latest_wardata['opponent']['tag'])
 
         msg = msg_template.format(top_imoji='\U0001F3C1',
                                   ourclan=self.latest_wardata['clan']['name'],
@@ -208,11 +209,21 @@ class TelegramUpdater(object):
                                   opponenttag=self.latest_wardata['opponent']['tag'],
                                   start=self.format_time(self.latest_wardata['startTime']),
                                   war_size=self.latest_wardata['teamSize'],
-                                  final_emoji='\U0001F6E1')
+                                  final_emoji='\U0001F6E1',
+                                  clanloc=clan_extra_info['location']['name'],
+                                  clanflag=self.get_country_flag_imoji(clan_extra_info['location']['countryCode']) if clan_extra_info['location']['isCountry'] else '',
+                                  oploc=op_extra_info['location']['name'],
+                                  opflag=self.get_country_flag_imoji(op_extra_info['location']['countryCode']) if op_extra_info['location']['isCountry'] else '',
+                                  clanwinstreak=clan_extra_info['warWinStreak'],
+                                  opwinstreak=op_extra_info['warWinStreak'])
         return msg
 
+    def get_country_flag_imoji(self, country_code):
+        return "{}{}".format(chr(127397 + ord(country_code[0])),
+                             chr(127397 + ord(country_code[1])))
+
     def get_clan_extra_info(self, clan_tag):
-        clan_info = get_claninfo(self.coc_token, clan_tag)
+        return self.coc_api.get_claninfo(clan_tag)
 
     def format_time(self, timestamp):
         utc_time = dateutil_parse(timestamp, fuzzy=True)

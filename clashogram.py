@@ -49,9 +49,16 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
 
 
 def get_currentwar(coc_token, clan_tag):
+    return call_api(coc_token, get_currentwar_endpoint(clan_tag))
+
+
+def get_claninfo(coc_token, clan_tag):
+    return call_api(coc_token, get_claninfo_endpoint(clan_tag))    
+
+
+def call_api(coc_token, endpoint):
     s = requests.Session()
     s.mount('https://api.clashofclans.com', HTTPAdapter(max_retries=5))
-    endpoint = get_currentwar_endpoint(clan_tag)
     res = s.get(endpoint, headers={'Authorization': 'Bearer %s' % coc_token})
     if res.status_code == requests.codes.ok:
         return json.loads(res.content.decode('utf-8'))
@@ -61,6 +68,11 @@ def get_currentwar(coc_token, clan_tag):
 
 def get_currentwar_endpoint(clan_tag):
     return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'.format(
+            clan_tag=requests.utils.quote('#%s' % clan_tag))
+
+
+def get_claninfo_endpoint(clan_tag):
+    return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
             clan_tag=requests.utils.quote('#%s' % clan_tag))
 
 

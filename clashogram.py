@@ -32,10 +32,11 @@ def main(coc_token, clan_tag, bot_token, channel_name):
 def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
     """Send war news to telegram channel."""
     with shelve.open('warlog.db', writeback=True) as db:
+        coc_api = CoCAPI(coc_token)
         telegram_updater = TelegramUpdater(db, bot_token, channel_name)
         while True:
             try:
-                wardata = get_currentwar(coc_token, clan_tag)
+                wardata = coc_api.get_currentwar(clan_tag)
                 save_latest_data(wardata, telegram_updater)
                 telegram_updater.update(wardata)
                 time.sleep(POLL_INTERVAL)
@@ -48,32 +49,32 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
                 raise
 
 
-def get_currentwar(coc_token, clan_tag):
-    return call_api(coc_token, get_currentwar_endpoint(clan_tag))
+class CoCAPI(object):
+    def __init__(self, coc_token):
+        self.coc_token = coc_token
 
+    def get_currentwar(self, clan_tag):
+        return self.call_api(self.get_currentwar_endpoint(clan_tag))
 
-def get_claninfo(coc_token, clan_tag):
-    return call_api(coc_token, get_claninfo_endpoint(clan_tag))    
+    def get_claninfo(self, clan_tag):
+        return self.call_api(self.get_claninfo_endpoint(clan_tag))    
 
+    def call_api(self, endpoint):
+        s = requests.Session()
+        s.mount('https://api.clashofclans.com', HTTPAdapter(max_retries=5))
+        res = s.get(endpoint, headers={'Authorization': 'Bearer %s' % self.coc_token})
+        if res.status_code == requests.codes.ok:
+            return json.loads(res.content.decode('utf-8'))
+        else:
+            raise Exception('Error calling CoC API: %s' % res)
 
-def call_api(coc_token, endpoint):
-    s = requests.Session()
-    s.mount('https://api.clashofclans.com', HTTPAdapter(max_retries=5))
-    res = s.get(endpoint, headers={'Authorization': 'Bearer %s' % coc_token})
-    if res.status_code == requests.codes.ok:
-        return json.loads(res.content.decode('utf-8'))
-    else:
-        raise Exception('Error calling CoC API: %s' % res)
+    def get_currentwar_endpoint(self, clan_tag):
+        return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'.format(
+                clan_tag=requests.utils.quote('#%s' % clan_tag))
 
-
-def get_currentwar_endpoint(clan_tag):
-    return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'.format(
-            clan_tag=requests.utils.quote('#%s' % clan_tag))
-
-
-def get_claninfo_endpoint(clan_tag):
-    return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
-            clan_tag=requests.utils.quote('#%s' % clan_tag))
+    def get_claninfo_endpoint(self, clan_tag):
+        return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
+                clan_tag=requests.utils.quote('#%s' % clan_tag))
 
 
 def save_wardata(wardata):
@@ -180,6 +181,7 @@ class TelegramUpdater(object):
 بازی {start} شروع می‌شود.
 شاد باشید! {final_emoji}
 """
+        clan_extra_info = self.get_clan_extra_info(self.latest_wardata['clan']['tag'])
 
         msg = msg_template.format(top_imoji='\U0001F3C1',
                                   ourclan=self.latest_wardata['clan']['name'],
@@ -192,6 +194,9 @@ class TelegramUpdater(object):
                                   war_size=self.latest_wardata['teamSize'],
                                   final_emoji='\U0001F6E1')
         return msg
+
+    def get_clan_extra_info(self, clan_tag):
+        clan_info = get_claninfo(self.coc_token, clan_tag)
 
     def format_time(self, timestamp):
         utc_time = dateutil_parse(timestamp, fuzzy=True)

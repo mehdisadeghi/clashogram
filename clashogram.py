@@ -388,16 +388,24 @@ class TelegramUpdater(object):
         return best_score
 
     def create_war_info_msg(self, war_stats):
-        template = """▪ {clan_attack_count: <2}/{total} ⭐ {clan_stars: <3} ⚡ {clan_destruction:.2f}%
-▪ {opponent_attack_count: <2}/{total} ⭐ {opponent_stars: <3} ⚡ {opponent_destruction:.2f}%"""
+        template = """▪ {clan_attack_count: >{atkwidth}}/{total} ⭐ {clan_stars: <{swidth}} ⚡ {clan_destruction:.2f}%
+▪ {opponent_attack_count: >{atkwidth}}/{total} ⭐ {opponent_stars: <{swidth}} ⚡ {opponent_destruction:.2f}%"""
+
+        clan_stars = war_stats['clan_stars']
+        op_stars = war_stats['op_stars']
+        clan_attack_count = war_stats['clan_used_attacks']
+        op_attack_count = war_stats['op_used_attacks']
+
         return template.format(
             total=self.latest_wardata['teamSize'] * 2,
-            clan_attack_count=war_stats['clan_used_attacks'],
-            opponent_attack_count=war_stats['op_used_attacks'],
-            clan_stars=war_stats['clan_stars'],
+            clan_attack_count=clan_attack_count,
+            opponent_attack_count=op_attack_count,
+            clan_stars=clan_stars,
             clan_destruction=war_stats['clan_destruction'],
-            opponent_stars=war_stats['op_stars'],
-            opponent_destruction=war_stats['op_destruction'])
+            opponent_stars=op_stars,
+            opponent_destruction=war_stats['op_destruction'],
+            swidth=len(str(max(clan_stars, op_stars))),
+            atkwidth=len(str(max(clan_attack_count, op_attack_count))))
 
     def get_player_info(self, tag):
         if tag not in self.players:

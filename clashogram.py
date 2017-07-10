@@ -192,18 +192,21 @@ class TelegramUpdater(object):
 
     def create_preparation_msg(self):
         msg_template = """{top_imoji} وار {war_size} ‌تائی در راه است!
-<pre>▫️ کلن {ourclan: <15} ل {ourlevel: <2} +{clanwinstreak} {clanloc}{clanflag}
-▪️ کلن {opponentclan: <15} ل {theirlevel: <2} +{opwinstreak} {oploc}{opflag}</pre>
+<pre>▫️ کلن {ourclan: <{cwidth}} ل {ourlevel: <2} +{clanwinstreak} {clanloc}{clanflag}
+▪️ کلن {opponentclan: <{cwidth}} ل {theirlevel: <2} +{opwinstreak} {oploc}{opflag}</pre>
 بازی {start} شروع می‌شود.
 شاد باشید! {final_emoji}
 """
         clan_extra_info = self.get_clan_extra_info(self.latest_wardata['clan']['tag'])
         op_extra_info = self.get_clan_extra_info(self.latest_wardata['opponent']['tag'])
 
+        ourclan = self.latest_wardata['clan']['name']
+        opclan = self.latest_wardata['opponent']['name']
+
         msg = msg_template.format(top_imoji='\U0001F3C1',
-                                  ourclan=self.latest_wardata['clan']['name'],
+                                  ourclan=ourclan,
                                   ourlevel=self.latest_wardata['clan']['clanLevel'],
-                                  opponentclan=self.latest_wardata['opponent']['name'],
+                                  opponentclan=opclan,
                                   theirlevel=self.latest_wardata['opponent']['clanLevel'],
                                   ourtag=self.latest_wardata['clan']['tag'],
                                   opponenttag=self.latest_wardata['opponent']['tag'],
@@ -215,7 +218,8 @@ class TelegramUpdater(object):
                                   oploc=op_extra_info['location']['name'],
                                   opflag=self.get_country_flag_imoji(op_extra_info['location']['countryCode']) if op_extra_info['location']['isCountry'] else '',
                                   clanwinstreak=clan_extra_info['warWinStreak'],
-                                  opwinstreak=op_extra_info['warWinStreak'])
+                                  opwinstreak=op_extra_info['warWinStreak'],
+                                  cwidth=max(len(ourclan), len(opclan)))
         return msg
 
     def get_country_flag_imoji(self, country_code):
@@ -284,8 +288,8 @@ class TelegramUpdater(object):
 
     def create_clan_attack_msg(self, member, attack, war_stats):
         msg_template = """<pre>{top_imoji} {order} کلن {ourclan} مقابل {opponentclan}
-مهاجم: {attacker_name: <15} ت {attacker_thlevel: <2} ر {attacker_map_position}
-مدافع: {defender_name: <15} ت {defender_thlevel: <2} ر {defender_map_position}
+مهاجم: {attacker_name: <{nwidth}} ت {attacker_thlevel: <2} ر {attacker_map_position}
+مدافع: {defender_name: <{nwidth}} ت {defender_thlevel: <2} ر {defender_map_position}
 نتیجه: {stars}
 تخریب: {destruction_percentage}%
 {war_info}
@@ -304,7 +308,8 @@ class TelegramUpdater(object):
                                   defender_map_position=defender['mapPosition'],
                                   stars=self.format_star_msg(attack),
                                   destruction_percentage=attack['destructionPercentage'],
-                                  war_info=self.create_war_info_msg(war_stats))
+                                  war_info=self.create_war_info_msg(war_stats),
+                                  nwidth=max(len(member['name']), len(defender['name'])))
         return msg
 
     def format_star_msg(self, attack):
@@ -413,8 +418,8 @@ class TelegramUpdater(object):
 
     def create_opponent_attack_msg(self, member, attack, war_stats):
         msg_template = """<pre>{top_imoji} {order} کلن {ourclan} مقابل {opponentclan}
-مهاجم: {attacker_name: <15} ت {attacker_thlevel: <2} ر {attacker_map_position}
-مدافع: {defender_name: <15} ت {defender_thlevel: <2} ر {defender_map_position}
+مهاجم: {attacker_name: <{nwidth}} ت {attacker_thlevel: <2} ر {attacker_map_position}
+مدافع: {defender_name: <{nwidth}} ت {defender_thlevel: <2} ر {defender_map_position}
 نتیجه: {stars}
 تخریب: {destruction_percentage}%
 {war_info}
@@ -432,7 +437,8 @@ class TelegramUpdater(object):
                                   defender_map_position=defender['mapPosition'],
                                   stars=self.format_star_msg(attack),
                                   destruction_percentage=attack['destructionPercentage'],
-                                  war_info=self.create_war_info_msg(war_stats))
+                                  war_info=self.create_war_info_msg(war_stats),
+                                  nwidth=max(len(member['name']), len(defender['name'])))
         return msg
 
 
@@ -453,17 +459,20 @@ class TelegramUpdater(object):
 
     def create_war_over_msg(self):
         msg_template = """<pre>{win_or_lose_title}
-کلن {ourclan: <15} لول {ourlevel: <2}
-کلن {opponentclan: <15} لول {theirlevel: <2}
+کلن {ourclan: <{cwidth}} لول {ourlevel: <2}
+کلن {opponentclan: <{cwidth}} لول {theirlevel: <2}
 {war_info}
 </pre>"""
 
+        ourclan = self.latest_wardata['clan']['name']
+        opclan = self.latest_wardata['opponent']['name']
         msg = msg_template.format(win_or_lose_title=self.create_win_or_lose_title(),
-                                  ourclan=self.latest_wardata['clan']['name'],
+                                  ourclan=ourclan,
                                   ourlevel=self.latest_wardata['clan']['clanLevel'],
-                                  opponentclan=self.latest_wardata['opponent']['name'],
+                                  opponentclan=opclan,
                                   theirlevel=self.latest_wardata['opponent']['clanLevel'],
-                                  war_info=self.create_war_info_msg(self.get_latest_war_stats()))
+                                  war_info=self.create_war_info_msg(self.get_latest_war_stats()),
+                                  cwidth=max(len(ourclan), len(opclan)))
         return msg
 
     def create_win_or_lose_title(self):

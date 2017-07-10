@@ -287,7 +287,7 @@ class TelegramUpdater(object):
         return self.db[self.get_war_id()].get(attack_id, False)
 
     def create_clan_attack_msg(self, member, attack, war_stats):
-        msg_template = """<pre>{top_imoji} {order} کلن {ourclan} مقابل {opponentclan}
+        msg_template = """<pre>{top_imoji} {order} ک {ourclan} و {opponentclan}
 مهاجم: {attacker_name: <{nwidth}} ت {attacker_thlevel: <2} ر {attacker_map_position}
 مدافع: {defender_name: <{nwidth}} ت {defender_thlevel: <2} ر {defender_map_position}
 نتیجه: {stars}
@@ -425,7 +425,7 @@ class TelegramUpdater(object):
             self.db[self.get_war_id()][self.get_attack_id(attack)] = True
 
     def create_opponent_attack_msg(self, member, attack, war_stats):
-        msg_template = """<pre>{top_imoji} {order} کلن {ourclan} مقابل {opponentclan}
+        msg_template = """<pre>{top_imoji} {order} ک {ourclan} و {opponentclan}
 مهاجم: {attacker_name: <{nwidth}} ت {attacker_thlevel: <2} ر {attacker_map_position}
 مدافع: {defender_name: <{nwidth}} ت {defender_thlevel: <2} ر {defender_map_position}
 نتیجه: {stars}

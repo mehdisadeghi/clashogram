@@ -44,7 +44,11 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
             except (KeyboardInterrupt, SystemExit):
                 db.close()
                 raise
-            except:
+            except Exception as err:
+                if '503' in str(err):
+                    print('COC maintenance error, ignoring.')
+                    time.sleep(POLL_INTERVAL)
+                    continue
                 telegram_updater.send("☠️ 😵 رئیس من ترکیدم! با آدمتون تماس بگیرید بیاد درستم کنه.")
                 db.close()
                 raise

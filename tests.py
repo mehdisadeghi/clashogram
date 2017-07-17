@@ -5,7 +5,7 @@ import json
 from clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, MessageFactory, WarMonitor
 
 
-class TestClanInfoMethods(unittest.TestCase):
+class ClanInfoTestCase(unittest.TestCase):
     def setUp(self):
         self.claninfo = ClanInfo({'location': {'name': 'Iran',
                                                'isCountry': 'true',
@@ -22,7 +22,7 @@ class TestClanInfoMethods(unittest.TestCase):
         assert self.claninfo.get_winstreak() == 0
 
 
-class TestWarInfoMethods(unittest.TestCase):
+class WarInfoTestCase(unittest.TestCase):
     def setUp(self):
         self.warinfo = WarInfo(json.loads(open('data/inWar_40.json', 'r').read()))
         self.op_member = {
@@ -102,7 +102,7 @@ class TestWarInfoMethods(unittest.TestCase):
         self.assertEqual(self.warinfo.create_war_id(), "#YVL0C8UY#JC0L922Y20170602T201148.000Z")
 
 
-class TestWarStatsMethods(unittest.TestCase):
+class WarStatsTestCase(unittest.TestCase):
     def setup(self):
         coc_api = CoCAPI(coc_token)
         warinfo = WarInfo(json.loads(open('data/inWar_40.json', 'r').read()))
@@ -124,6 +124,13 @@ class TestWarStatsMethods(unittest.TestCase):
     def test_a(self):
         pass
 
+
+class MessageFactoryTestCase(unittest.TestCase):
+    pass
+
+
+class WarMonitorTestCase(unittest.TestCase):
+    pass
 
 if __name__ == '__main__':
     unittest.main()

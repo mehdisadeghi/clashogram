@@ -106,6 +106,21 @@ class WarStatsTestCase(unittest.TestCase):
     def setUp(self):
         warinfo = WarInfo(json.loads(open('data/warEnded_50.json', 'r').read()))
         self.stats = WarStats(warinfo)
+        self.attack161 = {
+            "destructionPercentage": 53,
+            "attackerTag": "#9YUVL0CU",
+            "order": 161,
+            "stars": 2,
+            "defenderTag": "#228U8G88L"
+        }
+        self.attack150 = {
+            "destructionPercentage": 100,
+            "attackerTag": "#2Q02GYCYV",
+            "order": 150,
+            "stars": 3,
+            "defenderTag": "#2Y0C8YPYU"
+        }
+
         
     def test_first_attack_stats(self):
         stats = self.stats.calculate_war_stats_sofar(1)
@@ -136,6 +151,14 @@ class WarStatsTestCase(unittest.TestCase):
         self.assertEqual(stats['op_stars'], 147)
         self.assertEqual(stats['clan_used_attacks'], 87)
         self.assertEqual(stats['op_used_attacks'], 75)
+
+    def test_attack_destruction(self):
+        self.assertEqual(self.stats.get_attack_new_destruction(self.attack161), 0)
+        self.assertEqual(self.stats.get_attack_new_destruction(self.attack150), 3)
+
+    def test_attack_new_stars(self):
+        self.assertEqual(self.stats.get_attack_new_stars(self.attack161), 0)
+        self.assertEqual(self.stats.get_attack_new_stars(self.attack150), 1)
 
 
 class MessageFactoryTestCase(unittest.TestCase):

@@ -104,25 +104,38 @@ class WarInfoTestCase(unittest.TestCase):
 
 class WarStatsTestCase(unittest.TestCase):
     def setUp(self):
-        coc_api = CoCAPI(None)
-        warinfo = WarInfo(json.loads(open('data/inWar_40.json', 'r').read()))
-        our_claninfo = ClanInfo({'location': {'name': 'Iran',
-                                              'isCountry': 'true',
-                                              'countryCode': 'IR'},
-                                 'warWinStreak': 0})
-        op_claninfo = ClanInfo({'location': {'name': 'United States',
-                                             'isCountry': 'true',
-                                             'countryCode': 'US'},
-                                'warWinStreak': 0})
-        coc_api.get_currentwar = MagicMock(return_value=warinfo)
-        coc_api.get_claninfo = MagicMock(return_value=our_claninfo)
-        notifier = TelegramNotifier(None, None)
-        notifier.send = MagicMock(return_value=None)
-        self.monitor = WarMonitor({}, coc_api, notifier)
-        self.monitor.update(warinfo)
+        warinfo = WarInfo(json.loads(open('data/warEnded_50.json', 'r').read()))
+        self.stats = WarStats(warinfo)
         
-    def test_a(self):
-        pass
+    def test_first_attack_stats(self):
+        stats = self.stats.calculate_war_stats_sofar(1)
+
+        self.assertEqual(stats['clan_destruction'], 0)
+        self.assertEqual(stats['op_destruction'], 1.76)
+        self.assertEqual(stats['clan_stars'], 0)
+        self.assertEqual(stats['op_stars'], 2)
+        self.assertEqual(stats['clan_used_attacks'], 0)
+        self.assertEqual(stats['op_used_attacks'], 1)
+
+    def test_42th_attack_stats(self):
+        stats = self.stats.calculate_war_stats_sofar(42)
+
+        self.assertEqual(stats['clan_destruction'], 44.16)
+        self.assertEqual(stats['op_destruction'], 26.56)
+        self.assertEqual(stats['clan_stars'], 61)
+        self.assertEqual(stats['op_stars'], 37)
+        self.assertEqual(stats['clan_used_attacks'], 27)
+        self.assertEqual(stats['op_used_attacks'], 15)
+
+    def test_last_attack_stats(self):
+        stats = self.stats.calculate_war_stats_sofar(162)
+
+        self.assertEqual(stats['clan_destruction'], 96.72)
+        self.assertEqual(stats['op_destruction'], 98.90)
+        self.assertEqual(stats['clan_stars'], 142)
+        self.assertEqual(stats['op_stars'], 147)
+        self.assertEqual(stats['clan_used_attacks'], 87)
+        self.assertEqual(stats['op_used_attacks'], 75)
 
 
 class MessageFactoryTestCase(unittest.TestCase):

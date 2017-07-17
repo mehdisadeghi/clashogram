@@ -2,7 +2,7 @@
 import unittest
 from unittest.mock import MagicMock
 import json
-from clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, MessageFactory, WarMonitor
+from clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, MessageFactory, WarMonitor, TelegramNotifier
 
 
 class ClanInfoTestCase(unittest.TestCase):
@@ -103,8 +103,8 @@ class WarInfoTestCase(unittest.TestCase):
 
 
 class WarStatsTestCase(unittest.TestCase):
-    def setup(self):
-        coc_api = CoCAPI(coc_token)
+    def setUp(self):
+        coc_api = CoCAPI(None)
         warinfo = WarInfo(json.loads(open('data/inWar_40.json', 'r').read()))
         our_claninfo = ClanInfo({'location': {'name': 'Iran',
                                               'isCountry': 'true',
@@ -119,7 +119,7 @@ class WarStatsTestCase(unittest.TestCase):
         notifier = TelegramNotifier(None, None)
         notifier.send = MagicMock(return_value=None)
         self.monitor = WarMonitor({}, coc_api, notifier)
-        self.monitor.update(wardata)
+        self.monitor.update(warinfo)
         
     def test_a(self):
         pass
@@ -130,7 +130,52 @@ class MessageFactoryTestCase(unittest.TestCase):
 
 
 class WarMonitorTestCase(unittest.TestCase):
-    pass
+    def setUp(self):
+        coc_api = CoCAPI(None)
+        self.warinfo = WarInfo(json.loads(open('data/inWar_40.json', 'r').read()))
+        our_claninfo = ClanInfo({'location': {'name': 'Iran',
+                                              'isCountry': 'true',
+                                              'countryCode': 'IR'},
+                                 'warWinStreak': 0})
+        op_claninfo = ClanInfo({'location': {'name': 'United States',
+                                             'isCountry': 'true',
+                                             'countryCode': 'US'},
+                                'warWinStreak': 0})
+        coc_api.get_currentwar = MagicMock(return_value=self.warinfo)
+        coc_api.get_claninfo = MagicMock(return_value=our_claninfo)
+        notifier = TelegramNotifier(None, None)
+        notifier.send = MagicMock(return_value=None)
+        self.monitor = WarMonitor({}, coc_api, notifier)
+        self.monitor.update(self.warinfo)
+
+        self.clan_attack = {
+            "attackerTag": "#98VVJ8LV8",
+            "defenderTag": "#8CCLRP2JC",
+            "stars": 3,
+            "destructionPercentage": 100,
+            "order": 10
+        }
+
+    def test_send_preparation_msg(self):
+        self.monitor.send_preparation_msg()
+
+        self.assertTrue(self.monitor.is_preparation_msg_sent())
+
+    def test_send_war_msg(self):
+        self.monitor.send_war_msg()
+
+        self.assertTrue(self.monitor.is_war_msg_sent())
+
+    def test_is_attack_msg_sent(self):
+        self.assertTrue(self.monitor.is_attack_msg_sent(self.clan_attack))
+
+    def test_get_attack_id(self):
+        self.assertEqual(self.monitor.get_attack_id(self.clan_attack), 'attack98VVJ8LV88CCLRP2JC')
+
+    def test_is_war_over_msg_sent(self):
+        self.assertFalse(self.monitor.is_war_over_msg_sent(self.warinfo))
+
+
 
 if __name__ == '__main__':
     unittest.main()

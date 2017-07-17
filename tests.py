@@ -137,14 +137,10 @@ class WarMonitorTestCase(unittest.TestCase):
                                               'isCountry': 'true',
                                               'countryCode': 'IR'},
                                  'warWinStreak': 0})
-        op_claninfo = ClanInfo({'location': {'name': 'United States',
-                                             'isCountry': 'true',
-                                             'countryCode': 'US'},
-                                'warWinStreak': 0})
         coc_api.get_currentwar = MagicMock(return_value=self.warinfo)
         coc_api.get_claninfo = MagicMock(return_value=our_claninfo)
         notifier = TelegramNotifier(None, None)
-        notifier.send = MagicMock(return_value=None)
+        notifier.send = MagicMock()
         self.monitor = WarMonitor({}, coc_api, notifier)
         self.monitor.update(self.warinfo)
 

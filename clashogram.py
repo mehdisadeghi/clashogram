@@ -14,8 +14,9 @@ import pytz
 from dateutil.parser import parse as dateutil_parse
 from requests.adapters import HTTPAdapter
 
-gettext.install('clashogram')
-locale.setlocale(locale.LC_ALL, "fa_IR")
+gettext.bindtextdomain('messages', localedir='./locales')
+gettext.textdomain('messages')
+_ = gettext.gettext
 
 POLL_INTERVAL = 60
 

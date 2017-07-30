@@ -69,7 +69,7 @@ python -m unittest discover
 Or with `py.test`:
 ```
 pip install pytest
-py.test
+py.test tests.py
 ```
 
 ## I18N

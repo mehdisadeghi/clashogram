@@ -90,7 +90,7 @@ python setup.py extract_messages
 python setup.py compile_catalog
 ```
 
-For more information on internationalization look at [Bable](http://babel.pocoo.org/en/latest/setup.html).
+For more information on internationalization look at [Babel](http://babel.pocoo.org/en/latest/setup.html).
 
 Have fun!
 

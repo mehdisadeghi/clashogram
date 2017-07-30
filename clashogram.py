@@ -400,11 +400,10 @@ Have fun! {final_emoji}
         return self.create_attack_msg(member, attack, war_stats, imoji='\U0001F534')
 
     def create_attack_msg(self, member, attack, war_stats, imoji=''):
-        msg_template = _("""<pre>{top_imoji} {order} C {ourclan} & {opponentclan}
-Attaker: {attacker_name: <{nwidth}} TH {attacker_thlevel: <2} MP {attacker_map_position}
-Defender: {defender_name: <{nwidth}} TH {defender_thlevel: <2} MP {defender_map_position}
-Result: {stars}
-Destruction: {destruction_percentage}%
+        msg_template = _("""<pre>{top_imoji} [{order}] {ourclan} vs {opponentclan}
+Attacker: TH {attacker_thlevel: <2} MP {attacker_map_position} {attacker_name}
+Defender: TH {defender_thlevel: <2} MP {defender_map_position} {defender_name}
+Result: {stars} | {destruction_percentage}%
 {war_info}
 </pre>""")
         defender = self.warinfo.get_player_info(attack['defenderTag'])

@@ -30,9 +30,5 @@ setup(name='Clashogram',
                    'Programming Language :: Python :: 3.3',
                    'Programming Language :: Python :: 3.4',
                    'Programming Language :: Python :: 3.5',
-                   'Programming Language :: Python :: 3.6',]
+                   'Programming Language :: Python :: 3.6']
      )
-
-[babel.extract_messages]
-input_dirs = '.'
-output_file = './locale/handroll.pot'

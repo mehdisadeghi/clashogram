@@ -7,8 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Clashogram 1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-07-30 12:26+0200\n"
-"PO-Revision-Date: 2017-07-30 12:36+0200\n"
+"POT-Creation-Date: 2017-07-30 14:17+0200\n"
+"PO-Revision-Date: 2017-07-30 14:24+0200\n"
+"Last-Translator: \n"
 "Language: fa_IR\n"
 "Language-Team: fa_IR <LL@li.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
@@ -16,14 +17,15 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.4.0\n"
-"Last-Translator: \n"
 "X-Generator: Poedit 2.0.3\n"
 
-#: clashogram.py:55
+#: build/lib/clashogram.py:55 build/scripts-3.6/clashogram.py:55
+#: clashogram.py:56
 msgid "☠️ 😵 App is broken boss! Come over and fix me please!"
 msgstr "رئیس من ترکیدم! با آدمتون تماس بگیرید بیاد درستم کنه!"
 
-#: clashogram.py:358
+#: build/lib/clashogram.py:360 build/scripts-3.6/clashogram.py:360
+#: clashogram.py:361
 msgid ""
 "{top_imoji} {war_size} fold war is ahead!\n"
 "<pre>▫️ Clan {ourclan: <{cwidth}} L {ourlevel: <2} +{clanwinstreak} "
@@ -41,37 +43,38 @@ msgstr ""
 "بازی {start} شروع می‌شود.\n"
 "شاد باشید! {final_emoji}\n"
 
-#: clashogram.py:390
+#: build/lib/clashogram.py:392 build/scripts-3.6/clashogram.py:392
+#: clashogram.py:393
 msgid "War has begun!"
 msgstr "جنگ قبیله شروع شد!"
 
-#: clashogram.py:393
+#: build/lib/clashogram.py:395 build/scripts-3.6/clashogram.py:395
+#: clashogram.py:396
 msgid "⚪️We destroyed them 100% boss!"
-msgstr "We destroyed them 100% boss!"
+msgstr "⚫️رئیس فول زدیمشون!"
 
-#: clashogram.py:402
+#: clashogram.py:405
 msgid ""
-"<pre>{top_imoji} {order} C {ourclan} & {opponentclan}\n"
-"Attaker: {attacker_name: <{nwidth}} TH {attacker_thlevel: <2} MP "
-"{attacker_map_position}\n"
-"Defender: {defender_name: <{nwidth}} TH {defender_thlevel: <2} MP "
-"{defender_map_position}\n"
-"Result: {stars}\n"
-"Destruction: {destruction_percentage}%\n"
+"<pre>{top_imoji} [{order}] {ourclan} vs {opponentclan}\n"
+"Attacker: TH {attacker_thlevel: <2} MP {attacker_map_position} "
+"{attacker_name}\n"
+"Defender: TH {defender_thlevel: <2} MP {defender_map_position} "
+"{defender_name}\n"
+"Result: {stars} | {destruction_percentage}%\n"
 "{war_info}\n"
 "</pre>"
 msgstr ""
 "<pre>{top_imoji} {order} ک {ourclan} و {opponentclan}\n"
-"مهاجم: {attacker_name: <{nwidth}} ت {attacker_thlevel: <2} ر "
-"{attacker_map_position}\n"
-"مدافع: {defender_name: <{nwidth}} ت {defender_thlevel: <2} ر "
-"{defender_map_position}\n"
-"نتیجه: {stars}\n"
-"تخریب: {destruction_percentage}%\n"
+"مهاجم:  ت {attacker_thlevel: <2} ر {attacker_map_position} "
+"{attacker_name}\n"
+"مدافع:  ت {defender_thlevel: <2} ر {defender_map_position} "
+"{defender_name}\n"
+"نتیجه: {stars} | {destruction_percentage}%\n"
 "{war_info}\n"
 "</pre>"
 
-#: clashogram.py:433
+#: build/lib/clashogram.py:435 build/scripts-3.6/clashogram.py:435
+#: clashogram.py:435
 msgid ""
 "▪ {clan_attack_count: >{atkwidth}}/{total} ⭐ {clan_stars: <{swidth}} ⚡ "
 "{clan_destruction:.2f}%\n"
@@ -79,11 +82,13 @@ msgid ""
 "<{swidth}} ⚡ {opponent_destruction:.2f}%"
 msgstr ""
 
-#: clashogram.py:453
+#: build/lib/clashogram.py:455 build/scripts-3.6/clashogram.py:455
+#: clashogram.py:455
 msgid "⚫️They destroyed us 100% boss!"
 msgstr "⚫️رئیس فول خوردیم!"
 
-#: clashogram.py:456
+#: build/lib/clashogram.py:458 build/scripts-3.6/clashogram.py:458
+#: clashogram.py:458
 msgid ""
 "<pre>{win_or_lose_title}\n"
 "Clan {ourclan: <{cwidth}} L {ourlevel: <2}\n"
@@ -97,14 +102,30 @@ msgstr ""
 "{war_info}\n"
 "</pre>"
 
-#: clashogram.py:475
+#: build/lib/clashogram.py:477 build/scripts-3.6/clashogram.py:477
+#: clashogram.py:477
 msgid "🎉 We won!"
 msgstr "\\U0001F389 بردیم!"
 
-#: clashogram.py:477
+#: build/lib/clashogram.py:479 build/scripts-3.6/clashogram.py:479
+#: clashogram.py:479
 msgid "🏳 It's a tie!"
 msgstr "🏳 مساوی کردیم!"
 
-#: clashogram.py:479
+#: build/lib/clashogram.py:481 build/scripts-3.6/clashogram.py:481
+#: clashogram.py:481
 msgid "💩 We lost!"
 msgstr "💩 باختیم رئیس!"
+
+#: build/lib/clashogram.py:404 build/scripts-3.6/clashogram.py:404
+msgid ""
+"<pre>{top_imoji} {order} C {ourclan} & {opponentclan}\n"
+"Attaker: {attacker_name: <{nwidth}} TH {attacker_thlevel: <2} MP "
+"{attacker_map_position}\n"
+"Defender: {defender_name: <{nwidth}} TH {defender_thlevel: <2} MP "
+"{defender_map_position}\n"
+"Result: {stars}\n"
+"Destruction: {destruction_percentage}%\n"
+"{war_info}\n"
+"</pre>"
+msgstr ""

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
-from babel.messages import frontend as babel
+from setuptools import setup
 
 setup(name='Clashogram',
       version='1.0',
@@ -13,10 +12,7 @@ setup(name='Clashogram',
       scripts=['clashogram.py'],
       license='MIT',
       platforms='any',
-      cmdclass={'compile_catalog': babel.compile_catalog,
-                'extract_messages': babel.extract_messages,
-                'init_catalog': babel.init_catalog,
-                'update_catalog': babel.update_catalog},
+      install_requires=['babel'],
       classifiers=['Development Status :: 4 - Beta',
                    'Environment :: Console',
                    'Intended Audience :: End Users/Desktop',

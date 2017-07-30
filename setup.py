@@ -1,9 +1,7 @@
-#!/usr/bin/env python
-
 from setuptools import setup
 
 setup(name='Clashogram',
-      version='1.0',
+      version='0.1.4',
       description='Clash of Clans war moniting for telegram channels.',
       author='Mehdi Sadeghi',
       author_email='mehdi@mehdix.org',
@@ -12,14 +10,19 @@ setup(name='Clashogram',
       scripts=['clashogram.py'],
       license='MIT',
       platforms='any',
-      install_requires=['babel'],
+      install_requires=['babel',
+                        'requests',
+                        'jdatetime',
+                        'pytz',
+                        'python-dateutil',
+                        'click'],
+      keywords=['games', 'telegram', 'coc', 'notification'],
       classifiers=['Development Status :: 4 - Beta',
                    'Environment :: Console',
                    'Intended Audience :: End Users/Desktop',
                    'License :: OSI Approved :: MIT License',
                    'Natural Language :: Persian',
                    'Natural Language :: English',
-                   'Topic :: Games/Entertainment'
                    'Programming Language :: Python :: 3',
                    'Programming Language :: Python :: 3.1',
                    'Programming Language :: Python :: 3.2',

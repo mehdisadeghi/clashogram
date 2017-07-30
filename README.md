@@ -38,6 +38,26 @@ pip install clashogram
 clashogram --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
 ```
 
+## Run as a service
+The simplest way to use Clashogram is leave it running in background using either [byobu](byobu.org) or [GNU Screen](https://www.gnu.org/software/screen/). Another solution is to install a systemd unit:
+
+```
+[Unit]
+Description=Clashogram Daemon
+After=network.target
+
+[Service]
+WorkingDirectory=/path/to/clashogram/
+EnvironmentFile=/path/to/env/file
+ExecStart=/path/to/python /path/to/clashogram.py
+Restart=on-failure
+User=someuser
+
+[Install]
+WantedBy=multi-user.target```
+
+Search internet for more information on installing systemd units on your OS.
+
 # Contribution (PRs welcome!)
 The Telegram notification is isolated from the rest of the program. You can replace it with anything else to have your messages sent to somewhere else.
 

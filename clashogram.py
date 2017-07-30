@@ -72,8 +72,9 @@ def save_latest_data(wardata, monitor):
     if monitor and monitor.warinfo:
         json.dump(monitor.warinfo, open('latest_inmemory_wardata.json', 'w'), ensure_ascii=False)
 
-
-
+########################################################################
+# Notifiers
+########################################################################
 class TelegramNotifier(object):
     def __init__(self, bot_token, channel_name):
         self.bot_token = bot_token
@@ -87,6 +88,9 @@ class TelegramNotifier(object):
             text=requests.utils.quote(msg))
         requests.post(endpoint)
 
+########################################################################
+# CoC API Calls
+########################################################################
 
 class CoCAPI(object):
     def __init__(self, coc_token):
@@ -115,6 +119,9 @@ class CoCAPI(object):
         return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
                 clan_tag=requests.utils.quote(clan_tag))
 
+########################################################################
+# Models according to CoC API
+########################################################################
 
 class ClanInfo(object):
     def __init__(self, clandata):
@@ -258,6 +265,9 @@ class WarInfo(object):
                                   self.data['opponent']['tag'],
                                   self.data['preparationStartTime'])
 
+########################################################################
+# War statistics
+########################################################################
 
 class WarStats(object):
     def __init__(self, warinfo):
@@ -332,6 +342,9 @@ class WarStats(object):
                 best_score = attack['stars']
         return best_score
 
+########################################################################
+# Message formatters
+########################################################################
 
 class MessageFactory(object):
     def __init__(self, coc_api, warinfo):
@@ -496,6 +509,9 @@ class MessageFactory(object):
     def get_clan_extra_info(self, clan_tag):
         return self.coc_api.get_claninfo(self.warinfo.clan_tag)
 
+########################################################################
+# Main war monitor class
+########################################################################
 
 class WarMonitor(object):
     def __init__(self, db, coc_api, notifier):

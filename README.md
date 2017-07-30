@@ -54,7 +54,8 @@ Restart=on-failure
 User=someuser
 
 [Install]
-WantedBy=multi-user.target```
+WantedBy=multi-user.target
+```
 
 Search internet for more information on installing systemd units on your OS.
 

@@ -51,6 +51,26 @@ pip install pytest
 py.test
 ```
 
+# I18N
+In order toadd or update a new language catalog do the following:
+```
+python setup.py init_catalog -l <LANGUAGE_CODE>
+python setup.py update_catalog -l <LANGUAGE_CODE>
+```
+For example:
+```
+python setup.py init_catalog -l fa
+python setup.py update_catalog -l fa
+```
+
+In case of adding new messages extract them and compile again:
+```
+python setup.py extract_messages
+python setup.py compile_catalog
+```
+
+For more information on internationalization look at [Bable](http://babel.pocoo.org/en/latest/setup.html).
+
 Have fun!
 
 # License

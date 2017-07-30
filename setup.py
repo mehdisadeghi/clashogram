@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
+from babel.messages import frontend as babel
 
 setup(name='Clashogram',
       version='1.0',
@@ -12,6 +13,10 @@ setup(name='Clashogram',
       scripts=['clashogram.py'],
       license='MIT',
       platforms='any',
+      cmdclass={'compile_catalog': babel.compile_catalog,
+                'extract_messages': babel.extract_messages,
+                'init_catalog': babel.init_catalog,
+                'update_catalog': babel.update_catalog},
       classifiers=['Development Status :: 4 - Beta',
                    'Environment :: Console',
                    'Intended Audience :: End Users/Desktop',
@@ -27,3 +32,7 @@ setup(name='Clashogram',
                    'Programming Language :: Python :: 3.5',
                    'Programming Language :: Python :: 3.6',]
      )
+
+[babel.extract_messages]
+input_dirs = '.'
+output_file = './locale/handroll.pot'

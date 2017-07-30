@@ -5,6 +5,7 @@ import time
 import json
 import shelve
 import locale
+import gettext
 
 import jdatetime
 import requests
@@ -13,6 +14,7 @@ import pytz
 from dateutil.parser import parse as dateutil_parse
 from requests.adapters import HTTPAdapter
 
+gettext.install('clashogram')
 locale.setlocale(locale.LC_ALL, "fa_IR")
 
 POLL_INTERVAL = 60
@@ -50,7 +52,7 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
                     print('COC maintenance error, ignoring.')
                     time.sleep(POLL_INTERVAL)
                     continue
-                monitor.send("☠️ 😵 رئیس من ترکیدم! با آدمتون تماس بگیرید بیاد درستم کنه.")
+                monitor.send(_("☠️ 😵 App is broken boss! Come over and fix me please!"))
                 db.close()
                 raise
 
@@ -353,12 +355,12 @@ class MessageFactory(object):
         self.warstats = WarStats(warinfo)
 
     def create_preparation_msg(self):
-        msg_template = """{top_imoji} وار {war_size} ‌تائی در راه است!
-<pre>▫️ کلن {ourclan: <{cwidth}} ل {ourlevel: <2} +{clanwinstreak} {clanloc}{clanflag}
-▪️ کلن {opponentclan: <{cwidth}} ل {theirlevel: <2} +{opwinstreak} {oploc}{opflag}</pre>
-بازی {start} شروع می‌شود.
-شاد باشید! {final_emoji}
-"""
+        msg_template = _("""{top_imoji} {war_size} fold war is ahead!
+<pre>▫️ Clan {ourclan: <{cwidth}} L {ourlevel: <2} +{clanwinstreak} {clanloc}{clanflag}
+▪️ Clan {opponentclan: <{cwidth}} L {theirlevel: <2} +{opwinstreak} {oploc}{opflag}</pre>
+Game begins at {start}.
+Have fun! {final_emoji}
+""")
         clan_extra_info = self.get_clan_extra_info(self.warinfo.clan_tag)
         op_extra_info = self.get_clan_extra_info(self.warinfo.op_tag)
 
@@ -385,23 +387,28 @@ class MessageFactory(object):
         return msg
 
     def create_war_msg(self):
-        return 'جنگ قبیله شروع شد!'
+        return _('War has begun!')
 
     def create_clan_full_destruction_msg(self, attacker, attack, war_stats):
-        return '⚪️رئیس فول زدیمشون!'
+        return _('⚪️We destroyed them 100% boss!')
 
     def create_clan_attack_msg(self, member, attack, war_stats):
-        msg_template = """<pre>{top_imoji} {order} ک {ourclan} و {opponentclan}
-مهاجم: {attacker_name: <{nwidth}} ت {attacker_thlevel: <2} ر {attacker_map_position}
-مدافع: {defender_name: <{nwidth}} ت {defender_thlevel: <2} ر {defender_map_position}
-نتیجه: {stars}
-تخریب: {destruction_percentage}%
-{war_info}
-</pre>"""
+        return self.create_attack_msg(member, attack, war_stats, imoji='\U0001F535')
 
+    def create_opponent_attack_msg(self, member, attack, war_stats):
+        return self.create_attack_msg(member, attack, war_stats, imoji='\U0001F534')
+
+    def create_attack_msg(self, member, attack, war_stats, imoji=''):
+        msg_template = _("""<pre>{top_imoji} {order} C {ourclan} & {opponentclan}
+Attaker: {attacker_name: <{nwidth}} TH {attacker_thlevel: <2} MP {attacker_map_position}
+Defender: {defender_name: <{nwidth}} TH {defender_thlevel: <2} MP {defender_map_position}
+Result: {stars}
+Destruction: {destruction_percentage}%
+{war_info}
+</pre>""")
         defender = self.warinfo.get_player_info(attack['defenderTag'])
         msg = msg_template.format(order=attack['order'],
-                                  top_imoji='\U0001F535',
+                                  top_imoji=imoji,
                                   ourclan=self.warinfo.clan_name,
                                   opponentclan=self.warinfo.op_name,
                                   attacker_name=member['name'],
@@ -423,8 +430,8 @@ class MessageFactory(object):
         return cookies + stars
 
     def create_war_info_msg(self, war_stats):
-        template = """▪ {clan_attack_count: >{atkwidth}}/{total} ⭐ {clan_stars: <{swidth}} ⚡ {clan_destruction:.2f}%
-▪ {opponent_attack_count: >{atkwidth}}/{total} ⭐ {opponent_stars: <{swidth}} ⚡ {opponent_destruction:.2f}%"""
+        template = _("""▪ {clan_attack_count: >{atkwidth}}/{total} ⭐ {clan_stars: <{swidth}} ⚡ {clan_destruction:.2f}%
+▪ {opponent_attack_count: >{atkwidth}}/{total} ⭐ {opponent_stars: <{swidth}} ⚡ {opponent_destruction:.2f}%""")
 
         clan_stars = war_stats['clan_stars']
         op_stars = war_stats['op_stars']
@@ -442,40 +449,15 @@ class MessageFactory(object):
             swidth=len(str(max(clan_stars, op_stars))),
             atkwidth=len(str(max(clan_attack_count, op_attack_count))))
 
-    def create_opponent_attack_msg(self, member, attack, war_stats):
-        msg_template = """<pre>{top_imoji} {order} ک {ourclan} و {opponentclan}
-مهاجم: {attacker_name: <{nwidth}} ت {attacker_thlevel: <2} ر {attacker_map_position}
-مدافع: {defender_name: <{nwidth}} ت {defender_thlevel: <2} ر {defender_map_position}
-نتیجه: {stars}
-تخریب: {destruction_percentage}%
-{war_info}
-</pre>"""
-        defender = self.warinfo.get_player_info(attack['defenderTag'])
-        msg = msg_template.format(order=attack['order'],
-                                  top_imoji='\U0001F534',
-                                  ourclan=self.warinfo.clan_name,
-                                  opponentclan=self.warinfo.op_name,
-                                  attacker_name=member['name'],
-                                  attacker_thlevel=member['townhallLevel'],
-                                  attacker_map_position=member['mapPosition'],
-                                  defender_name=defender['name'],
-                                  defender_thlevel=defender['townhallLevel'],
-                                  defender_map_position=defender['mapPosition'],
-                                  stars=self.format_star_msg(attack),
-                                  destruction_percentage=attack['destructionPercentage'],
-                                  war_info=self.create_war_info_msg(war_stats),
-                                  nwidth=max(len(member['name']), len(defender['name'])))
-        return msg
-
     def create_opponent_full_destruction_msg(self, attacker, attack, war_stats):
-        return '⚫️رئیس فول خوردیم!'
+        return _('⚫️They destroyed us 100% boss!')
 
     def create_war_over_msg(self):
-        msg_template = """<pre>{win_or_lose_title}
-کلن {ourclan: <{cwidth}} لول {ourlevel: <2}
-کلن {opponentclan: <{cwidth}} لول {theirlevel: <2}
+        msg_template = _("""<pre>{win_or_lose_title}
+Clan {ourclan: <{cwidth}} L {ourlevel: <2}
+Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
 {war_info}
-</pre>"""
+</pre>""")
 
         ourclan = self.warinfo.clan_name
         opclan = self.warinfo.op_name
@@ -490,14 +472,16 @@ class MessageFactory(object):
 
     def create_win_or_lose_title(self):
         if self.did_we_win():
-            return '\U0001F389 بردیم!'
+            return _('\U0001F389 We won!')
         elif self.is_draw():
-            return '🏳 مساوی کردیم.'
+            return _('🏳 It\'s a tie!')
         else:
-            return '💩 باختیم رئیس!'
+            return _('💩 We lost!')
 
     def format_time(self, timestamp):
         utc_time = dateutil_parse(timestamp, fuzzy=True)
+        if locale.getlocale()[0] != 'fa_IR':
+            return utc_time.strftime("%a، %d %b %Y %H:%M:%S")
         tehran_time = utc_time.astimezone(pytz.timezone("Asia/Tehran"))
         fmt = jdatetime.datetime.fromgregorian(datetime=tehran_time).strftime("%a، %d %b %Y %H:%M:%S")
         return self.convert_to_persian_numbers(fmt)

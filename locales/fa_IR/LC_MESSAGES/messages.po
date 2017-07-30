@@ -1,0 +1,110 @@
+# Persian (Iran) translations for Clashogram.
+# Copyright (C) 2017 ORGANIZATION
+# This file is distributed under the same license as the Clashogram project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Clashogram 1.0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2017-07-30 12:26+0200\n"
+"PO-Revision-Date: 2017-07-30 12:36+0200\n"
+"Language: fa_IR\n"
+"Language-Team: fa_IR <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.4.0\n"
+"Last-Translator: \n"
+"X-Generator: Poedit 2.0.3\n"
+
+#: clashogram.py:55
+msgid "☠️ 😵 App is broken boss! Come over and fix me please!"
+msgstr "رئیس من ترکیدم! با آدمتون تماس بگیرید بیاد درستم کنه!"
+
+#: clashogram.py:358
+msgid ""
+"{top_imoji} {war_size} fold war is ahead!\n"
+"<pre>▫️ Clan {ourclan: <{cwidth}} L {ourlevel: <2} +{clanwinstreak} "
+"{clanloc}{clanflag}\n"
+"▪️ Clan {opponentclan: <{cwidth}} L {theirlevel: <2} +{opwinstreak} "
+"{oploc}{opflag}</pre>\n"
+"Game begins at {start}.\n"
+"Have fun! {final_emoji}\n"
+msgstr ""
+"{top_imoji} وار {war_size} ‌تائی در راه است!\n"
+"<pre>▫️ کلن {ourclan: <{cwidth}} ل {ourlevel: <2} +{clanwinstreak} "
+"{clanloc}{clanflag}\n"
+"▪️ کلن {opponentclan: <{cwidth}} ل {theirlevel: <2} +{opwinstreak} "
+"{oploc}{opflag}</pre>\n"
+"بازی {start} شروع می‌شود.\n"
+"شاد باشید! {final_emoji}\n"
+
+#: clashogram.py:390
+msgid "War has begun!"
+msgstr "جنگ قبیله شروع شد!"
+
+#: clashogram.py:393
+msgid "⚪️We destroyed them 100% boss!"
+msgstr "We destroyed them 100% boss!"
+
+#: clashogram.py:402
+msgid ""
+"<pre>{top_imoji} {order} C {ourclan} & {opponentclan}\n"
+"Attaker: {attacker_name: <{nwidth}} TH {attacker_thlevel: <2} MP "
+"{attacker_map_position}\n"
+"Defender: {defender_name: <{nwidth}} TH {defender_thlevel: <2} MP "
+"{defender_map_position}\n"
+"Result: {stars}\n"
+"Destruction: {destruction_percentage}%\n"
+"{war_info}\n"
+"</pre>"
+msgstr ""
+"<pre>{top_imoji} {order} ک {ourclan} و {opponentclan}\n"
+"مهاجم: {attacker_name: <{nwidth}} ت {attacker_thlevel: <2} ر "
+"{attacker_map_position}\n"
+"مدافع: {defender_name: <{nwidth}} ت {defender_thlevel: <2} ر "
+"{defender_map_position}\n"
+"نتیجه: {stars}\n"
+"تخریب: {destruction_percentage}%\n"
+"{war_info}\n"
+"</pre>"
+
+#: clashogram.py:433
+msgid ""
+"▪ {clan_attack_count: >{atkwidth}}/{total} ⭐ {clan_stars: <{swidth}} ⚡ "
+"{clan_destruction:.2f}%\n"
+"▪ {opponent_attack_count: >{atkwidth}}/{total} ⭐ {opponent_stars: "
+"<{swidth}} ⚡ {opponent_destruction:.2f}%"
+msgstr ""
+
+#: clashogram.py:453
+msgid "⚫️They destroyed us 100% boss!"
+msgstr "⚫️رئیس فول خوردیم!"
+
+#: clashogram.py:456
+msgid ""
+"<pre>{win_or_lose_title}\n"
+"Clan {ourclan: <{cwidth}} L {ourlevel: <2}\n"
+"Clan {opponentclan: <{cwidth}} L {theirlevel: <2}\n"
+"{war_info}\n"
+"</pre>"
+msgstr ""
+"<pre>{win_or_lose_title}\n"
+"کلن {ourclan: <{cwidth}} لول {ourlevel: <2}\n"
+"کلن {opponentclan: <{cwidth}} لول {theirlevel: <2}\n"
+"{war_info}\n"
+"</pre>"
+
+#: clashogram.py:475
+msgid "🎉 We won!"
+msgstr "\\U0001F389 بردیم!"
+
+#: clashogram.py:477
+msgid "🏳 It's a tie!"
+msgstr "🏳 مساوی کردیم!"
+
+#: clashogram.py:479
+msgid "💩 We lost!"
+msgstr "💩 باختیم رئیس!"

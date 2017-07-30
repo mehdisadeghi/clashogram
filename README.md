@@ -38,6 +38,18 @@ pip install clashogram
 clashogram --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
 ```
 
+In order to have messages in a different locale do the following and then run the program:
+```
+export LANGUAGE=<LANGUAGE_CODE>
+e.g.
+export LANGUAGE=fa
+```
+
+Or do it in one step:
+```
+LANGUAGE=fa clashogram --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
+```
+
 ### Run as a service
 The simplest way to use Clashogram is leave it running in background using either [byobu](byobu.org) or [GNU Screen](https://www.gnu.org/software/screen/). Another solution is to install a systemd unit:
 

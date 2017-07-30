@@ -40,8 +40,8 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
         monitor = WarMonitor(db, coc_api, notifier)
         while True:
             try:
-                wardata = coc_api.get_currentwar(clan_tag)
-                #warinfo = WarInfo(json.loads(open('sample.json', 'r').read()))
+                warinfo = coc_api.get_currentwar(clan_tag)
+                #warinfo = WarInfo(json.loads(open('../garbage/sample.json', 'r').read()))
                 save_latest_data(warinfo.data, monitor)
                 monitor.update(warinfo)
                 time.sleep(POLL_INTERVAL)

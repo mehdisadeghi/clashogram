@@ -10,7 +10,7 @@ Clash of Clans war moniting for telegram channels.
 4. War over
 
 
-# Installation
+## Installation
 From pypi:
 ```
 pip install clashogram
@@ -23,7 +23,7 @@ install -r requirements.txt
 python setup.py install
 ```
 
-# Usage
+## Usage
 In order to use the program do the following:
 
 1. Open a Clash of Clans developer account at https://developer.clashofclans.com/.
@@ -38,7 +38,7 @@ pip install clashogram
 clashogram --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
 ```
 
-## Run as a service
+### Run as a service
 The simplest way to use Clashogram is leave it running in background using either [byobu](byobu.org) or [GNU Screen](https://www.gnu.org/software/screen/). Another solution is to install a systemd unit:
 
 ```
@@ -59,7 +59,7 @@ WantedBy=multi-user.target
 
 Search internet for more information on installing systemd units on your OS.
 
-# Contribution (PRs welcome!)
+## Contribution (PRs welcome!)
 The Telegram notification is isolated from the rest of the program. You can replace it with anything else to have your messages sent to somewhere else.
 
 Fork and clone the repository and send a PR. Make sure tests pass beforehand:
@@ -72,7 +72,7 @@ pip install pytest
 py.test
 ```
 
-# I18N
+## I18N
 In order toadd or update a new language catalog do the following:
 ```
 python setup.py init_catalog -l <LANGUAGE_CODE>
@@ -94,5 +94,5 @@ For more information on internationalization look at [Bable](http://babel.pocoo.
 
 Have fun!
 
-# License
+## License
 MIT

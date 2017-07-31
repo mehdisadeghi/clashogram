@@ -27,7 +27,7 @@ python setup.py install
 In order to use the program do the following:
 
 1. Open a Clash of Clans developer account at https://developer.clashofclans.com/.
-2. Find your external IP address using a website like [this](whatismyipaddress.com).
+2. Find your external IP address using a website like [this](https://whatismyipaddress.com/).
 3. Go to your CoC developer page and create an API token for the IP number you just found.
 4. Create a Telegram bot using BotFather and copy its token.
 5. Create a new Telegram group and add the bot you just created as an administrator to that group.

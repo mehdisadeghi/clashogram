@@ -72,8 +72,8 @@ def save_latest_data(wardata, monitor):
     if wardata:
         save_wardata(wardata)
         json.dump(wardata, open('latest_downloaded_wardata.json', 'w'), ensure_ascii=False)
-    if monitor and monitor.warinfo:
-        json.dump(monitor.warinfo, open('latest_inmemory_wardata.json', 'w'), ensure_ascii=False)
+    #if monitor and monitor.warinfo:
+    #    json.dump(monitor.warinfo, open('latest_inmemory_wardata.json', 'w'), ensure_ascii=False)
 
 ########################################################################
 # Notifiers

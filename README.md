@@ -1,4 +1,4 @@
-# clashogram [![Build Status](https://travis-ci.org/mehdisadeghi/clashogram.svg?branch=master)](https://travis-ci.org/mehdisadeghi/clashogram)
+# clashogram [![Build Status](https://travis-ci.org/mehdisadeghi/clashogram.svg?branch=master)](https://travis-ci.org/mehdisadeghi/clashogram) [![Build status](https://ci.appveyor.com/api/projects/status/ovixrhmsp3og4nt4/branch/master?svg=true)](https://ci.appveyor.com/project/mehdisadeghi/clashogram/branch/master)
 Clash of Clans war moniting for telegram channels.
 
 > NOTE: Clash of Clans API data is always 10 minutes behind the game events. This is not a bug in this program.

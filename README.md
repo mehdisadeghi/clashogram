@@ -10,6 +10,9 @@ Clash of Clans war moniting for telegram channels.
 4. War over
 
 
+## Requirements
+To run the program you need to have python 3.3 or higher. You will also need `pip` to install python dependencies. Moreover, using a [virtualenv](https://virtualenv.pypa.io/en/stable/) makes installation much easier, otherwise you have to install everything system-wide. On Linux you would need to run commands with `sudo`, on windows with administrator account.
+
 ## Installation
 From pypi:
 ```

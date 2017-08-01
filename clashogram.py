@@ -387,6 +387,18 @@ Have fun! {final_emoji}
                                   cwidth=max(len(ourclan), len(opclan)))
         return msg
 
+    def create_players_msg(self):
+        msg = "⚪️" + _(" Players")
+        msg += "\n▪️" + _("Position, TH, name")
+        sorted_players_by_map_position = sorted(self.warinfo.clan_members.items(), key=lambda x: x[1]['mapPosition'])
+        for player_tag, player_info in sorted_players_by_map_position:
+            line = "▫️{map_position: <2d} {thlevel: <2d} {name}".format(thlevel=player_info['townhallLevel'],
+                                                                        map_position=player_info['mapPosition'],
+                                                                        name=player_info['name'])
+            msg += "\n" + line
+
+        return "<pre>" + msg + "</pre>"
+
     def create_war_msg(self):
         return _('War has begun!')
 
@@ -542,8 +554,8 @@ class WarMonitor(object):
 
     def send_preparation_msg(self):
         if not self.is_preparation_msg_sent():
-            msg = self.msg_factory.create_preparation_msg()
-            self.send(msg)
+            self.send(self.msg_factory.create_preparation_msg())
+            self.send(self.msg_factory.create_players_msg())
             self.db[self.get_war_id()]['preparation_msg_sent'] = True
     
     def is_preparation_msg_sent(self):

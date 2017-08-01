@@ -14,7 +14,7 @@ import pytz
 from dateutil.parser import parse as dateutil_parse
 from requests.adapters import HTTPAdapter
 
-gettext.bindtextdomain('messages', localedir='./locales')
+gettext.bindtextdomain('messages', localedir=os.path.join(os.curdir, 'locales'))
 gettext.textdomain('messages')
 _ = gettext.gettext
 

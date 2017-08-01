@@ -154,6 +154,10 @@ class WarInfo(object):
         self._populate()
 
     @property
+    def state(self):
+        return self.data['state']
+
+    @property
     def clan_tag(self):
         return self.data['clan']['tag']
 

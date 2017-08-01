@@ -1,4 +1,4 @@
-# clashogram [![Build Status](https://travis-ci.org/mehdisadeghi/clashogram.svg?branch=master)](https://travis-ci.org/mehdisadeghi/clashogram)
+# clashogram [![Build Status](https://travis-ci.org/mehdisadeghi/clashogram.svg?branch=master)](https://travis-ci.org/mehdisadeghi/clashogram) [![Build status](https://ci.appveyor.com/api/projects/status/ovixrhmsp3og4nt4/branch/master?svg=true)](https://ci.appveyor.com/project/mehdisadeghi/clashogram/branch/master)
 Clash of Clans war moniting for telegram channels.
 
 > NOTE: Clash of Clans API data is always 10 minutes behind the game events. This is not a bug in this program.
@@ -9,6 +9,9 @@ Clash of Clans war moniting for telegram channels.
 3. New attacks (with details)
 4. War over
 
+
+## Requirements
+To run the program you need to have python 3.3 or higher. You will also need `pip` to install python dependencies. Moreover, using a [virtualenv](https://virtualenv.pypa.io/en/stable/) makes installation much easier, otherwise you have to install everything system-wide. On Linux you would need to run commands with `sudo`, on windows with administrator account.
 
 ## Installation
 From pypi:

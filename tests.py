@@ -25,7 +25,7 @@ class ClanInfoTestCase(unittest.TestCase):
 
 class WarInfoTestCase(unittest.TestCase):
     def setUp(self):
-        self.warinfo = WarInfo(json.loads(open(os.path.join('data', 'inWar_40.json'), 'r').read()))
+        self.warinfo = WarInfo(json.loads(open(os.path.join('data', 'inWar_40.json'), 'r', encoding='utf8').read()))
         self.op_member = {
             "tag": "#2GCR2YLP8",
             "name": "captain spock",
@@ -105,7 +105,7 @@ class WarInfoTestCase(unittest.TestCase):
 
 class WarStatsTestCase(unittest.TestCase):
     def setUp(self):
-        warinfo = WarInfo(json.loads(open(os.path.join('data', 'warEnded_50.json'), 'r').read()))
+        warinfo = WarInfo(json.loads(open(os.path.join('data', 'warEnded_50.json'), 'r', encoding='utf8').read()))
         self.stats = WarStats(warinfo)
         self.attack161 = {
             "destructionPercentage": 53,
@@ -169,7 +169,7 @@ class MessageFactoryTestCase(unittest.TestCase):
 class WarMonitorTestCase(unittest.TestCase):
     def setUp(self):
         coc_api = CoCAPI(None)
-        self.warinfo = WarInfo(json.loads(open(os.path.join('data', 'inWar_40.json'), 'r').read()))
+        self.warinfo = WarInfo(json.loads(open(os.path.join('data', 'inWar_40.json'), 'r', encoding='utf8').read()))
         our_claninfo = ClanInfo({'location': {'name': 'Iran',
                                               'isCountry': 'true',
                                               'countryCode': 'IR'},

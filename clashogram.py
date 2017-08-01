@@ -463,17 +463,17 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
         opclan = self.warinfo.op_name
         msg = msg_template.format(win_or_lose_title=self.create_win_or_lose_title(),
                                   ourclan=ourclan,
-                                  ourlevel=self.self.warinfo.clan_level,
+                                  ourlevel=self.warinfo.clan_level,
                                   opponentclan=opclan,
-                                  theirlevel=self.self.warinfo.op_level,
+                                  theirlevel=self.warinfo.op_level,
                                   war_info=self.create_war_info_msg(self.warstats.get_latest_war_stats()),
                                   cwidth=max(len(ourclan), len(opclan)))
         return msg
 
     def create_win_or_lose_title(self):
-        if self.did_we_win():
+        if self.warinfo.is_win():
             return _('\U0001F389 We won!')
-        elif self.is_draw():
+        elif self.warinfo.is_draw():
             return _('🏳 It\'s a tie!')
         else:
             return _('💩 We lost!')

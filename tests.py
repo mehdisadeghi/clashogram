@@ -169,7 +169,7 @@ class MessageFactoryTestCase(unittest.TestCase):
 class WarMonitorTestCase(unittest.TestCase):
     def setUp(self):
         coc_api = CoCAPI(None)
-        self.warinfo = WarInfo(json.loads(open(os.path.join('data', 'inWar_40.json'), 'r', encoding='utf8').read()))
+        self.warinfo = self.get_warinfo()
         our_claninfo = ClanInfo({'location': {'name': 'Iran',
                                               'isCountry': 'true',
                                               'countryCode': 'IR'},
@@ -189,6 +189,13 @@ class WarMonitorTestCase(unittest.TestCase):
             "order": 10
         }
 
+    def get_warinfo(self):
+        raise NotImplementedError()
+
+class WarMonitorInWarTestCase(WarMonitorTestCase):
+    def get_warinfo(self):
+        return WarInfo(json.loads(open(os.path.join('data', 'inWar_40.json'), 'r', encoding='utf8').read()))
+
     def test_send_preparation_msg(self):
         self.monitor.send_preparation_msg()
 
@@ -207,6 +214,14 @@ class WarMonitorTestCase(unittest.TestCase):
 
     def test_is_war_over_msg_sent(self):
         self.assertFalse(self.monitor.is_war_over_msg_sent(self.warinfo))
+
+
+class WarMonitorOnWarOverTestCase(WarMonitorTestCase):
+    def get_warinfo(self):
+        return WarInfo(json.loads(open(os.path.join('data', 'warEnded_50.json'), 'r', encoding='utf8').read()))
+
+    def test_is_war_over_msg_sent(self):
+        self.assertTrue(self.monitor.is_war_over_msg_sent(self.warinfo))
 
 
 

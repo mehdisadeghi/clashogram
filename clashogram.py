@@ -210,6 +210,8 @@ class WarInfo(object):
         return self.data['teamSize']
 
     def _populate(self):
+        if self.is_not_in_war():
+            return
         for member in self.data['clan']['members']:
             self.clan_members[member['tag']] = member
             self.players[member['tag']] = member

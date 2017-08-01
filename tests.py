@@ -103,6 +103,26 @@ class WarInfoTestCase(unittest.TestCase):
         self.assertEqual(self.warinfo.create_war_id(), "#YVL0C8UY#JC0L922Y20170602T201148.000Z")
 
 
+class WarInfoNotInWarTestCase(unittest.TestCase):
+    def setUp(self):
+        self.warinfo = WarInfo(json.loads(open(os.path.join('data', 'notInWar.json'), 'r', encoding='utf8').read()))
+
+    def test_clan_stats(self):
+        self.assertEqual(self.warinfo.clan_level, 0)
+        self.assertEqual(self.warinfo.clan_destruction, 0)
+        self.assertEqual(self.warinfo.clan_stars, 0)
+        self.assertEqual(self.warinfo.clan_attacks, 0)
+
+    def test_op_stats(self):
+        self.assertEqual(self.warinfo.op_level, 0)
+        self.assertEqual(self.warinfo.op_destruction, 0)
+        self.assertEqual(self.warinfo.op_stars, 0)
+        self.assertEqual(self.warinfo.op_attacks, 0)
+
+    def test_players(self):
+        self.assertEqual(self.warinfo.players, {})
+
+
 class WarStatsTestCase(unittest.TestCase):
     def setUp(self):
         warinfo = WarInfo(json.loads(open(os.path.join('data', 'warEnded_50.json'), 'r', encoding='utf8').read()))

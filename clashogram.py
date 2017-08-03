@@ -490,11 +490,11 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
 
     def create_win_or_lose_title(self):
         if self.warinfo.is_win():
-            return _('\U0001F389 We won!')
+            return "{} {}".format(🎉, _('We won!'))
         elif self.warinfo.is_draw():
-            return _('🏳 It\'s a tie!')
+            return "{} {}".format(🏳, _('It\'s a tie!'))
         else:
-            return _('💩 We lost!')
+            return "{} {}".format(💩, _('We lost!'))
 
     def format_time(self, timestamp):
         utc_time = dateutil_parse(timestamp, fuzzy=True)

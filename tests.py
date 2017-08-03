@@ -186,8 +186,6 @@ class WarStatsTestCase(unittest.TestCase):
 
 class MessageFactoryTestCase(unittest.TestCase):
     def setUp(self):
-        #coc_api = CoCAPI(None)
-        #warinfo = WarInfo(json.loads(open(os.path.join('data', 'inWar_40.json'), 'r', encoding='utf8').read()))
         self.msg_factory = MessageFactory(None, None)
         locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
 

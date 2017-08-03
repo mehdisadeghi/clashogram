@@ -1,8 +1,10 @@
 '''Clashogram tests.'''
 import os
+import json
+import locale
 import unittest
 from unittest.mock import MagicMock
-import json
+
 from clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, MessageFactory, WarMonitor, TelegramNotifier
 
 
@@ -183,7 +185,31 @@ class WarStatsTestCase(unittest.TestCase):
 
 
 class MessageFactoryTestCase(unittest.TestCase):
-    pass
+    def setUp(self):
+        #coc_api = CoCAPI(None)
+        #warinfo = WarInfo(json.loads(open(os.path.join('data', 'inWar_40.json'), 'r', encoding='utf8').read()))
+        self.msg_factory = MessageFactory(None, None)
+        locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+
+    def test_format_time_default(self):
+        os.environ['LANGUAGE'] = 'en'
+        timestr = self.msg_factory.format_time('20170603T191148.000Z')
+        self.assertEqual(timestr, 'Sat, 03 Jun 2017 19:11:48')
+
+    def test_format_time_fa(self):
+        os.environ['LANG'] = 'fa'
+        timestr = self.msg_factory.format_time('20170603T191148.000Z')
+        self.assertEqual(timestr, 'شنبه، ۱۳ خرداد ۱۳۹۶ ۲۳:۴۱:۴۸')
+
+    def test_format_time_fa_IR(self):
+        os.environ['LANGUAGE'] = 'fa_IR'
+        timestr = self.msg_factory.format_time('20170603T191148.000Z')
+        self.assertEqual(timestr, 'شنبه، ۱۳ خرداد ۱۳۹۶ ۲۳:۴۱:۴۸')
+
+    def test_format_time_fa_IR_locale(self):
+        locale.setlocale(locale.LC_ALL, "fa_IR")
+        timestr = self.msg_factory.format_time('20170603T191148.000Z')
+        self.assertEqual(timestr, 'شنبه، ۱۳ خرداد ۱۳۹۶ ۲۳:۴۱:۴۸')
 
 
 class WarMonitorTestCase(unittest.TestCase):

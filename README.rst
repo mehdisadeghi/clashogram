@@ -2,8 +2,8 @@
    :depth: 3
 ..
 
-clashogram |Build Status| |Build status|
-========================================
+clashogram |Build Status| |Build status| |Pypi status|
+======================================================
 
 Clash of Clans war moniting for telegram channels.
 
@@ -166,3 +166,5 @@ MIT
    :target: https://travis-ci.org/mehdisadeghi/clashogram
 .. |Build status| image:: https://ci.appveyor.com/api/projects/status/ovixrhmsp3og4nt4/branch/master?svg=true
    :target: https://ci.appveyor.com/project/mehdisadeghi/clashogram/branch/master
+.. |Pypi status| image:: https://img.shields.io/pypi/v/clashogram.svg
+   :target: https://pypi.python.org/pypi/clashogram

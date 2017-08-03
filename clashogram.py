@@ -498,7 +498,7 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
 
     def format_time(self, timestamp):
         utc_time = dateutil_parse(timestamp, fuzzy=True)
-        if locale.getlocale()[0] != 'fa_IR':
+        if locale.getlocale()[0] not in ('fa_IR', 'fa'):
             return utc_time.strftime("%a, %d %b %Y %H:%M:%S")
         tehran_time = utc_time.astimezone(pytz.timezone("Asia/Tehran"))
         fmt = jdatetime.datetime.fromgregorian(datetime=tehran_time).strftime("%a، %d %b %Y %H:%M:%S")

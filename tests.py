@@ -3,6 +3,7 @@ import os
 import json
 import locale
 import unittest
+import platform
 from unittest.mock import MagicMock
 
 from clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, MessageFactory, WarMonitor, TelegramNotifier
@@ -187,7 +188,19 @@ class WarStatsTestCase(unittest.TestCase):
 class MessageFactoryTestCase(unittest.TestCase):
     def setUp(self):
         self.msg_factory = MessageFactory(None, None)
-        locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+        self.setlocale_en()
+
+    def setlocale_en(self):
+        if platform.system() == 'Windows':
+            locale.setlocale(locale.LC_ALL, 'English')
+        else:
+            locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+
+    def setlocale_fa(self):
+        if platform.system() == 'Windows':
+            locale.setlocale(locale.LC_ALL, 'Persian')
+        else:
+            locale.setlocale(locale.LC_ALL, "fa_IR.UTF-8")
 
     def test_format_time_default(self):
         os.environ['LANGUAGE'] = 'en'
@@ -205,7 +218,7 @@ class MessageFactoryTestCase(unittest.TestCase):
         self.assertEqual(timestr, 'شنبه، ۱۳ خرداد ۱۳۹۶ ۲۳:۴۱:۴۸')
 
     def test_format_time_fa_IR_locale(self):
-        locale.setlocale(locale.LC_ALL, "fa_IR")
+        self.setlocale_fa()
         timestr = self.msg_factory.format_time('20170603T191148.000Z')
         self.assertEqual(timestr, 'شنبه، ۱۳ خرداد ۱۳۹۶ ۲۳:۴۱:۴۸')
 

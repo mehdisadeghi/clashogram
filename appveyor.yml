@@ -16,7 +16,6 @@ init:
   - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
 
 install:
-  - ps: Set-Culture fa-IR
   - "%PYTHON%\\python.exe setup.py install"
   - "%PYTHON%/Scripts/pip.exe install pytest"
 

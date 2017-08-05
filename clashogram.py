@@ -6,6 +6,7 @@ import json
 import shelve
 import locale
 import gettext
+import platform
 
 import jdatetime
 import requests
@@ -501,12 +502,18 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
         langs = set([locale.getlocale()[0],
                     os.environ.get('LANG'),
                     os.environ.get('LANGUAGE')])
-        if langs.intersection(['fa_IR', 'fa', 'fa_IR.UTF-8']):
-            locale.setlocale(locale.LC_ALL, "fa_IR") 
+        if langs.intersection(['fa_IR', 'fa', 'fa_IR.UTF-8', 'Persian_Iran']):
+            self.setlocale_fa()
             tehran_time = utc_time.astimezone(pytz.timezone("Asia/Tehran"))
             fmt = jdatetime.datetime.fromgregorian(datetime=tehran_time).strftime("%a، %d %b %Y %H:%M:%S")
             return self.convert_to_persian_numbers(fmt)
         return utc_time.strftime("%a, %d %b %Y %H:%M:%S")
+
+    def setlocale_fa(self):
+        if platform.system() == 'Windows':
+            locale.setlocale(locale.LC_ALL, 'Persian')
+        else:
+            locale.setlocale(locale.LC_ALL, "fa_IR.UTF-8")
 
     def convert_to_persian_numbers(self, text):
         # Supper intelligent and super efficient :)

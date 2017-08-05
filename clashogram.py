@@ -512,8 +512,12 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
     def setlocale_fa(self):
         if platform.system() == 'Windows':
             locale.setlocale(locale.LC_ALL, 'Persian')
+            self.patch_jdatetime()
         else:
             locale.setlocale(locale.LC_ALL, "fa_IR.UTF-8")
+
+    def patch_jdatetime(self):
+        jdatetime.date._is_fa_locale = lambda self: True
 
     def convert_to_persian_numbers(self, text):
         # Supper intelligent and super efficient :)

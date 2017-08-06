@@ -152,10 +152,8 @@ In case of adding new messages extract them and compile again:
     python setup.py extract_messages
     python setup.py compile_catalog
 
-For more information on internationalization look at
+For more information on internationalization see
 `Babel <http://babel.pocoo.org/en/latest/setup.html>`__.
-
-Have fun!
 
 License
 -------

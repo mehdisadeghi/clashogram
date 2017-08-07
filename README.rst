@@ -11,9 +11,12 @@ Clash of Clans war moniting for telegram channels.
     events. This is not a bug in this program.
 
 ``clashogram`` monitors your clan's warlog and posts the following
-messages to a Telegram channel: 1. Preparation started (with clans and
-players information) 2. War started 3. New attacks (with details) 4. War
-over
+messages to a Telegram channel:
+
+1. Preparation started (with clans and players information)
+2. War started
+3. New attacks (with details)
+4. War over
 
 Requirements
 ------------

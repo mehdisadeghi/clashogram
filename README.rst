@@ -158,6 +158,11 @@ In case of adding new messages extract them and compile again:
 For more information on internationalization see
 `Babel <http://babel.pocoo.org/en/latest/setup.html>`__.
 
+Credits
+-------
+Thanks Ali Ayatollahi and other members from IRAN clan (tag #YVL0C8UY) for the initial idea and testing.
+
+
 License
 -------
 

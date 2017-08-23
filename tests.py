@@ -272,6 +272,22 @@ class WarMonitorInWarTestCase(WarMonitorTestCase):
     def test_is_war_over_msg_sent(self):
         self.assertFalse(self.monitor.is_war_over_msg_sent(self.warinfo))
 
+    def test_mark_msg_as_sent(self):
+        self.monitor.mark_msg_as_sent('my_msg')
+
+        self.assertTrue(self.monitor.is_msg_sent('my_msg'))
+        self.assertFalse(self.monitor.is_msg_sent('nonexistent_msg'))
+
+    def test_full_destruction_msg_sent(self):
+        self.assertFalse(self.monitor.is_msg_sent('clan_full_destruction'))
+
+
+class WarMonitorFullDestructionTestCase(WarMonitorTestCase):
+    def get_warinfo(self):
+        return WarInfo(json.loads(open(os.path.join('data', 'full_destruction.json'), 'r', encoding='utf8').read()))
+
+    def test_full_destruction_msg_sent(self):
+        self.assertTrue(self.monitor.is_msg_sent('clan_full_destruction'))
 
 class WarMonitorOnWarOverTestCase(WarMonitorTestCase):
     def get_warinfo(self):

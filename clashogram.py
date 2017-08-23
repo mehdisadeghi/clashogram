@@ -607,9 +607,16 @@ class WarMonitor(object):
         if not self.is_attack_msg_sent(attack):
             msg = self.msg_factory.create_clan_attack_msg(attacker, attack, war_stats)
             self.send(msg)
-            if war_stats['clan_destruction'] == 100:
-                self.send(self.msg_factory.create_clan_full_destruction_msg(player, attack, war_stats))
+            if war_stats['clan_destruction'] == 100 and not self.is_msg_sent('clan_full_destruction'):
+                self.send(self.msg_factory.create_clan_full_destruction_msg(attacker, attack, war_stats))
+                self.mark_msg_as_sent('clan_full_destruction')
             self.db[self.get_war_id()][self.get_attack_id(attack)] = True
+
+    def is_msg_sent(self, msg_id):
+        return self.db[self.get_war_id()].get(msg_id, False)
+
+    def mark_msg_as_sent(self, msg_id):
+        self.db[self.get_war_id()][msg_id] = True
 
     def is_attack_msg_sent(self, attack):
         attack_id = self.get_attack_id(attack)

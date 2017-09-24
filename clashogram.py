@@ -631,7 +631,8 @@ class WarMonitor(object):
             msg = self.msg_factory.create_opponent_attack_msg(attacker, attack, war_stats)
             self.send(msg)
             if war_stats['op_destruction'] == 100:
-                self.send(self.msg_factory.create_opponent_full_destruction_msg(player, attack, war_stats))
+                self.send(self.msg_factory.create_opponent_full_destruction_msg(attacker, attack, war_stats))
+                self.mark_msg_as_sent('op_full_destruction')
             self.db[self.get_war_id()][self.get_attack_id(attack)] = True
 
     def send_war_over_msg(self):

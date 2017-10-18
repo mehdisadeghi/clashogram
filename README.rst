@@ -174,3 +174,9 @@ MIT
    :target: https://ci.appveyor.com/project/mehdisadeghi/clashogram/branch/master
 .. |Pypi status| image:: https://img.shields.io/pypi/v/clashogram.svg
    :target: https://pypi.python.org/pypi/clashogram
+
+<div dir="rtl">
+راهنمای فارسی
+-------------
+برای مطالعه راهنمای فارسی به ‬‬[این آدرس](http://mehdix.ir/clashogram.html) سر بزنید.
+</div>

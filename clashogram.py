@@ -524,7 +524,7 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
         return text.replace('0', '۰').replace('1', '۱').replace('2', '۲').replace('3', '۳').replace('4', '۴').replace('5', '۵').replace('6', '۶').replace('7', '۷').replace('8', '۸').replace('9', '۹')
 
     def get_clan_extra_info(self, clan_tag):
-        return self.coc_api.get_claninfo(self.warinfo.clan_tag)
+        return self.coc_api.get_claninfo(clan_tag)
 
 ########################################################################
 # Main war monitor class

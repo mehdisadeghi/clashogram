@@ -46,8 +46,10 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
                 #warinfo = WarInfo(json.loads(open('../garbage/sample.json', 'r').read()))
                 save_latest_data(warinfo.data, monitor)
                 monitor.update(warinfo)
+                db.sync()
                 time.sleep(POLL_INTERVAL)
             except (KeyboardInterrupt, SystemExit):
+                db.sync()
                 db.close()
                 raise
             except Exception as err:

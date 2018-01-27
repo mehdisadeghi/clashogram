@@ -78,7 +78,8 @@ class WarInfoTestCase(unittest.TestCase):
         assert self.warinfo.get_player_attacks(player) == []
 
     def test_get_player_info(self):
-        self.assertRaises(Exception, '#2GCZZZZP8')
+        with self.assertRaises(Exception):
+            self.warinfo.players['#2GCZZZZP8']
 
     def test_is_not_in_war(self):
         assert not self.warinfo.is_not_in_war()
@@ -256,21 +257,22 @@ class WarMonitorInWarTestCase(WarMonitorTestCase):
     def test_send_preparation_msg(self):
         self.monitor.send_preparation_msg()
 
-        self.assertTrue(self.monitor.is_preparation_msg_sent())
+        self.assertTrue(self.monitor.is_msg_sent('preparation_msg'))
+        self.assertTrue(self.monitor.is_msg_sent('players_msg'))
 
     def test_send_war_msg(self):
         self.monitor.send_war_msg()
 
-        self.assertTrue(self.monitor.is_war_msg_sent())
+        self.assertTrue(self.monitor.is_msg_sent('war_msg'))
 
     def test_is_attack_msg_sent(self):
-        self.assertTrue(self.monitor.is_attack_msg_sent(self.clan_attack))
+        self.assertTrue(self.monitor.is_msg_sent(self.monitor.get_attack_id(self.clan_attack)))
 
     def test_get_attack_id(self):
         self.assertEqual(self.monitor.get_attack_id(self.clan_attack), 'attack98VVJ8LV88CCLRP2JC')
 
     def test_is_war_over_msg_sent(self):
-        self.assertFalse(self.monitor.is_war_over_msg_sent(self.warinfo))
+        self.assertFalse(self.monitor.is_msg_sent('war_over_msg'))
 
     def test_mark_msg_as_sent(self):
         self.monitor.mark_msg_as_sent('my_msg')
@@ -280,6 +282,9 @@ class WarMonitorInWarTestCase(WarMonitorTestCase):
 
     def test_full_destruction_msg_sent(self):
         self.assertFalse(self.monitor.is_msg_sent('clan_full_destruction'))
+
+    def test_op_destruction_msg_sent(self):
+        self.assertFalse(self.monitor.is_msg_sent('op_full_destruction'))
 
 
 class WarMonitorFullDestructionTestCase(WarMonitorTestCase):
@@ -302,8 +307,13 @@ class WarMonitorOnWarOverTestCase(WarMonitorTestCase):
     def get_warinfo(self):
         return WarInfo(json.loads(open(os.path.join('data', 'warEnded_50.json'), 'r', encoding='utf8').read()))
 
+    def test_reset_on_ended_war(self):
+        with self.assertRaises(ValueError):
+            self.monitor.is_msg_sent('war_over_msg')
+
     def test_is_war_over_msg_sent(self):
-        self.assertTrue(self.monitor.is_war_over_msg_sent(self.warinfo))
+        self.monitor.warinfo = self.warinfo
+        self.assertTrue(self.monitor.is_msg_sent('war_over_msg'))
 
 
 

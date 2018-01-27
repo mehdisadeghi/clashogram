@@ -7,6 +7,7 @@ import shelve
 import locale
 import gettext
 import platform
+import hashlib
 
 import jdatetime
 import requests
@@ -410,7 +411,7 @@ Have fun! {final_emoji}
         return _('War has begun!')
 
     def create_clan_full_destruction_msg(self, attacker, attack, war_stats):
-        return _('⚪️We destroyed them 100% boss!')
+        return _('⚪️ We destroyed them 100% boss!')
 
     def create_clan_attack_msg(self, member, attack, war_stats):
         return self.create_attack_msg(member, attack, war_stats, imoji='\U0001F535')
@@ -469,7 +470,7 @@ Result: {stars} | {destruction_percentage}%
             atkwidth=len(str(max(clan_attack_count, op_attack_count))))
 
     def create_opponent_full_destruction_msg(self, attacker, attack, war_stats):
-        return _('⚫️They destroyed us 100% boss!')
+        return _('⚫️ They destroyed us 100% boss!')
 
     def create_war_over_msg(self):
         msg_template = _("""<pre>{win_or_lose_title}
@@ -533,15 +534,15 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
 class WarMonitor(object):
     def __init__(self, db, coc_api, notifier):
         self.db = db
-        self.msg_factory = None
         self.coc_api = coc_api
         self.notifier = notifier
         self.warinfo = None
+        self.msg_factory = None
         self.warstats = None
 
     def update(self, warinfo):
         if warinfo.is_not_in_war():
-            if self.warinfo is not None and not self.is_war_over_msg_sent(self.warinfo):
+            if self.warinfo is not None:
                 self.send_war_over_msg()
             self.reset()
             return
@@ -564,32 +565,19 @@ class WarMonitor(object):
         self.warstats = WarStats(warinfo)
         self.msg_factory = MessageFactory(self.coc_api, warinfo)
         if self.get_war_id() not in self.db:
-            self.initialize_war_entry()
-
-    def initialize_war_entry(self):
-        initial_db = {}
-        self.db[self.get_war_id()] = initial_db
+            self.db[self.get_war_id()] = {}
 
     def get_war_id(self):
+        if not self.warinfo:
+            raise ValueError('Warinfo is empty.')
         return self.warinfo.create_war_id()
 
     def send_preparation_msg(self):
-        if not self.is_preparation_msg_sent():
-            self.send(self.msg_factory.create_preparation_msg())
-            self.send(self.msg_factory.create_players_msg())
-            self.db[self.get_war_id()]['preparation_msg_sent'] = True
+        self.send_once(self.msg_factory.create_preparation_msg(), msg_id='preparation_msg')
+        self.send_once(self.msg_factory.create_players_msg(), msg_id='players_msg')
     
-    def is_preparation_msg_sent(self):
-        return self.db[self.get_war_id()].get('preparation_msg_sent', False)
-
     def send_war_msg(self):
-        if not self.is_war_msg_sent():
-            msg = self.msg_factory.create_war_msg()
-            self.send(msg)
-            self.db[self.get_war_id()]['war_msg_sent'] = True
-
-    def is_war_msg_sent(self):
-        return self.db[self.get_war_id()].get('war_msg_sent', False)
+        self.send_once(self.msg_factory.create_war_msg(), 'war_msg')
 
     def send_attack_msgs(self):
         for order, items in sorted(self.warinfo.ordered_attacks.items()):
@@ -604,13 +592,11 @@ class WarMonitor(object):
             self.send_opponent_attack_msg(player, attack, war_stats)
 
     def send_clan_attack_msg(self, attacker, attack, war_stats):
-        if not self.is_attack_msg_sent(attack):
-            msg = self.msg_factory.create_clan_attack_msg(attacker, attack, war_stats)
-            self.send(msg)
-            if war_stats['clan_destruction'] == 100 and not self.is_msg_sent('clan_full_destruction'):
-                self.send(self.msg_factory.create_clan_full_destruction_msg(attacker, attack, war_stats))
-                self.mark_msg_as_sent('clan_full_destruction')
-            self.db[self.get_war_id()][self.get_attack_id(attack)] = True
+        self.send_once(self.msg_factory.create_clan_attack_msg(attacker, attack, war_stats),
+            msg_id=self.get_attack_id(attack))
+        if war_stats['clan_destruction'] == 100:
+            self.send_once(self.msg_factory.create_clan_full_destruction_msg(attacker, attack, war_stats),
+                msg_id='clan_full_destruction')
 
     def is_msg_sent(self, msg_id):
         return self.db[self.get_war_id()].get(msg_id, False)
@@ -618,36 +604,32 @@ class WarMonitor(object):
     def mark_msg_as_sent(self, msg_id):
         self.db[self.get_war_id()][msg_id] = True
 
-    def is_attack_msg_sent(self, attack):
-        attack_id = self.get_attack_id(attack)
-        return self.db[self.get_war_id()].get(attack_id, False)
-
     def get_attack_id(self, attack):
         return "attack{}{}".format(attack['attackerTag'][1:],    
                                    attack['defenderTag'][1:])
 
     def send_opponent_attack_msg(self, attacker, attack, war_stats):
-        if not self.is_attack_msg_sent(attack):
-            msg = self.msg_factory.create_opponent_attack_msg(attacker, attack, war_stats)
-            self.send(msg)
-            if war_stats['op_destruction'] == 100:
-                self.send(self.msg_factory.create_opponent_full_destruction_msg(attacker, attack, war_stats))
-                self.mark_msg_as_sent('op_full_destruction')
-            self.db[self.get_war_id()][self.get_attack_id(attack)] = True
+        self.send_once(self.msg_factory.create_opponent_attack_msg(attacker, attack, war_stats),
+            msg_id=self.get_attack_id(attack))
+        if war_stats['op_destruction'] == 100:
+            self.send_once(self.msg_factory.create_opponent_full_destruction_msg(attacker, attack, war_stats),
+                msg_id='op_full_destruction')
 
     def send_war_over_msg(self):
-        if not self.is_war_over_msg_sent(self.warinfo):
-            msg = self.msg_factory.create_war_over_msg()
-            self.send(msg)
-            self.db[self.get_war_id()]['war_over_msg_sent'] = True
-
-    def is_war_over_msg_sent(self, warinfo):
-        return self.db[warinfo.create_war_id()].get('war_over_msg_sent', False)
+        self.send_once(self.msg_factory.create_war_over_msg(), msg_id='war_over_msg')
 
     def reset(self):
         self.warinfo = None
         self.warstats = None
         self.msg_factory = None
+
+    def send_once(self, msg, msg_id=None):
+        if not msg_id:
+            msg_id = hashlib.md5(msg.encode('utf-8')).hexdigest()
+
+        if not self.is_msg_sent(msg_id):
+            self.send(msg)
+            self.mark_msg_as_sent(msg_id)
 
     def send(self, msg):
         self.notifier.send(msg)

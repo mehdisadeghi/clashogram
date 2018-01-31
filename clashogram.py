@@ -138,7 +138,12 @@ class ClanInfo(object):
         return self.data['location']['name']
 
     def get_country_flag_imoji(self):
-        return self._get_country_flag_imoji(self.data['location']['countryCode']) if self.data['location']['isCountry'] else ''
+        if self.data['location']['isCountry']:
+            return self._get_country_flag_imoji(self.data['location']['countryCode'])
+        elif self.data['location']['name'] == 'International':
+            return '🌎' # The unicode character for planet earth, not empty string!
+        else:
+            return ''
 
     def _get_country_flag_imoji(self, country_code):
         return "{}{}".format(chr(127397 + ord(country_code[0])),

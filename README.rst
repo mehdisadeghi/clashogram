@@ -138,6 +138,10 @@ In order toadd or update a new language catalog do the following:
 
 ::
 
+    pip install babel # Install the babel i18n tool first.
+
+::
+
     python setup.py init_catalog -l <LANGUAGE_CODE>
     python setup.py update_catalog -l <LANGUAGE_CODE>
 

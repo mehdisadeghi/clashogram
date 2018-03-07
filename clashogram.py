@@ -43,7 +43,6 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
         while True:
             try:
                 warinfo = coc_api.get_currentwar(clan_tag)
-                #warinfo = WarInfo(json.loads(open('../garbage/sample.json', 'r').read()))
                 save_latest_data(warinfo.data, monitor)
                 monitor.update(warinfo)
                 db.sync()
@@ -69,15 +68,13 @@ def save_wardata(wardata):
         if not os.path.exists('warlog'):
             os.mkdir('warlog')
         path = os.path.join('warlog', war_id)
-        json.dump(wardata, open(path, 'w'), ensure_ascii=False)
+        json.dump(wardata, open(path, 'w', encoding='utf-8'), ensure_ascii=False)
     
 
 def save_latest_data(wardata, monitor):
     if wardata:
         save_wardata(wardata)
-        json.dump(wardata, open('latest_downloaded_wardata.json', 'w'), ensure_ascii=False)
-    #if monitor and monitor.warinfo:
-    #    json.dump(monitor.warinfo, open('latest_inmemory_wardata.json', 'w'), ensure_ascii=False)
+        json.dump(wardata, open('latest_downloaded_wardata.json', 'w', encoding='utf-8'), ensure_ascii=False)
 
 ########################################################################
 # Notifiers

@@ -84,8 +84,8 @@ Or do it in one step:
     LANGUAGE=fa clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
 
 Problems on Windows
--------------------
-In case you decide to run Clashogram on windows make sure to run `chcp 65001` in your terminal to avoid encoding errors.
+~~~~~~~~~~~~~~~~~~~
+In case you decide to run Clashogram on windows make sure to run ``chcp 65001`` in your terminal to avoid encoding errors.
 
 Run as a service
 ~~~~~~~~~~~~~~~~
@@ -183,6 +183,11 @@ MIT
 .. |Pypi status| image:: https://img.shields.io/pypi/v/clashogram.svg
    :target: https://pypi.python.org/pypi/clashogram
 
+
+Russian Translations
+--------------------
+You can read this document in Russian thanks to Timur from Illuminati clan. Thanks Timur!
+`this document in Russian <README_RU.rst>`__
 
 .. raw:: html
 

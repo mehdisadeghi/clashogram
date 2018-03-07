@@ -1,0 +1,6 @@
+build
+*.sublime-workspace
+__pycache__
+.coverage
+.cache
+*.egg-info

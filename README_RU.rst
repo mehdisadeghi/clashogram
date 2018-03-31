@@ -65,13 +65,13 @@ clashogram |Build Status| |Build status| |Pypi status|
 
     export LANGUAGE=<LANGUAGE_CODE>
     К примеру,
-    export LANGUAGE=fa
+    export LANGUAGE=ru
 
 Или сделайте это одной командой:
 
 ::
 
-    LANGUAGE=fa clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
+    LANGUAGE=ru clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
 
 Проблемы при использовании Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -139,8 +139,8 @@ Screen <https://www.gnu.org/software/screen/>`__. Другое решение - 
 
 ::
 
-    python setup.py init_catalog -l fa
-    python setup.py update_catalog -l fa
+    python setup.py init_catalog -l ru
+    python setup.py update_catalog -l ru
 
 В случае добавления новых сообщений извлеките их и скомпилируйте снова:
 

@@ -9,26 +9,40 @@ import gettext
 import platform
 import hashlib
 
-import jdatetime
-import requests
 import click
+import jdatetime
 import pytz
+import requests
 from dateutil.parser import parse as dateutil_parse
 from requests.adapters import HTTPAdapter
 
-gettext.bindtextdomain('messages', localedir=os.path.join(os.curdir, 'locales'))
+gettext.bindtextdomain('messages',
+                       localedir=os.path.join(os.curdir, 'locales'))
 gettext.textdomain('messages')
 _ = gettext.gettext
 
 POLL_INTERVAL = 60
 
+
 @click.command()
-@click.option('--coc-token', help='CoC API token. Reads COC_API_TOKEN env var.', envvar='COC_API_TOKEN', prompt=True)
-@click.option('--clan-tag', help='Tag of clan without hash. Reads COC_CLAN_TAG env var.',envvar='COC_CLAN_TAG', prompt=True)
-@click.option('--bot-token', help='Telegram bot token. The bot must be admin on the channel. Reads TELEGRAM_BOT_TOKEN env var.',
-              envvar='TELEGRAM_BOT_TOKEN', prompt=True)
-@click.option('--channel-name', help='Name of telegram channel for updates. Reads TELEGRAM_CHANNEL env var.',   
-              envvar='TELEGRAM_CHANNEL', prompt=True)
+@click.option('--coc-token',
+              help='CoC API token. Reads COC_API_TOKEN env var.',
+              envvar='COC_API_TOKEN',
+              prompt=True)
+@click.option('--clan-tag',
+              help='Tag of clan without hash. Reads COC_CLAN_TAG env var.',
+              envvar='COC_CLAN_TAG',
+              prompt=True)
+@click.option('--bot-token',
+              help='Telegram bot token. The bot must be admin on the channel.'
+                   'Reads TELEGRAM_BOT_TOKEN env var.',
+              envvar='TELEGRAM_BOT_TOKEN',
+              prompt=True)
+@click.option('--channel-name',
+              help='Name of telegram channel for updates.'
+                   'Reads TELEGRAM_CHANNEL env var.',
+              envvar='TELEGRAM_CHANNEL',
+              prompt=True)
 def main(coc_token, clan_tag, bot_token, channel_name):
     """Publish war updates to a telegram channel."""
     monitor_currentwar(coc_token, clan_tag, bot_token, channel_name)
@@ -56,7 +70,8 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
                     print('COC maintenance error, ignoring.')
                     time.sleep(POLL_INTERVAL)
                     continue
-                monitor.send(_("☠️ 😵 App is broken boss! Come over and fix me please!"))
+                monitor.send(
+                    _("☠️ 😵 App is broken boss! Come over and fix me please!"))
                 db.close()
                 raise
 
@@ -68,33 +83,42 @@ def save_wardata(wardata):
         if not os.path.exists('warlog'):
             os.mkdir('warlog')
         path = os.path.join('warlog', war_id)
-        json.dump(wardata, open(path, 'w', encoding='utf-8'), ensure_ascii=False)
-    
+        json.dump(wardata,
+                  open(path, 'w', encoding='utf-8'), ensure_ascii=False)
+
 
 def save_latest_data(wardata, monitor):
     if wardata:
         save_wardata(wardata)
-        json.dump(wardata, open('latest_downloaded_wardata.json', 'w', encoding='utf-8'), ensure_ascii=False)
+        json.dump(wardata,
+                  open('latest_downloaded_wardata.json',
+                       'w',
+                       encoding='utf-8'),
+                  ensure_ascii=False)
 
 ########################################################################
 # Notifiers
 ########################################################################
+
+
 class TelegramNotifier(object):
     def __init__(self, bot_token, channel_name):
         self.bot_token = bot_token
         self.channel_name = channel_name
 
     def send(self, msg):
-        endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?parse_mode={mode}&chat_id=@{channel_name}&text={text}".format(
-            bot_token=self.bot_token,
-            mode='HTML',
-            channel_name=self.channel_name,
-            text=requests.utils.quote(msg))
+        endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?"\
+                   "parse_mode={mode}&chat_id=@{channel_name}&text={text}"\
+                   .format(bot_token=self.bot_token,
+                           mode='HTML',
+                           channel_name=self.channel_name,
+                           text=requests.utils.quote(msg))
         requests.post(endpoint)
 
 ########################################################################
 # CoC API Calls
 ########################################################################
+
 
 class CoCAPI(object):
     def __init__(self, coc_token):
@@ -109,15 +133,16 @@ class CoCAPI(object):
     def call_api(self, endpoint):
         s = requests.Session()
         s.mount('https://api.clashofclans.com', HTTPAdapter(max_retries=5))
-        res = s.get(endpoint, headers={'Authorization': 'Bearer %s' % self.coc_token})
+        res = s.get(endpoint,
+                    headers={'Authorization': 'Bearer %s' % self.coc_token})
         if res.status_code == requests.codes.ok:
             return json.loads(res.content.decode('utf-8'))
         else:
             raise Exception('Error calling CoC API: %s' % res)
 
     def get_currentwar_endpoint(self, clan_tag):
-        return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'.format(
-                clan_tag=requests.utils.quote('#%s' % clan_tag))
+        return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'\
+            .format(clan_tag=requests.utils.quote('#%s' % clan_tag))
 
     def get_claninfo_endpoint(self, clan_tag):
         return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
@@ -126,6 +151,7 @@ class CoCAPI(object):
 ########################################################################
 # Models according to CoC API
 ########################################################################
+
 
 class ClanInfo(object):
     def __init__(self, clandata):
@@ -136,9 +162,11 @@ class ClanInfo(object):
 
     def get_country_flag_imoji(self):
         if self.data['location']['isCountry']:
-            return self._get_country_flag_imoji(self.data['location']['countryCode'])
+            return self._get_country_flag_imoji(
+                    self.data['location']['countryCode'])
         elif self.data['location']['name'] == 'International':
-            return '🌎' # The unicode character for planet earth, not empty string!
+            # The unicode character for planet earth, not empty string!
+            return '🌎'
         else:
             return ''
 
@@ -239,7 +267,7 @@ class WarInfo(object):
 
     def get_player_attacks(self, player):
         if 'attacks' in player:
-            return  player['attacks']
+            return player['attacks']
         else:
             return []
 
@@ -267,13 +295,17 @@ class WarInfo(object):
         if self.data['clan']['stars'] > self.data['opponent']['stars']:
             return True
         elif self.data['clan']['stars'] == self.data['opponent']['stars'] and\
-             self.data['clan']['destructionPercentage'] > self.data['opponent']['destructionPercentage']:
+                (self.data['clan']['destructionPercentage'] >
+                 self.data['opponent']['destructionPercentage']):
             return True
         else:
             return False
 
     def is_draw(self):
-        return self.data['clan']['stars'] == self.data['opponent']['stars'] and self.data['clan']['destructionPercentage'] == self.data['opponent']['destructionPercentage']
+        return \
+            self.data['clan']['stars'] == self.data['opponent']['stars'] and\
+            (self.data['clan']['destructionPercentage'] ==
+             self.data['opponent']['destructionPercentage'])
 
     def create_war_id(self):
         return "{0}{1}{2}".format(self.data['clan']['tag'],
@@ -284,13 +316,17 @@ class WarInfo(object):
 # War statistics
 ########################################################################
 
+
 class WarStats(object):
     def __init__(self, warinfo):
         self.warinfo = warinfo
 
     def calculate_war_stats_sofar(self, attack_order):
-        """CoC data is updated every 10 minutes and reflects stats after the last attack.
-        We have to calculate the necesssary info for the previous ones"""
+        """Calculate latest war stats.
+
+        CoC data is updated every 10 minutes and reflects stats after the
+        last attack. We have to calculate the necesssary info for the
+        previous ones"""
         info = {}
         info['clan_destruction'] = 0
         info['op_destruction'] = 0
@@ -301,11 +337,13 @@ class WarStats(object):
         for order in range(1, attack_order + 1):
             player, attack = self.warinfo.ordered_attacks[order]
             if self.warinfo.is_clan_member(player):
-                info['clan_destruction'] += self.get_attack_new_destruction(attack)
+                info['clan_destruction'] +=\
+                    self.get_attack_new_destruction(attack)
                 info['clan_stars'] += self.get_attack_new_stars(attack)
                 info['clan_used_attacks'] += 1
             else:
-                info['op_destruction'] += self.get_attack_new_destruction(attack)
+                info['op_destruction'] +=\
+                    self.get_attack_new_destruction(attack)
                 info['op_stars'] += self.get_attack_new_stars(attack)
                 info['op_used_attacks'] += 1
         info['op_destruction'] /= self.warinfo.team_size
@@ -321,14 +359,18 @@ class WarStats(object):
                 'op_used_attacks': self.warinfo.op_attacks,}
 
     def get_attack_new_destruction(self, attack):
-        if attack['destructionPercentage'] > self.get_best_attack_destruction_upto(attack):
-            return attack['destructionPercentage'] - self.get_best_attack_destruction_upto(attack)
+        if (attack['destructionPercentage'] >
+                self.get_best_attack_destruction_upto(attack)):
+            return (attack['destructionPercentage'] -
+                    self.get_best_attack_destruction_upto(attack))
         else:
             return 0
 
     def get_best_attack_destruction(self, attack):
         defender = self.warinfo.get_player_info(attack['defenderTag'])
-        if 'bestOpponentAttack' in defender and defender['bestOpponentAttack']['attackerTag'] != attack['attackerTag']:
+        if 'bestOpponentAttack' in defender and\
+                (defender['bestOpponentAttack']['attackerTag'] !=
+                 attack['attackerTag']):
             return defender['bestOpponentAttack']['destructionPercentage']
         else:
             return 0
@@ -337,7 +379,9 @@ class WarStats(object):
         best_score = 0
         for order in range(1, in_attack['order'] + 1):
             player, attack = self.warinfo.ordered_attacks[order]
-            if attack['defenderTag'] == in_attack['defenderTag'] and attack['destructionPercentage'] > best_score and attack['attackerTag'] != in_attack['attackerTag']:
+            if attack['defenderTag'] == in_attack['defenderTag'] and\
+               attack['destructionPercentage'] > best_score and\
+               attack['attackerTag'] != in_attack['attackerTag']:
                 best_score = attack['destructionPercentage']
         return best_score
 
@@ -353,13 +397,16 @@ class WarStats(object):
         best_score = 0
         for order in range(1, in_attack['order'] + 1):
             player, attack = self.warinfo.ordered_attacks[order]
-            if attack['defenderTag'] == in_attack['defenderTag'] and attack['stars'] > best_score and attack['attackerTag'] != in_attack['attackerTag']:
+            if attack['defenderTag'] == in_attack['defenderTag'] and\
+               attack['stars'] > best_score and\
+               attack['attackerTag'] != in_attack['attackerTag']:
                 best_score = attack['stars']
         return best_score
 
 ########################################################################
 # Message formatters
 ########################################################################
+
 
 class MessageFactory(object):
     def __init__(self, coc_api, warinfo):
@@ -380,33 +427,37 @@ Have fun! {final_emoji}
         ourclan = self.warinfo.clan_name
         opclan = self.warinfo.op_name
 
-        msg = msg_template.format(top_imoji='\U0001F3C1',
-                                  ourclan=ourclan,
-                                  ourlevel=self.warinfo.clan_level,
-                                  opponentclan=opclan,
-                                  theirlevel=self.warinfo.op_level,
-                                  ourtag=self.warinfo.clan_tag,
-                                  opponenttag=self.warinfo.op_tag,
-                                  start=self.format_time(self.warinfo.start_time),
-                                  war_size=self.warinfo.team_size,
-                                  final_emoji='\U0001F6E1',
-                                  clanloc=clan_extra_info.get_location(),
-                                  clanflag=clan_extra_info.get_country_flag_imoji(),
-                                  oploc=op_extra_info.get_location(),
-                                  opflag=op_extra_info.get_country_flag_imoji(),
-                                  clanwinstreak=clan_extra_info.get_winstreak(),
-                                  opwinstreak=op_extra_info.get_winstreak(),
-                                  cwidth=max(len(ourclan), len(opclan)))
+        msg = msg_template.format(
+                top_imoji='\U0001F3C1',
+                ourclan=ourclan,
+                ourlevel=self.warinfo.clan_level,
+                opponentclan=opclan,
+                theirlevel=self.warinfo.op_level,
+                ourtag=self.warinfo.clan_tag,
+                opponenttag=self.warinfo.op_tag,
+                start=self.format_time(self.warinfo.start_time),
+                war_size=self.warinfo.team_size,
+                final_emoji='\U0001F6E1',
+                clanloc=clan_extra_info.get_location(),
+                clanflag=clan_extra_info.get_country_flag_imoji(),
+                oploc=op_extra_info.get_location(),
+                opflag=op_extra_info.get_country_flag_imoji(),
+                clanwinstreak=clan_extra_info.get_winstreak(),
+                opwinstreak=op_extra_info.get_winstreak(),
+                cwidth=max(len(ourclan), len(opclan)))
         return msg
 
     def create_players_msg(self):
         msg = "⚪️" + _(" Players")
         msg += "\n▪️" + _("Position, TH, name")
-        sorted_players_by_map_position = sorted(self.warinfo.clan_members.items(), key=lambda x: x[1]['mapPosition'])
+        sorted_players_by_map_position = sorted(
+            self.warinfo.clan_members.items(),
+            key=lambda x: x[1]['mapPosition'])
         for player_tag, player_info in sorted_players_by_map_position:
-            line = "▫️{map_position: <2d} {thlevel: <2d} {name}".format(thlevel=player_info['townhallLevel'],
-                                                                        map_position=player_info['mapPosition'],
-                                                                        name=player_info['name'])
+            line = "▫️{map_position: <2d} {thlevel: <2d} {name}"\
+                .format(thlevel=player_info['townhallLevel'],
+                        map_position=player_info['mapPosition'],
+                        name=player_info['name'])
             msg += "\n" + line
 
         return "<pre>" + msg + "</pre>"
@@ -418,10 +469,12 @@ Have fun! {final_emoji}
         return _('⚪️ We destroyed them 100% boss!')
 
     def create_clan_attack_msg(self, member, attack, war_stats):
-        return self.create_attack_msg(member, attack, war_stats, imoji='\U0001F535')
+        return self.create_attack_msg(member, attack, war_stats,
+                                      imoji='\U0001F535')
 
     def create_opponent_attack_msg(self, member, attack, war_stats):
-        return self.create_attack_msg(member, attack, war_stats, imoji='\U0001F534')
+        return self.create_attack_msg(member,
+                                      attack, war_stats, imoji='\U0001F534')
 
     def create_attack_msg(self, member, attack, war_stats, imoji=''):
         msg_template = _("""<pre>{top_imoji} [{order}] {ourclan} vs {opponentclan}
@@ -431,20 +484,21 @@ Result: {stars} | {destruction_percentage}%
 {war_info}
 </pre>""")
         defender = self.warinfo.get_player_info(attack['defenderTag'])
-        msg = msg_template.format(order=attack['order'],
-                                  top_imoji=imoji,
-                                  ourclan=self.warinfo.clan_name,
-                                  opponentclan=self.warinfo.op_name,
-                                  attacker_name=member['name'],
-                                  attacker_thlevel=member['townhallLevel'],
-                                  attacker_map_position=member['mapPosition'],
-                                  defender_name=defender['name'],
-                                  defender_thlevel=defender['townhallLevel'],
-                                  defender_map_position=defender['mapPosition'],
-                                  stars=self.format_star_msg(attack),
-                                  destruction_percentage=attack['destructionPercentage'],
-                                  war_info=self.create_war_info_msg(war_stats),
-                                  nwidth=max(len(member['name']), len(defender['name'])))
+        msg = msg_template.format(
+                order=attack['order'],
+                top_imoji=imoji,
+                ourclan=self.warinfo.clan_name,
+                opponentclan=self.warinfo.op_name,
+                attacker_name=member['name'],
+                attacker_thlevel=member['townhallLevel'],
+                attacker_map_position=member['mapPosition'],
+                defender_name=defender['name'],
+                defender_thlevel=defender['townhallLevel'],
+                defender_map_position=defender['mapPosition'],
+                stars=self.format_star_msg(attack),
+                destruction_percentage=attack['destructionPercentage'],
+                war_info=self.create_war_info_msg(war_stats),
+                nwidth=max(len(member['name']), len(defender['name'])))
         return msg
 
     def format_star_msg(self, attack):
@@ -473,7 +527,8 @@ Result: {stars} | {destruction_percentage}%
             swidth=len(str(max(clan_stars, op_stars))),
             atkwidth=len(str(max(clan_attack_count, op_attack_count))))
 
-    def create_opponent_full_destruction_msg(self, attacker, attack, war_stats):
+    def create_opponent_full_destruction_msg(self, attacker, attack,
+                                             war_stats):
         return _('⚫️ They destroyed us 100% boss!')
 
     def create_war_over_msg(self):
@@ -485,13 +540,15 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
 
         ourclan = self.warinfo.clan_name
         opclan = self.warinfo.op_name
-        msg = msg_template.format(win_or_lose_title=self.create_win_or_lose_title(),
-                                  ourclan=ourclan,
-                                  ourlevel=self.warinfo.clan_level,
-                                  opponentclan=opclan,
-                                  theirlevel=self.warinfo.op_level,
-                                  war_info=self.create_war_info_msg(self.warstats.get_latest_war_stats()),
-                                  cwidth=max(len(ourclan), len(opclan)))
+        msg = msg_template.format(
+                win_or_lose_title=self.create_win_or_lose_title(),
+                ourclan=ourclan,
+                ourlevel=self.warinfo.clan_level,
+                opponentclan=opclan,
+                theirlevel=self.warinfo.op_level,
+                war_info=self.create_war_info_msg(
+                        self.warstats.get_latest_war_stats()),
+                cwidth=max(len(ourclan), len(opclan)))
         return msg
 
     def create_win_or_lose_title(self):
@@ -510,7 +567,8 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
         if langs.intersection(['fa_IR', 'fa', 'fa_IR.UTF-8', 'Persian_Iran']):
             self.setlocale_fa()
             tehran_time = utc_time.astimezone(pytz.timezone("Asia/Tehran"))
-            fmt = jdatetime.datetime.fromgregorian(datetime=tehran_time).strftime("%a، %d %b %Y %H:%M:%S")
+            fmt = jdatetime.datetime.fromgregorian(
+                    datetime=tehran_time).strftime("%a، %d %b %Y %H:%M:%S")
             return self.convert_to_persian_numbers(fmt)
         return utc_time.strftime("%a, %d %b %Y %H:%M:%S")
 
@@ -526,7 +584,16 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
 
     def convert_to_persian_numbers(self, text):
         # Supper intelligent and super efficient :)
-        return text.replace('0', '۰').replace('1', '۱').replace('2', '۲').replace('3', '۳').replace('4', '۴').replace('5', '۵').replace('6', '۶').replace('7', '۷').replace('8', '۸').replace('9', '۹')
+        return text.replace('0', '۰')\
+                   .replace('1', '۱')\
+                   .replace('2', '۲')\
+                   .replace('3', '۳')\
+                   .replace('4', '۴')\
+                   .replace('5', '۵')\
+                   .replace('6', '۶')\
+                   .replace('7', '۷')\
+                   .replace('8', '۸')\
+                   .replace('9', '۹')
 
     def get_clan_extra_info(self, clan_tag):
         return self.coc_api.get_claninfo(clan_tag)
@@ -534,6 +601,7 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
 ########################################################################
 # Main war monitor class
 ########################################################################
+
 
 class WarMonitor(object):
     def __init__(self, db, coc_api, notifier):
@@ -577,9 +645,13 @@ class WarMonitor(object):
         return self.warinfo.create_war_id()
 
     def send_preparation_msg(self):
-        self.send_once(self.msg_factory.create_preparation_msg(), msg_id='preparation_msg')
-        self.send_once(self.msg_factory.create_players_msg(), msg_id='players_msg')
-    
+        self.send_once(
+            self.msg_factory.create_preparation_msg(),
+            msg_id='preparation_msg')
+        self.send_once(
+            self.msg_factory.create_players_msg(),
+            msg_id='players_msg')
+
     def send_war_msg(self):
         self.send_once(self.msg_factory.create_war_msg(), 'war_msg')
 
@@ -596,10 +668,14 @@ class WarMonitor(object):
             self.send_opponent_attack_msg(player, attack, war_stats)
 
     def send_clan_attack_msg(self, attacker, attack, war_stats):
-        self.send_once(self.msg_factory.create_clan_attack_msg(attacker, attack, war_stats),
+        self.send_once(
+            self.msg_factory.create_clan_attack_msg(
+                attacker, attack, war_stats),
             msg_id=self.get_attack_id(attack))
         if war_stats['clan_destruction'] == 100:
-            self.send_once(self.msg_factory.create_clan_full_destruction_msg(attacker, attack, war_stats),
+            self.send_once(
+                self.msg_factory.create_clan_full_destruction_msg(
+                    attacker, attack, war_stats),
                 msg_id='clan_full_destruction')
 
     def is_msg_sent(self, msg_id):
@@ -609,18 +685,22 @@ class WarMonitor(object):
         self.db[self.get_war_id()][msg_id] = True
 
     def get_attack_id(self, attack):
-        return "attack{}{}".format(attack['attackerTag'][1:],    
+        return "attack{}{}".format(attack['attackerTag'][1:],
                                    attack['defenderTag'][1:])
 
     def send_opponent_attack_msg(self, attacker, attack, war_stats):
-        self.send_once(self.msg_factory.create_opponent_attack_msg(attacker, attack, war_stats),
+        self.send_once(self.msg_factory.create_opponent_attack_msg(
+            attacker, attack, war_stats),
             msg_id=self.get_attack_id(attack))
         if war_stats['op_destruction'] == 100:
-            self.send_once(self.msg_factory.create_opponent_full_destruction_msg(attacker, attack, war_stats),
+            self.send_once(
+                self.msg_factory.create_opponent_full_destruction_msg(
+                    attacker, attack, war_stats),
                 msg_id='op_full_destruction')
 
     def send_war_over_msg(self):
-        self.send_once(self.msg_factory.create_war_over_msg(), msg_id='war_over_msg')
+        self.send_once(
+            self.msg_factory.create_war_over_msg(), msg_id='war_over_msg')
 
     def reset(self):
         self.warinfo = None

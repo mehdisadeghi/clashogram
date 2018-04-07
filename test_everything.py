@@ -6,7 +6,8 @@ import unittest
 import platform
 from unittest.mock import MagicMock
 
-from clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, MessageFactory, WarMonitor, TelegramNotifier
+from clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, MessageFactory,\
+    WarMonitor, TelegramNotifier
 
 
 class ClanInfoTestCase(unittest.TestCase):
@@ -20,7 +21,7 @@ class ClanInfoTestCase(unittest.TestCase):
         assert self.claninfo.get_location() == 'Iran'
 
     def test_country_imoji(self):
-        assert self.claninfo.get_country_flag_imoji() ==  '🇮🇷'
+        assert self.claninfo.get_country_flag_imoji() == '🇮🇷'
 
     def test_winstreak(self):
         assert self.claninfo.get_winstreak() == 0
@@ -28,7 +29,9 @@ class ClanInfoTestCase(unittest.TestCase):
 
 class WarInfoTestCase(unittest.TestCase):
     def setUp(self):
-        self.warinfo = WarInfo(json.loads(open(os.path.join('data', 'inWar_40.json'), 'r', encoding='utf8').read()))
+        self.warinfo = WarInfo(
+            json.loads(open(os.path.join('data', 'inWar_40.json'),
+                            'r', encoding='utf8').read()))
         self.op_member = {
             "tag": "#2GCR2YLP8",
             "name": "captain spock",
@@ -104,12 +107,15 @@ class WarInfoTestCase(unittest.TestCase):
         self.assertFalse(self.warinfo.is_draw())
 
     def test_create_war_id(self):
-        self.assertEqual(self.warinfo.create_war_id(), "#YVL0C8UY#JC0L922Y20170602T201148.000Z")
+        self.assertEqual(self.warinfo.create_war_id(),
+                         "#YVL0C8UY#JC0L922Y20170602T201148.000Z")
 
 
 class WarInfoNotInWarTestCase(unittest.TestCase):
     def setUp(self):
-        self.warinfo = WarInfo(json.loads(open(os.path.join('data', 'notInWar.json'), 'r', encoding='utf8').read()))
+        self.warinfo = WarInfo(json.loads(
+            open(os.path.join('data', 'notInWar.json'),
+                 'r', encoding='utf8').read()))
 
     def test_clan_stats(self):
         self.assertEqual(self.warinfo.clan_level, 0)
@@ -129,7 +135,9 @@ class WarInfoNotInWarTestCase(unittest.TestCase):
 
 class WarStatsTestCase(unittest.TestCase):
     def setUp(self):
-        warinfo = WarInfo(json.loads(open(os.path.join('data', 'warEnded_50.json'), 'r', encoding='utf8').read()))
+        warinfo = WarInfo(json.loads(
+            open(os.path.join('data', 'warEnded_50.json'),
+                 'r', encoding='utf8').read()))
         self.stats = WarStats(warinfo)
         self.attack161 = {
             "destructionPercentage": 53,
@@ -146,7 +154,6 @@ class WarStatsTestCase(unittest.TestCase):
             "defenderTag": "#2Y0C8YPYU"
         }
 
-        
     def test_first_attack_stats(self):
         stats = self.stats.calculate_war_stats_sofar(1)
 
@@ -178,8 +185,10 @@ class WarStatsTestCase(unittest.TestCase):
         self.assertEqual(stats['op_used_attacks'], 75)
 
     def test_attack_destruction(self):
-        self.assertEqual(self.stats.get_attack_new_destruction(self.attack161), 0)
-        self.assertEqual(self.stats.get_attack_new_destruction(self.attack150), 3)
+        self.assertEqual(
+            self.stats.get_attack_new_destruction(self.attack161), 0)
+        self.assertEqual(
+            self.stats.get_attack_new_destruction(self.attack150), 3)
 
     def test_attack_new_stars(self):
         self.assertEqual(self.stats.get_attack_new_stars(self.attack161), 0)
@@ -250,9 +259,12 @@ class WarMonitorTestCase(unittest.TestCase):
     def get_warinfo(self):
         raise NotImplementedError()
 
+
 class WarMonitorInWarTestCase(WarMonitorTestCase):
     def get_warinfo(self):
-        return WarInfo(json.loads(open(os.path.join('data', 'inWar_40.json'), 'r', encoding='utf8').read()))
+        return WarInfo(json.loads(
+            open(os.path.join('data', 'inWar_40.json'),
+                 'r', encoding='utf8').read()))
 
     def test_send_preparation_msg(self):
         self.monitor.send_preparation_msg()
@@ -266,10 +278,12 @@ class WarMonitorInWarTestCase(WarMonitorTestCase):
         self.assertTrue(self.monitor.is_msg_sent('war_msg'))
 
     def test_is_attack_msg_sent(self):
-        self.assertTrue(self.monitor.is_msg_sent(self.monitor.get_attack_id(self.clan_attack)))
+        self.assertTrue(self.monitor.is_msg_sent(
+            self.monitor.get_attack_id(self.clan_attack)))
 
     def test_get_attack_id(self):
-        self.assertEqual(self.monitor.get_attack_id(self.clan_attack), 'attack98VVJ8LV88CCLRP2JC')
+        self.assertEqual(self.monitor.get_attack_id(self.clan_attack),
+                         'attack98VVJ8LV88CCLRP2JC')
 
     def test_is_war_over_msg_sent(self):
         self.assertFalse(self.monitor.is_msg_sent('war_over_msg'))
@@ -289,15 +303,19 @@ class WarMonitorInWarTestCase(WarMonitorTestCase):
 
 class WarMonitorFullDestructionTestCase(WarMonitorTestCase):
     def get_warinfo(self):
-        return WarInfo(json.loads(open(os.path.join('data', 'full_destruction.json'), 'r', encoding='utf8').read()))
+        return WarInfo(json.loads(
+            open(os.path.join('data', 'full_destruction.json'),
+                 'r', encoding='utf8').read()))
 
     def test_full_destruction_msg_sent(self):
         self.assertTrue(self.monitor.is_msg_sent('clan_full_destruction'))
 
 
-class WarMonitorFullDestructionTestCase(WarMonitorTestCase):
+class WarMonitorOpFullDestructionTestCase(WarMonitorTestCase):
     def get_warinfo(self):
-        return WarInfo(json.loads(open(os.path.join('data', 'op_full_destruction.json'), 'r', encoding='utf8').read()))
+        return WarInfo(json.loads(
+            open(os.path.join('data', 'op_full_destruction.json'),
+                 'r', encoding='utf8').read()))
 
     def test_op_full_destruction_msg_sent(self):
         self.assertTrue(self.monitor.is_msg_sent('op_full_destruction'))
@@ -305,7 +323,9 @@ class WarMonitorFullDestructionTestCase(WarMonitorTestCase):
 
 class WarMonitorOnWarOverTestCase(WarMonitorTestCase):
     def get_warinfo(self):
-        return WarInfo(json.loads(open(os.path.join('data', 'warEnded_50.json'), 'r', encoding='utf8').read()))
+        return WarInfo(json.loads(
+            open(os.path.join('data', 'warEnded_50.json'),
+                 'r', encoding='utf8').read()))
 
     def test_reset_on_ended_war(self):
         with self.assertRaises(ValueError):
@@ -314,7 +334,6 @@ class WarMonitorOnWarOverTestCase(WarMonitorTestCase):
     def test_is_war_over_msg_sent(self):
         self.monitor.warinfo = self.warinfo
         self.assertTrue(self.monitor.is_msg_sent('war_over_msg'))
-
 
 
 if __name__ == '__main__':

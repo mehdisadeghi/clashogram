@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='Clashogram',
-      version='0.1.24',
+      version='0.2.0',
       description='Clash of Clans war moniting for telegram channels.',
       long_description=readme(),
       author='Mehdi Sadeghi',

@@ -11,8 +11,11 @@ deploy:
   user: mehdix
   password:
     secure: q5ggy3pssEJcJznAMkOSwzCqfQxp8cBev1UfRUUW+UB7j54oa8gCgPLD9wrLVS15GwUhL1HMVPomFPYw7wrvPa1pujPFKMv/2TdPLVeVo3MQD7qHYiKBHCtD98UlrkHo2UwqQCcAeNurp2d567p2kOrS+vKpiMVAPSeMMX3SHV+2Gt3aRA0hNEIUW9AwHytbYMBtCRXWfEDdKMLVD5gUTrtJvEfTlGjAEFP9eLQPSDCwVOy8oy794ESLuB2PP3nEYzsa6EjjKN/HlXpUzmiCgAeSAXQ/v2CeSI5atW5ys6KElM2x4332Y2263NK9XERWdQIM/7AYECYjs1G3i2DORvLGRqZHlgwQs8NGlkVz4uL85kXBOiNXagWQO+U3Vwnvtq+jfTfZAIkMsUxyoVSjTnyvlxsN7avw7O0v8d24K90HAI8OtWGpywkuxXDNAwwLaG16P7wIfQD/fDmdCreAQ659mq3DQdf4ifM7xPRsMG8lGOBaSNjoxfWYGC+UAV84V36L7FjqQtlQDkK8je/g2RqZg4ZUKNlQrtn20q8f0EnODXKBXZGGuISM+rPnHMJTlYlYbk1y3j/Gvam3ox6ixqDlMAP+Vs4Nqk2x46kXdc6sARI9HLiK3j8jJ/J8xmnw1TEuRlJxLntEFa3RKQOn6fA9Uy18Y5myzjz4ejTihVw=
+  distributions: sdist bdist_wheel
   on:
     tags: true
+    python: 3.6
+    branch: master
 addons:
   apt:
     packages:

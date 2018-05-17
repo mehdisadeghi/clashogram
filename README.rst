@@ -84,7 +84,7 @@ Or do it in one step:
     LANGUAGE=fa clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
 
 Setting Language on Windows
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Make sure to run ``set LANGUAGE=<your_lang_code_here>`` on windows before running the program.
 
 Run as a service
@@ -189,10 +189,8 @@ Russian Translations
 You can read this document in Russian thanks to Timur from Illuminati clan. Thanks Timur!
 `this document in Russian <README_RU.rst>`__
 
-.. raw:: html
 
-    <div dir="rtl">
-    <h3>راهنمای فارسی</h3>
-    برای مطالعه راهنمای فارسی به <a href="http://mehdix.ir/clashogram.html">این آدرس</a> سر بزنید.
-    </div>
+راهنمای فارسی
+-------------
+برای مطالعه راهنمای فارسی به `این آدرس <http://mehdix.ir/clashogram.html>`__ سر بزنید.
 

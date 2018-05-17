@@ -1,19 +1,15 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [packages]
-
 requests = "*"
 click = "*"
 jdatetime = "*"
 python-dateutil = "*"
 pytz = "*"
 
-
 [dev-packages]
-
 pytest = "*"
+restview = "*"

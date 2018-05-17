@@ -2,9 +2,9 @@ from setuptools import setup
 
 
 setup(name='Clashogram',
-      version='0.2.3',
+      version='0.2.4',
       description='Clash of Clans war moniting for telegram channels.',
-      long_description=open('README.rst').read(),
+      long_description=open('README.rst', encoding='utf-8').read(),
       author='Mehdi Sadeghi',
       author_email='mehdi@mehdix.org',
       url='https://github.com/mehdisadeghi/clashogram',

@@ -1,16 +1,10 @@
 from setuptools import setup
 
 
-def readme():
-    with open('README.rst', encoding='utf-8') as f:
-        return f.read()
-
-
 setup(name='Clashogram',
-      version='0.2.1',
+      version='0.2.2',
       description='Clash of Clans war moniting for telegram channels.',
-      long_description=readme(),
-      long_description_content_type='text/x-rst',
+      long_description=open('README.rst', encoding='utf-8').read(),
       author='Mehdi Sadeghi',
       author_email='mehdi@mehdix.org',
       url='https://github.com/mehdisadeghi/clashogram',

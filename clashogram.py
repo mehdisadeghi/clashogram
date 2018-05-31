@@ -43,12 +43,15 @@ POLL_INTERVAL = 60
                    'Reads TELEGRAM_CHANNEL env var.',
               envvar='TELEGRAM_CHANNEL',
               prompt=True)
-def main(coc_token, clan_tag, bot_token, channel_name):
+@click.option('--forever',
+              is_flag=True,
+              help='Try to connect to the CoC server, no matter what.')
+def main(coc_token, clan_tag, bot_token, channel_name, forever):
     """Publish war updates to a telegram channel."""
-    monitor_currentwar(coc_token, clan_tag, bot_token, channel_name)
+    monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever)
 
 
-def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
+def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever):
     """Send war news to telegram channel."""
     with shelve.open('warlog.db', writeback=True) as db:
         coc_api = CoCAPI(coc_token)
@@ -66,8 +69,16 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name):
                 db.close()
                 raise
             except Exception as err:
+                if '500' in str(err) and forever:
+                    print('CoC internal server error, retrying.')
+                    time.sleep(POLL_INTERVAL)
+                    continue
+                if '502' in str(err) and forever:
+                    print('CoC bad gateway, retrying.')
+                    time.sleep(POLL_INTERVAL)
+                    continue
                 if '503' in str(err):
-                    print('COC maintenance error, ignoring.')
+                    print('CoC maintenance error, retrying.')
                     time.sleep(POLL_INTERVAL)
                     continue
                 monitor.send(
@@ -132,7 +143,8 @@ class CoCAPI(object):
 
     def call_api(self, endpoint):
         s = requests.Session()
-        s.mount('https://api.clashofclans.com', HTTPAdapter(max_retries=5))
+        s.mount('https://api.clashofclans.com',
+                HTTPAdapter(max_retries=5))
         res = s.get(endpoint,
                     headers={'Authorization': 'Bearer %s' % self.coc_token})
         if res.status_code == requests.codes.ok:

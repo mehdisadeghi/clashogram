@@ -66,7 +66,7 @@ Now you can run the following command:
 ::
 
     pip install clashogram
-    clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
+    clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME> --forever
 
 In order to have messages in a different locale do the following and
 then run the program:

@@ -57,7 +57,7 @@ clashogram |Build Status| |Build status| |Pypi status|
 ::
 
     pip install clashogram
-    clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
+    clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME> --forever
 
 В случае, если вам требуется изменить язык сообщений, используйте команды:
 

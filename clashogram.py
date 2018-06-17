@@ -70,15 +70,24 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever):
             except Exception as err:
                 if '500' in str(err) and forever:
                     print('CoC internal server error, retrying.')
-                    time.sleep(POLL_INTERVAL)
+                    notifier.send(
+                        'CoC internal server error, retrying in {} seconds.'
+                        .format(POLL_INTERVAL * 10))
+                    time.sleep(POLL_INTERVAL * 10)
                     continue
                 if '502' in str(err) and forever:
                     print('CoC bad gateway, retrying.')
-                    time.sleep(POLL_INTERVAL)
+                    notifier.send(
+                        'CoC bad gateway, retrying in {} seconds.'
+                        .format(POLL_INTERVAL * 10))
+                    time.sleep(POLL_INTERVAL * 10)
                     continue
                 if '503' in str(err):
                     print('CoC maintenance error, retrying.')
-                    time.sleep(POLL_INTERVAL)
+                    notifier.send(
+                        'CoC maintenance error, retrying in {} seconds.'
+                        .format(POLL_INTERVAL * 10))
+                    time.sleep(POLL_INTERVAL * 10)
                     continue
                 monitor.send(
                     _("☠️ 😵 App is broken boss! Come over and fix me please!"))

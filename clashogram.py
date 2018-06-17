@@ -14,7 +14,6 @@ import jdatetime
 import pytz
 import requests
 from dateutil.parser import parse as dateutil_parse
-from requests.adapters import HTTPAdapter
 
 gettext.bindtextdomain('messages',
                        localedir=os.path.join(os.curdir, 'locales'))
@@ -126,6 +125,7 @@ class TelegramNotifier(object):
                            text=requests.utils.quote(msg))
         requests.post(endpoint)
 
+
 ########################################################################
 # CoC API Calls
 ########################################################################
@@ -143,8 +143,6 @@ class CoCAPI(object):
 
     def call_api(self, endpoint):
         s = requests.Session()
-        s.mount('https://api.clashofclans.com',
-                HTTPAdapter(max_retries=5))
         res = s.get(endpoint,
                     headers={'Authorization': 'Bearer %s' % self.coc_token})
         if res.status_code == requests.codes.ok:

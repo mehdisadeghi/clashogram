@@ -45,12 +45,15 @@ POLL_INTERVAL = 60
 @click.option('--forever',
               is_flag=True,
               help='Try to connect to the CoC server, no matter what.')
-def main(coc_token, clan_tag, bot_token, channel_name, forever):
+@click.option('--mute-attacks',
+              is_flag=True,
+              help='Do not send attack updates.')
+def main(coc_token, clan_tag, bot_token, channel_name, forever, mute_attacks):
     """Publish war updates to a telegram channel."""
-    monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever)
+    monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever, mute_attacks)
 
 
-def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever):
+def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever, mute_attacks):
     """Send war news to telegram channel."""
     with shelve.open('warlog.db', writeback=True) as db:
         coc_api = CoCAPI(coc_token)
@@ -60,7 +63,7 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever):
             try:
                 warinfo = coc_api.get_currentwar(clan_tag)
                 save_latest_data(warinfo.data, monitor)
-                monitor.update(warinfo)
+                monitor.update(warinfo, mute_attacks=mute_attacks)
                 db.sync()
                 time.sleep(POLL_INTERVAL)
             except (KeyboardInterrupt, SystemExit):
@@ -631,7 +634,7 @@ class WarMonitor(object):
         self.msg_factory = None
         self.warstats = None
 
-    def update(self, warinfo):
+    def update(self, warinfo, mute_attacks=False):
         if warinfo.is_not_in_war():
             if self.warinfo is not None:
                 self.send_war_over_msg()
@@ -643,9 +646,11 @@ class WarMonitor(object):
             self.send_preparation_msg()
         elif warinfo.is_in_war():
             self.send_war_msg()
-            self.send_attack_msgs()
+            if not mute_attacks:
+                self.send_attack_msgs()
         elif warinfo.is_war_over():
-            self.send_attack_msgs()
+            if not mute_attacks:
+                self.send_attack_msgs()
             self.send_war_over_msg()
             self.reset()
         else:

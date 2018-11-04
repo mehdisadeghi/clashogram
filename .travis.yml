@@ -1,10 +1,10 @@
 language: python
 python:
-- 3.5
 - 3.6
 install:
-- pip install -r requirements.txt
-- python setup.py install
+- pip install flit
+- flit install
+- flit build
 script: pytest
 deploy:
   provider: pypi
@@ -16,7 +16,3 @@ deploy:
     tags: true
     python: 3.6
     branch: master
-addons:
-  apt:
-    packages:
-    - language-pack-fa

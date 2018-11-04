@@ -6,7 +6,7 @@ import unittest
 import platform
 from unittest.mock import MagicMock
 
-from clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, MessageFactory,\
+from clashogram._clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, MessageFactory,\
     WarMonitor, TelegramNotifier
 
 

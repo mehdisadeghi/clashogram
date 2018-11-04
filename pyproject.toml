@@ -1,0 +1,32 @@
+[build-system]
+requires = ['flit']
+build-backend = 'flit.buildapi'
+
+[tool.flit.metadata]
+module = 'clashogram'
+author = 'Mehdi Sadeghi'
+author-email = 'mehdi@mehdix.rog'
+home-page = 'https://github.com/mehdisadeghi/clashogram'
+requires-python = '>=3.5'
+classifiers = [
+    'Environment :: Console',
+    'Natural Language :: Persian',
+    'Natural Language :: English',
+    'Development Status :: 4 - Beta',
+    'Programming Language :: Python :: 3',
+    'Intended Audience :: End Users/Desktop',
+    'License :: OSI Approved :: MIT License']
+description-file = 'README.rst'
+keywords = 'coc telegram clashofclans'
+requires = ['requests',
+            'jdatetime',
+            'pytz',
+            'python-dateutil',
+            'click']
+
+[tool.flit.metadata.requires-extra]
+test = ['pytest']
+i18n = ['babel']
+
+[tool.flit.scripts]
+clashogram = 'clashogram:main'

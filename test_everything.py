@@ -1,13 +1,12 @@
 '''Clashogram tests.'''
 import os
 import json
-import locale
+import gettext
 import unittest
-import platform
 from unittest.mock import MagicMock
 
-from clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, MessageFactory,\
-    WarMonitor, TelegramNotifier
+from clashogram._clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, \
+    MessageFactory, WarMonitor, TelegramNotifier
 
 
 class ClanInfoTestCase(unittest.TestCase):
@@ -200,17 +199,17 @@ class MessageFactoryTestCase(unittest.TestCase):
         self.msg_factory = MessageFactory(None, None)
         self.setlocale_en()
 
+    def _setlocale(self, language):
+        os.environ['LANGUAGE'] = language
+        gettext.bindtextdomain('messages',
+                               localedir=os.path.join(os.curdir, 'locales'))
+        gettext.textdomain('messages')
+
     def setlocale_en(self):
-        if platform.system() == 'Windows':
-            locale.setlocale(locale.LC_ALL, 'English')
-        else:
-            locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+        self._setlocale('en_US.UTF-8')
 
     def setlocale_fa(self):
-        if platform.system() == 'Windows':
-            locale.setlocale(locale.LC_ALL, 'Persian')
-        else:
-            locale.setlocale(locale.LC_ALL, "fa_IR.UTF-8")
+        self._setlocale('fa_IR.UTF-8')
 
     def test_format_time_default(self):
         os.environ['LANGUAGE'] = 'en'

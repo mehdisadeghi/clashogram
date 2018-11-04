@@ -6,24 +6,22 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Clashogram 0.1.22\n"
+"Project-Id-Version: Clashogram 0.6.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-01-27 16:15+0100\n"
+"POT-Creation-Date: 2018-11-04 11:45+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.5.3\n"
+"Generated-By: Babel 2.6.0\n"
 
-#: build/lib/clashogram.py:57 build/scripts-3.6/clashogram.py:57
-#: clashogram.py:58
+#: clashogram/_clashogram.py:95
 msgid "☠️ 😵 App is broken boss! Come over and fix me please!"
 msgstr ""
 
-#: build/lib/clashogram.py:366 build/scripts-3.6/clashogram.py:366
-#: clashogram.py:367
+#: clashogram/_clashogram.py:439
 msgid ""
 "{top_imoji} {war_size} fold war is ahead!\n"
 "<pre>▫️ Clan {ourclan: <{cwidth}} L {ourlevel: <2} +{clanwinstreak} "
@@ -34,27 +32,23 @@ msgid ""
 "Have fun! {final_emoji}\n"
 msgstr ""
 
-#: build/lib/clashogram.py:398 build/scripts-3.6/clashogram.py:398
-#: clashogram.py:399
+#: clashogram/_clashogram.py:472
 msgid " Players"
 msgstr ""
 
-#: build/lib/clashogram.py:399 build/scripts-3.6/clashogram.py:399
-#: clashogram.py:400
+#: clashogram/_clashogram.py:473
 msgid "Position, TH, name"
 msgstr ""
 
-#: build/lib/clashogram.py:410 build/scripts-3.6/clashogram.py:410
-#: clashogram.py:411
+#: clashogram/_clashogram.py:487
 msgid "War has begun!"
 msgstr ""
 
-#: clashogram.py:414
+#: clashogram/_clashogram.py:490
 msgid "⚪️ We destroyed them 100% boss!"
 msgstr ""
 
-#: build/lib/clashogram.py:422 build/scripts-3.6/clashogram.py:422
-#: clashogram.py:423
+#: clashogram/_clashogram.py:501
 msgid ""
 "<pre>{top_imoji} [{order}] {ourclan} vs {opponentclan}\n"
 "Attacker: TH {attacker_thlevel: <2} MP {attacker_map_position} "
@@ -66,8 +60,7 @@ msgid ""
 "</pre>"
 msgstr ""
 
-#: build/lib/clashogram.py:452 build/scripts-3.6/clashogram.py:452
-#: clashogram.py:453
+#: clashogram/_clashogram.py:532
 msgid ""
 "▪ {clan_attack_count: >{atkwidth}}/{total} ⭐ {clan_stars: <{swidth}} ⚡ "
 "{clan_destruction:.2f}%\n"
@@ -75,12 +68,11 @@ msgid ""
 "<{swidth}} ⚡ {opponent_destruction:.2f}%"
 msgstr ""
 
-#: clashogram.py:473
+#: clashogram/_clashogram.py:553
 msgid "⚫️ They destroyed us 100% boss!"
 msgstr ""
 
-#: build/lib/clashogram.py:475 build/scripts-3.6/clashogram.py:475
-#: clashogram.py:476
+#: clashogram/_clashogram.py:556
 msgid ""
 "<pre>{win_or_lose_title}\n"
 "Clan {ourclan: <{cwidth}} L {ourlevel: <2}\n"
@@ -89,26 +81,15 @@ msgid ""
 "</pre>"
 msgstr ""
 
-#: build/lib/clashogram.py:494 build/scripts-3.6/clashogram.py:494
-#: clashogram.py:495
+#: clashogram/_clashogram.py:577
 msgid "We won!"
 msgstr ""
 
-#: build/lib/clashogram.py:496 build/scripts-3.6/clashogram.py:496
-#: clashogram.py:497
+#: clashogram/_clashogram.py:579
 msgid "It's a tie!"
 msgstr ""
 
-#: build/lib/clashogram.py:498 build/scripts-3.6/clashogram.py:498
-#: clashogram.py:499
+#: clashogram/_clashogram.py:581
 msgid "We lost!"
-msgstr ""
-
-#: build/lib/clashogram.py:413 build/scripts-3.6/clashogram.py:413
-msgid "⚪️We destroyed them 100% boss!"
-msgstr ""
-
-#: build/lib/clashogram.py:472 build/scripts-3.6/clashogram.py:472
-msgid "⚫️They destroyed us 100% boss!"
 msgstr ""
 

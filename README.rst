@@ -43,8 +43,8 @@ From Github:
 
     git clone https://github.com/mehdisadeghi/clashogram.git
     cd clashogram
-    install -r requirements.txt
-    python setup.py install
+    install -r requirements.txt flit
+    flit install --symlink
 
 Usage
 -----
@@ -148,22 +148,23 @@ In order toadd or update a new language catalog do the following:
 
 ::
 
-    python setup.py init_catalog -l <LANGUAGE_CODE>
-    python setup.py update_catalog -l <LANGUAGE_CODE>
+    pybable init -i clashogram/locales/messages.pot -d clashogram/locales -l <LANGUAGE_CODE>
+    pybable update -i clashogram/locales/messages.pot -d clashogram/locales -l <LANGUAGE_CODE>
 
 For example:
 
 ::
 
-    python setup.py init_catalog -l fa
-    python setup.py update_catalog -l fa
+    pybable init -i clashogram/locales/messages.pot -d clashogram/locales -l fa
+    pybable update -i clashogram/locales/messages.pot -d clashogram/locales -l fa
 
 In case of adding new messages extract them and compile again:
 
 ::
 
-    python setup.py extract_messages
-    python setup.py compile_catalog
+    pybabel extract clashogram/ -o clashogram/locales/messages.pot --project Clashogram --version 0.6.0
+    pybabel update -i clashogram/locales/messages.pot -d clashogram/locales
+    pybabel compile -d clashogram/locales
 
 For more information on internationalization see
 `Babel <http://babel.pocoo.org/en/latest/setup.html>`__.

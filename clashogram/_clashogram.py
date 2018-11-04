@@ -15,7 +15,9 @@ import requests
 from dateutil.parser import parse as dateutil_parse
 
 gettext.bindtextdomain('messages',
-                       localedir=os.path.join(os.curdir, 'locales'))
+                       localedir=os.path.join(
+                           os.path.dirname(os.path.realpath(__file__)),
+                           'locales'))
 gettext.textdomain('messages')
 _ = gettext.gettext
 

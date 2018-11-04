@@ -2,17 +2,15 @@ build: false
 
 environment:
   matrix:
-    - PYTHON: "C:\\Python35"
     - PYTHON: "C:\\Python36"
-    - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
 
 init:
   - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
 
 install:
-  - "%PYTHON%\\python.exe setup.py install"
-  - "%PYTHON%/Scripts/pip.exe install pytest"
+  - "%PYTHON%/Scripts/pip.exe install flit pytest"
+  - "%PYTHON%\\python.exe -m flit install"
 
 test_script:
   - "%PYTHON%/Scripts/pytest"

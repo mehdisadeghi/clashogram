@@ -5,7 +5,7 @@ build-backend = 'flit.buildapi'
 [tool.flit.metadata]
 module = 'clashogram'
 author = 'Mehdi Sadeghi'
-author-email = 'mehdi@mehdix.rog'
+author-email = 'mehdi@mehdix.org'
 home-page = 'https://github.com/mehdisadeghi/clashogram'
 requires-python = '>=3.5'
 classifiers = [

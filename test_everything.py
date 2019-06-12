@@ -14,16 +14,20 @@ class ClanInfoTestCase(unittest.TestCase):
         self.claninfo = ClanInfo({'location': {'name': 'Iran',
                                                'isCountry': 'true',
                                                'countryCode': 'IR'},
-                                  'warWinStreak': 0})
+                                  'warWinStreak': 0,
+                                  'isWarLogPublic': True})
 
     def test_location(self):
-        assert self.claninfo.get_location() == 'Iran'
+        assert self.claninfo.location == 'Iran'
 
     def test_country_imoji(self):
-        assert self.claninfo.get_country_flag_imoji() == '🇮🇷'
+        assert self.claninfo.country_flag_imoji == '🇮🇷'
 
     def test_winstreak(self):
-        assert self.claninfo.get_winstreak() == 0
+        assert self.claninfo.winstreak == 0
+
+    def test_is_warlog_public(self):
+        assert self.claninfo.is_warlog_public == True
 
 
 class WarInfoTestCase(unittest.TestCase):

@@ -72,29 +72,35 @@ def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever, mu
                 db.close()
                 raise
             except Exception as err:
-                if '500' in str(err) and forever:
+                if '403' in str(err):
+                    # Check whether warlog is public
+                    if not coc_api.get_claninfo(clan_tag).is_warlog_public:
+                        print('Warlog must be public. Exiting.')
+                        notifier.send(_("Warlog must be public. Now I'm dead boss. ☠️"))
+                elif '500' in str(err) and forever:
                     print('CoC internal server error, retrying.')
                     notifier.send(
                         'CoC internal server error, retrying in {} seconds.'
                         .format(POLL_INTERVAL * 10))
                     time.sleep(POLL_INTERVAL * 10)
                     continue
-                if '502' in str(err) and forever:
+                elif '502' in str(err) and forever:
                     print('CoC bad gateway, retrying.')
                     notifier.send(
                         'CoC bad gateway, retrying in {} seconds.'
                         .format(POLL_INTERVAL * 10))
                     time.sleep(POLL_INTERVAL * 10)
                     continue
-                if '503' in str(err):
+                elif '503' in str(err):
                     print('CoC maintenance error, retrying.')
                     notifier.send(
                         'CoC maintenance error, retrying in {} seconds.'
                         .format(POLL_INTERVAL * 10))
                     time.sleep(POLL_INTERVAL * 10)
                     continue
-                monitor.send(
-                    _("☠️ 😵 App is broken boss! Come over and fix me please!"))
+                else:
+                    notifier.send(
+                        _("☠️ 😵 App is broken boss! Come over and fix me please!"))
                 db.close()
                 raise
 

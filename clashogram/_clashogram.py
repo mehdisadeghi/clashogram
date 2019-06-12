@@ -57,7 +57,7 @@ def main(coc_token, clan_tag, bot_token, channel_name, forever, mute_attacks):
 def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever, mute_attacks):
     """Send war news to telegram channel."""
     with shelve.open('warlog.db', writeback=True) as db:
-        coc_api = CoCAPI(coc_token, clan_tag)
+        coc_api = CoCAPI(coc_token)
         notifier = TelegramNotifier(bot_token, channel_name)
         monitor = WarMonitor(db, coc_api, notifier)
         while True:
@@ -145,25 +145,14 @@ class TelegramNotifier(object):
 
 
 class CoCAPI(object):
-    def __init__(self, coc_token, clan_tag):
+    def __init__(self, coc_token):
         self.coc_token = coc_token
-        self.clan_tag = clan_tag
-
-    @property
-    def currentwar_endpoint(self):
-        return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'\
-            .format(clan_tag=requests.utils.quote(self.clan_tag))
-
-    @property
-    def claninfo_endpoint(self):
-        return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
-                clan_tag=requests.utils.quote(self.clan_tag))
 
     def get_currentwar(self, clan_tag):
-        return WarInfo(self.call_api(self.currentwar_endpoint))
+        return WarInfo(self.call_api(self.get_currentwar_endpoint(clan_tag)))
 
     def get_claninfo(self, clan_tag):
-        return ClanInfo(self.call_api(self.claninfo_endpoint))
+        return ClanInfo(self.call_api(self.get_claninfo_endpoint(clan_tag)))
 
     def call_api(self, endpoint):
         s = requests.Session()
@@ -174,6 +163,13 @@ class CoCAPI(object):
         else:
             raise Exception('Error calling CoC API: %s' % res)
 
+    def get_currentwar_endpoint(self, clan_tag):
+        return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'\
+            .format(clan_tag=requests.utils.quote('#%s' % clan_tag))
+
+    def get_claninfo_endpoint(self, clan_tag):
+        return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
+                clan_tag=requests.utils.quote(clan_tag))
 
 ########################################################################
 # Models according to CoC API

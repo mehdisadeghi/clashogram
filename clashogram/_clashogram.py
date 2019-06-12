@@ -171,7 +171,7 @@ class CoCAPI(object):
 
     def get_currentwar_endpoint(self, clan_tag):
         return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'\
-            .format(clan_tag=requests.utils.quote('#%s' % clan_tag))
+            .format(clan_tag=requests.utils.quote(clan_tag))
 
     def get_claninfo_endpoint(self, clan_tag):
         return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
@@ -186,10 +186,12 @@ class ClanInfo(object):
     def __init__(self, clandata):
         self.data = clandata
 
-    def get_location(self):
+    @property
+    def location(self):
         return self.data['location']['name']
 
-    def get_country_flag_imoji(self):
+    @property
+    def country_flag_imoji(self):
         if self.data['location']['isCountry']:
             return self._get_country_flag_imoji(
                     self.data['location']['countryCode'])
@@ -203,8 +205,13 @@ class ClanInfo(object):
         return "{}{}".format(chr(127397 + ord(country_code[0])),
                              chr(127397 + ord(country_code[1])))
 
-    def get_winstreak(self):
+    @property
+    def winstreak(self):
         return self.data['warWinStreak']
+
+    @property
+    def is_warlog_public(self):
+        return self.data['isWarLogPublic']
 
 
 class WarInfo(object):
@@ -467,12 +474,12 @@ Have fun! {final_emoji}
                 start=self.format_time(self.warinfo.start_time),
                 war_size=self.warinfo.team_size,
                 final_emoji='\U0001F6E1',
-                clanloc=clan_extra_info.get_location(),
-                clanflag=clan_extra_info.get_country_flag_imoji(),
-                oploc=op_extra_info.get_location(),
-                opflag=op_extra_info.get_country_flag_imoji(),
-                clanwinstreak=clan_extra_info.get_winstreak(),
-                opwinstreak=op_extra_info.get_winstreak(),
+                clanloc=clan_extra_info.location,
+                clanflag=clan_extra_info.country_flag_imoji,
+                oploc=op_extra_info.location,
+                opflag=op_extra_info.country_flag_imoji,
+                clanwinstreak=clan_extra_info.winstreak,
+                opwinstreak=op_extra_info.winstreak,
                 cwidth=max(len(ourclan), len(opclan)))
         return msg
 

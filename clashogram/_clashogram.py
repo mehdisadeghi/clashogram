@@ -43,13 +43,10 @@ POLL_INTERVAL = 60
                    'Reads TELEGRAM_CHANNEL env var.',
               envvar='TELEGRAM_CHANNEL',
               prompt=True)
-@click.option('--forever',
-              is_flag=True,
-              help='Try to connect to the CoC server, no matter what.')
 @click.option('--mute-attacks',
               is_flag=True,
               help='Do not send attack updates.')
-def main(coc_token, clan_tag, bot_token, channel_name, forever, mute_attacks):
+def main(coc_token, clan_tag, bot_token, channel_name, mute_attacks):
     """Publish war updates to a telegram channel."""
     coc_api = CoCAPI(coc_token)
     notifier = TelegramNotifier(bot_token, channel_name)
@@ -732,14 +729,14 @@ class WarMonitor(object):
                     if not self.coc_api.get_claninfo(self.clan_tag).is_warlog_public:
                         print('Warlog must be public. Exiting.')
                         self.notifier.send(_("Warlog must be public boss! ☠️"))
-                elif '500' in str(err) and forever:
+                elif '500' in str(err):
                     print('CoC internal server error, retrying.')
                     self.notifier.send(
                         'CoC internal server error, retrying in {} seconds.'
                         .format(POLL_INTERVAL * 10))
                     time.sleep(POLL_INTERVAL * 10)
                     continue
-                elif '502' in str(err) and forever:
+                elif '502' in str(err):
                     print('CoC bad gateway, retrying.')
                     self.notifier.send(
                         'CoC bad gateway, retrying in {} seconds.'

@@ -56,9 +56,6 @@ def main(coc_token, clan_tag, bot_token, channel_name, mute_attacks):
         monitor.mute_attacks = mute_attacks
         try:
             monitor.start()
-        #except (KeyboardInterrupt, SystemExit):
-        #    db.sync()
-        #    raise
         finally:
             db.sync()
             db.close()
@@ -743,12 +740,7 @@ class WarMonitor(object):
         while True:
             try:
                 self.update()
-                #self.db.sync()
                 time.sleep(POLL_INTERVAL)
-            #except (KeyboardInterrupt, SystemExit):
-                #self.db.sync()
-                #self.db.close()
-                #raise
             except Exception as err:
                 if '403' in str(err):
                     # Check whether warlog is public
@@ -779,7 +771,6 @@ class WarMonitor(object):
                 else:
                     self.notifier.send(
                         _("☠️ 😵 App is broken boss! Come over and fix me please!"))
-                #self.db.close()
                 raise
 
 

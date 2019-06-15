@@ -51,9 +51,17 @@ def main(coc_token, clan_tag, bot_token, channel_name, mute_attacks):
     coc_api = CoCAPI(coc_token)
     notifier = TelegramNotifier(bot_token, channel_name)
     with shelve.open('warlog.db', writeback=True) as db:
-        monitor = WarMonitor(db, clan_tag, coc_api, notifier)
+        dbwrapper = SimpleKVDB(db)
+        monitor = WarMonitor(dbwrapper, clan_tag, coc_api, notifier)
         monitor.mute_attacks = mute_attacks
-        monitor.start()
+        try:
+            monitor.start()
+        #except (KeyboardInterrupt, SystemExit):
+        #    db.sync()
+        #    raise
+        finally:
+            db.sync()
+            db.close()
 
 
 def save_wardata(wardata):
@@ -100,7 +108,6 @@ class TelegramNotifier(object):
 # CoC API Calls
 ########################################################################
 
-
 class CoCAPI(object):
     def __init__(self, coc_token):
         self.coc_token = coc_token
@@ -128,10 +135,10 @@ class CoCAPI(object):
         return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
                 clan_tag=requests.utils.quote(clan_tag))
 
+
 ########################################################################
 # Models according to CoC API
 ########################################################################
-
 
 class ClanInfo(object):
     def __init__(self, clandata):
@@ -299,10 +306,10 @@ class WarInfo(object):
                                   self.data['opponent']['tag'],
                                   self.data['preparationStartTime'])
 
+
 ########################################################################
 # War statistics
 ########################################################################
-
 
 class WarStats(object):
     def __init__(self, warinfo):
@@ -390,10 +397,10 @@ class WarStats(object):
                 best_score = attack['stars']
         return best_score
 
+
 ########################################################################
 # Message formatters
 ########################################################################
-
 
 class MessageFactory(object):
     def __init__(self, coc_api, warinfo):
@@ -580,6 +587,25 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
 
 
 ########################################################################
+# DB helper classes (mainly to faciliate serveress) 
+########################################################################
+
+class SimpleKVDB(object):
+    def __init__(self, db):
+        self._db = db
+
+    def __contains__(self, key):
+        return key in self._db
+
+    def __getitem__(self, key):
+        return self._db[key]
+
+    def __setitem__(self, key, value):
+        self._db[key] = value
+        self._db.sync()
+
+
+########################################################################
 # Main war monitor class
 ########################################################################
 
@@ -717,12 +743,12 @@ class WarMonitor(object):
         while True:
             try:
                 self.update()
-                self.db.sync()
+                #self.db.sync()
                 time.sleep(POLL_INTERVAL)
-            except (KeyboardInterrupt, SystemExit):
-                self.db.sync()
-                self.db.close()
-                raise
+            #except (KeyboardInterrupt, SystemExit):
+                #self.db.sync()
+                #self.db.close()
+                #raise
             except Exception as err:
                 if '403' in str(err):
                     # Check whether warlog is public
@@ -753,7 +779,7 @@ class WarMonitor(object):
                 else:
                     self.notifier.send(
                         _("☠️ 😵 App is broken boss! Come over and fix me please!"))
-                self.db.close()
+                #self.db.close()
                 raise
 
 

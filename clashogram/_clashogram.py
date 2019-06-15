@@ -51,58 +51,12 @@ POLL_INTERVAL = 60
               help='Do not send attack updates.')
 def main(coc_token, clan_tag, bot_token, channel_name, forever, mute_attacks):
     """Publish war updates to a telegram channel."""
-    monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever, mute_attacks)
-
-
-def monitor_currentwar(coc_token, clan_tag, bot_token, channel_name, forever, mute_attacks):
-    """Send war news to telegram channel."""
+    coc_api = CoCAPI(coc_token)
+    notifier = TelegramNotifier(bot_token, channel_name)
     with shelve.open('warlog.db', writeback=True) as db:
-        coc_api = CoCAPI(coc_token)
-        notifier = TelegramNotifier(bot_token, channel_name)
-        monitor = WarMonitor(db, coc_api, notifier)
-        while True:
-            try:
-                warinfo = coc_api.get_currentwar(clan_tag)
-                save_latest_data(warinfo.data, monitor)
-                monitor.update(warinfo, mute_attacks=mute_attacks)
-                db.sync()
-                time.sleep(POLL_INTERVAL)
-            except (KeyboardInterrupt, SystemExit):
-                db.sync()
-                db.close()
-                raise
-            except Exception as err:
-                if '403' in str(err):
-                    # Check whether warlog is public
-                    if not coc_api.get_claninfo(clan_tag).is_warlog_public:
-                        print('Warlog must be public. Exiting.')
-                        notifier.send(_("Warlog must be public. Now I'm dead boss. ☠️"))
-                elif '500' in str(err) and forever:
-                    print('CoC internal server error, retrying.')
-                    notifier.send(
-                        'CoC internal server error, retrying in {} seconds.'
-                        .format(POLL_INTERVAL * 10))
-                    time.sleep(POLL_INTERVAL * 10)
-                    continue
-                elif '502' in str(err) and forever:
-                    print('CoC bad gateway, retrying.')
-                    notifier.send(
-                        'CoC bad gateway, retrying in {} seconds.'
-                        .format(POLL_INTERVAL * 10))
-                    time.sleep(POLL_INTERVAL * 10)
-                    continue
-                elif '503' in str(err):
-                    print('CoC maintenance error, retrying.')
-                    notifier.send(
-                        'CoC maintenance error, retrying in {} seconds.'
-                        .format(POLL_INTERVAL * 10))
-                    time.sleep(POLL_INTERVAL * 10)
-                    continue
-                else:
-                    notifier.send(
-                        _("☠️ 😵 App is broken boss! Come over and fix me please!"))
-                db.close()
-                raise
+        monitor = WarMonitor(db, clan_tag, coc_api, notifier)
+        monitor.mute_attacks = mute_attacks
+        monitor.start()
 
 
 def save_wardata(wardata):
@@ -125,10 +79,10 @@ def save_latest_data(wardata, monitor):
                        encoding='utf-8'),
                   ensure_ascii=False)
 
+
 ########################################################################
 # Notifiers
 ########################################################################
-
 
 class TelegramNotifier(object):
     def __init__(self, bot_token, channel_name):
@@ -155,12 +109,12 @@ class CoCAPI(object):
         self.coc_token = coc_token
 
     def get_currentwar(self, clan_tag):
-        return WarInfo(self.call_api(self.get_currentwar_endpoint(clan_tag)))
+        return WarInfo(self._call_api(self._get_currentwar_endpoint(clan_tag)))
 
     def get_claninfo(self, clan_tag):
-        return ClanInfo(self.call_api(self.get_claninfo_endpoint(clan_tag)))
+        return ClanInfo(self._call_api(self._get_claninfo_endpoint(clan_tag)))
 
-    def call_api(self, endpoint):
+    def _call_api(self, endpoint):
         s = requests.Session()
         res = s.get(endpoint,
                     headers={'Authorization': 'Bearer %s' % self.coc_token})
@@ -169,11 +123,11 @@ class CoCAPI(object):
         else:
             raise Exception('Error calling CoC API: %s' % res)
 
-    def get_currentwar_endpoint(self, clan_tag):
+    def _get_currentwar_endpoint(self, clan_tag):
         return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'\
             .format(clan_tag=requests.utils.quote(clan_tag))
 
-    def get_claninfo_endpoint(self, clan_tag):
+    def _get_claninfo_endpoint(self, clan_tag):
         return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
                 clan_tag=requests.utils.quote(clan_tag))
 
@@ -627,21 +581,33 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
     def get_clan_extra_info(self, clan_tag):
         return self.coc_api.get_claninfo(clan_tag)
 
+
 ########################################################################
 # Main war monitor class
 ########################################################################
 
-
 class WarMonitor(object):
-    def __init__(self, db, coc_api, notifier):
+    def __init__(self, db, tag, api, notifier):
         self.db = db
-        self.coc_api = coc_api
+        self.clan_tag = tag
+        self.coc_api = api
         self.notifier = notifier
         self.warinfo = None
         self.msg_factory = None
         self.warstats = None
+        self._mute_attacks = False
 
-    def update(self, warinfo, mute_attacks=False):
+    @property
+    def mute_attacks(self):
+        return self._mute_attacks
+
+    @mute_attacks.setter
+    def mute_attacks(self, value):
+        self._mute_attacks = value
+
+    def update(self):
+        warinfo = self.coc_api.get_currentwar(self.clan_tag)
+        #save_latest_data(warinfo.data, monitor)
         if warinfo.is_not_in_war():
             if self.warinfo is not None:
                 self.send_war_over_msg()
@@ -653,10 +619,10 @@ class WarMonitor(object):
             self.send_preparation_msg()
         elif warinfo.is_in_war():
             self.send_war_msg()
-            if not mute_attacks:
+            if not self.mute_attacks:
                 self.send_attack_msgs()
         elif warinfo.is_war_over():
-            if not mute_attacks:
+            if not self.mute_attacks:
                 self.send_attack_msgs()
             self.send_war_over_msg()
             self.reset()
@@ -748,6 +714,50 @@ class WarMonitor(object):
 
     def send(self, msg):
         self.notifier.send(msg)
+
+    def start(self):
+        """Send war news to telegram channel."""
+        while True:
+            try:
+                self.update()
+                self.db.sync()
+                time.sleep(POLL_INTERVAL)
+            except (KeyboardInterrupt, SystemExit):
+                self.db.sync()
+                self.db.close()
+                raise
+            except Exception as err:
+                if '403' in str(err):
+                    # Check whether warlog is public
+                    if not self.coc_api.get_claninfo(self.clan_tag).is_warlog_public:
+                        print('Warlog must be public. Exiting.')
+                        self.notifier.send(_("Warlog must be public boss! ☠️"))
+                elif '500' in str(err) and forever:
+                    print('CoC internal server error, retrying.')
+                    self.notifier.send(
+                        'CoC internal server error, retrying in {} seconds.'
+                        .format(POLL_INTERVAL * 10))
+                    time.sleep(POLL_INTERVAL * 10)
+                    continue
+                elif '502' in str(err) and forever:
+                    print('CoC bad gateway, retrying.')
+                    self.notifier.send(
+                        'CoC bad gateway, retrying in {} seconds.'
+                        .format(POLL_INTERVAL * 10))
+                    time.sleep(POLL_INTERVAL * 10)
+                    continue
+                elif '503' in str(err):
+                    print('CoC maintenance error, retrying.')
+                    self.notifier.send(
+                        'CoC maintenance error, retrying in {} seconds.'
+                        .format(POLL_INTERVAL * 10))
+                    time.sleep(POLL_INTERVAL * 10)
+                    continue
+                else:
+                    self.notifier.send(
+                        _("☠️ 😵 App is broken boss! Come over and fix me please!"))
+                self.db.close()
+                raise
 
 
 if __name__ == '__main__':

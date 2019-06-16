@@ -248,7 +248,7 @@ class WarMonitorTestCase(unittest.TestCase):
         coc_api.get_claninfo = MagicMock(return_value=our_claninfo)
         notifier = TelegramNotifier(None, None)
         notifier.send = MagicMock()
-        self.monitor = WarMonitor({}, '', coc_api, notifier)
+        self.monitor = WarMonitor({}, coc_api, '', notifier)
         self.monitor.update()
 
         self.clan_attack = {

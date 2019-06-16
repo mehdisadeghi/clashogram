@@ -50,15 +50,24 @@ def main(coc_token, clan_tag, bot_token, channel_name, mute_attacks):
     """Publish war updates to a telegram channel."""
     coc_api = CoCAPI(coc_token)
     notifier = TelegramNotifier(bot_token, channel_name)
+
     with shelve.open('warlog.db', writeback=True) as db:
         dbwrapper = SimpleKVDB(db)
-        monitor = WarMonitor(dbwrapper, clan_tag, coc_api, notifier)
+        monitor = WarMonitor(dbwrapper, coc_api, clan_tag, notifier)
         monitor.mute_attacks = mute_attacks
         try:
             monitor.start()
         finally:
             db.sync()
             db.close()
+
+
+def serverless(db, coc_token, clan_tag, bot_token, channel_name):
+    """Publish war updates to a telegram channel."""
+    coc_api = CoCAPI(coc_token)
+    notifier = TelegramNotifier(bot_token, channel_name)
+    monitor = WarMonitor(db, coc_api, clan_tag, notifier)
+    monitor.update()
 
 
 def save_wardata(wardata):
@@ -607,7 +616,19 @@ class SimpleKVDB(object):
 ########################################################################
 
 class WarMonitor(object):
-    def __init__(self, db, tag, api, notifier):
+    def __init__(self, db, api, tag, notifier):
+        """Scan warlog for war updates.
+
+        This is the top most class that puts everything together.
+        Calling `start` method will block forever. Calling `update`
+        will fetch one update, notify the changes and return.
+
+        Arguments:
+            db -- A persistant dictionary-like object.
+            api -- Api object
+            tag -- Clantag
+            notifier -- Notifier object
+        """
         self.db = db
         self.clan_tag = tag
         self.coc_api = api
@@ -733,7 +754,8 @@ class WarMonitor(object):
             self.mark_msg_as_sent(msg_id)
 
     def send(self, msg):
-        self.notifier.send(msg)
+        print('print msg, pass')
+        #self.notifier.send(msg)
 
     def start(self):
         """Send war news to telegram channel."""

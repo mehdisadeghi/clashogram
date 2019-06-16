@@ -2,6 +2,6 @@
 
 __version__ = '0.5.3'
 
-from ._clashogram import main
+from ._clashogram import main, serverless
 
-__all__ = ['main']
+__all__ = ['main', 'serverless']

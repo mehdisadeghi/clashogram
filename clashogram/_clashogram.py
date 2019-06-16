@@ -720,7 +720,9 @@ class WarMonitor(object):
         return self.db[self.get_war_id()].get(msg_id, False)
 
     def mark_msg_as_sent(self, msg_id):
-        self.db[self.get_war_id()][msg_id] = True
+        tmp = self.db[self.get_war_id()]
+        tmp[msg_id] = True
+        self.db[self.get_war_id()] = tmp
 
     def get_attack_id(self, attack):
         return "attack{}{}".format(attack['attackerTag'][1:],

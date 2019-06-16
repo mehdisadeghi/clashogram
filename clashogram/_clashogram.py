@@ -754,8 +754,7 @@ class WarMonitor(object):
             self.mark_msg_as_sent(msg_id)
 
     def send(self, msg):
-        print('print msg, pass')
-        #self.notifier.send(msg)
+        self.notifier.send(msg)
 
     def start(self):
         """Send war news to telegram channel."""

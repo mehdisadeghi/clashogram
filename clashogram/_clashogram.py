@@ -48,7 +48,7 @@ POLL_INTERVAL = 60
               help='Do not send attack updates.')
 @click.option('--warlog',
               help='Warlog file path.',
-              envvar='WARLOG_FILE',
+              envvar='WARLOG',
               default='warlog.db',
               type=click.Path())
 def main(coc_token, clan_tag, bot_token, channel_name, mute_attacks, warlog):

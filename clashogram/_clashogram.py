@@ -46,12 +46,17 @@ POLL_INTERVAL = 60
 @click.option('--mute-attacks',
               is_flag=True,
               help='Do not send attack updates.')
-def main(coc_token, clan_tag, bot_token, channel_name, mute_attacks):
+@click.option('--warlog',
+              help='Warlog file path.',
+              envvar='WARLOG_FILE',
+              default='warlog.db',
+              type=click.Path())
+def main(coc_token, clan_tag, bot_token, channel_name, mute_attacks, warlog):
     """Publish war updates to a telegram channel."""
     coc_api = CoCAPI(coc_token)
     notifier = TelegramNotifier(bot_token, channel_name)
 
-    with shelve.open('warlog.db', writeback=True) as db:
+    with shelve.open(warlog, writeback=True) as db:
         dbwrapper = SimpleKVDB(db)
         monitor = WarMonitor(dbwrapper, coc_api, clan_tag, notifier)
         monitor.mute_attacks = mute_attacks

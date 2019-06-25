@@ -105,13 +105,15 @@ class TelegramNotifier(object):
         self.bot_token = bot_token
         self.channel_name = channel_name
 
-    def send(self, msg):
+    def send(self, msg, silent=False):
         endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?"\
                    "parse_mode={mode}&chat_id=@{channel_name}&text={text}"\
+                   "&disable_notification={silent}"\
                    .format(bot_token=self.bot_token,
                            mode='HTML',
                            channel_name=self.channel_name,
-                           text=requests.utils.quote(msg))
+                           text=requests.utils.quote(msg),
+                           silent=silent)
         requests.post(endpoint)
 
 
@@ -779,23 +781,31 @@ class WarMonitor(object):
                     print('CoC internal server error, retrying.')
                     self.notifier.send(
                         'CoC internal server error, retrying in {} seconds.'
-                        .format(POLL_INTERVAL * 10))
+                        .format(POLL_INTERVAL * 10), silent=True)
                     time.sleep(POLL_INTERVAL * 10)
                     continue
                 elif '502' in str(err):
                     print('CoC bad gateway, retrying.')
                     self.notifier.send(
                         'CoC bad gateway, retrying in {} seconds.'
-                        .format(POLL_INTERVAL * 10))
+                        .format(POLL_INTERVAL * 10), silent=True)
                     time.sleep(POLL_INTERVAL * 10)
                     continue
                 elif '503' in str(err):
                     print('CoC maintenance error, retrying.')
                     self.notifier.send(
                         'CoC maintenance error, retrying in {} seconds.'
-                        .format(POLL_INTERVAL * 10))
+                        .format(POLL_INTERVAL * 10), silent=True)
                     time.sleep(POLL_INTERVAL * 10)
                     continue
+                elif '504' in str(err):
+                    print('504 Gateway Timeout, retrying.')
+                    self.notifier.send(
+                        '504 Gateway Timeout, retrying in {} seconds.'
+                        .format(POLL_INTERVAL * 10), silent=True)
+                    time.sleep(POLL_INTERVAL * 10)
+                    continue
+
                 else:
                     self.notifier.send(
                         _("☠️ 😵 App is broken boss! Come over and fix me please!"))

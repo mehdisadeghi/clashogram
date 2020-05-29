@@ -88,7 +88,8 @@ Now we can proceed with starting the program. Run the following command to insta
     $ pip install clashogram
     $ clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --chat-id <CHAT_ID> --forever
 
-Remember that channel names begin with ``@`` and chat_ids are numbers (often negative).
+    NOTE: Remember that channel names begin with ``@`` and chat_ids are numbers (often negative).
+
 
 If you don't want attack updates in your channel add ``--mute-attacks`` to the above command.
 

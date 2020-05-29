@@ -4,6 +4,7 @@ import gettext
 import hashlib
 import json
 import locale
+import logging
 import os
 import shelve
 import time
@@ -51,8 +52,17 @@ POLL_INTERVAL = 60
               envvar='WARLOG',
               default='warlog.db',
               type=click.Path())
-def main(coc_token, clan_tag, bot_token, chat_id, mute_attacks, warlog):
+@click.option('--loglevel',
+              default='WARNING',
+              type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR',
+                                 'CRITICAL']),
+              help="Set the logging level")
+def main(coc_token, clan_tag, bot_token, chat_id, mute_attacks, warlog,
+         loglevel):
     """Publish war updates to a telegram channel."""
+    if loglevel:
+        logging.basicConfig(level=loglevel)
+
     coc_api = CoCAPI(coc_token)
     notifier = TelegramNotifier(bot_token, chat_id)
 
@@ -657,6 +667,7 @@ class WarMonitor(object):
         warinfo = self.coc_api.get_currentwar(self.clan_tag)
         #save_latest_data(warinfo.data, monitor)
         if warinfo.is_not_in_war():
+            logging.debug('Not in a war.')
             if self.warinfo is not None:
                 self.send_war_over_msg()
             self.reset()
@@ -664,12 +675,15 @@ class WarMonitor(object):
 
         self.populate_warinfo(warinfo)
         if warinfo.is_in_preparation():
+            logging.debug('War preparation.')
             self.send_preparation_msg()
         elif warinfo.is_in_war():
+            logging.debug('In a war.')
             self.send_war_msg()
             if not self.mute_attacks:
                 self.send_attack_msgs()
         elif warinfo.is_war_over():
+            logging.debug('War is over.')
             if not self.mute_attacks:
                 self.send_attack_msgs()
             self.send_war_over_msg()

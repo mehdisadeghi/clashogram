@@ -41,7 +41,7 @@ POLL_INTERVAL = 60
 @click.option('--chat-id',
               help=('Numeric ID of a chat or name of a public channel with @.'
                     ' Reads COC_CHAT_ID env var.'),
-              envvar='COC_CHAT_ID',
+              envvar='TELEGRAM_CHAT_ID',
               prompt=True)
 @click.option('--mute-attacks',
               is_flag=True,

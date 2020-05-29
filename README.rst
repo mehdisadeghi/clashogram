@@ -31,20 +31,16 @@ windows with administrator account.
 Installation
 ------------
 
-From pypi:
+From pypi::
 
-::
+    $ pip install clashogram
 
-    pip install clashogram
+From Github (for development)::
 
-From Github:
-
-::
-
-    git clone https://github.com/mehdisadeghi/clashogram.git
-    cd clashogram
-    install -r requirements.txt flit
-    flit install --symlink
+    $ git clone https://github.com/mehdisadeghi/clashogram.git
+    $ cd clashogram
+    $ pip install flit
+    $ flit install --symlink
 
 Usage
 -----
@@ -55,65 +51,57 @@ In order to use the program do the following:
    https://developer.clashofclans.com/.
 2. Find your external IP address using a website like
    `this <https://whatismyipaddress.com/>`__.
-3. Go to your CoC developer page and create an API token for the IP
-   number you just found.
+3. Go to your CoC developer page and create an API token for the IP number you just found.
 4. Create a Telegram bot using BotFather and copy its token.
 5. [For Channels] Create a new Telegram channel and add the bot you just created as to that channel. As of May 2020, bots can only be added as administrators to channels. If you want to post to a group instead of a channel see the instructions below.
 6. [For Groups] Add the bot you just created to your Telegram group (create one if necessary).
 
-Obtaining Chat ID
-=================
-In order to send messages to a channel or a chat in Telegram we need the ID of that chat, i.e. `chat_id`. This is how Telegram API works. For public channels it is possible to use the name of the channel prefixed with `@` as `chat_id`, e.g. `@mypublicchannel`. However, for private channels and group chats we need to obtain the `chat_id`.
+Obtaining The Chat ID
+~~~~~~~~~~~~~~~~~~~~~
+In order to send messages to a channel or a chat in Telegram we need the ID of that chat, i.e. ``chat_id``. This is how Telegram API works. For public channels it is possible to use the name of the channel prefixed with ``@`` as ``chat_id``, e.g. ``@mypublicchannel``. However, for private channels and group chats we need to obtain the ``chat_id``.
 
-Take the following steps to obtain the correct `chat_id`:
+Take the following steps to obtain the correct ``chat_id``:
 
 1. Add the bot to the group or channel
 2. Make sure to write something in the channel/chat
-3. Use the `bot_token` from the step 4 of the previous section and run one of these this command:
+3. Use the ``bot_token`` from the step 4 of the previous section and run one of these this command::
 
-::
     # For a group chat run this
     $ curl --silent --request POST https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates | jq '.result | map(select(.message.chat.type == "group")) | .[0].message.chat.id'
 
     # For a channel run this
     $ curl --silent --request POST https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates | jq '.result | map(select(.channel_post.chat.type == "channel")) | .[0].channel_post.chat.id'
 
-You can omit the `jq <https://stedolan.github.io/jq/>`__ part and just search for a `type=group` or `type=channel` in the output and take note of its `id`. This is what we will use in the rest of this document as `chat_id` for channels and groups. Remember that you can also use `@yourpublicchannel` form as `chat_id` for public channels.
+You can omit the `jq <https://stedolan.github.io/jq/>`__ part and just search for a ``type=group`` or ``type=channel`` in the output and take note of its ``id``. This is what we will use in the rest of this document as ``chat_id`` for channels and groups. Remember that you can also use ``@yourpublicchannel`` form as ``chat_id`` for public channels.
 
+Now to make sure if the ``chat_id`` realy points to a chat, run the following command and see whether your bot can post to your channel or group chat::
 
-Now to make sure if the `chat_id` realy points to a chat, run the following command and see whether your bot can post to your channel or group chat.
-
-::
-
-    curl --request POST --url https://api.telegram.org/bot<YOUR_BOT_TOKEN>/sendMessage\?chat_id\=<CHAT_ID_FROM_THE_PREVIOUS_STEP>\&text\=hi
+    $ curl --request POST --url https://api.telegram.org/bot<YOUR_BOT_TOKEN>/sendMessage\?chat_id\=<CHAT_ID_FROM_THE_PREVIOUS_STEP>\&text\=hi
 
 If it does not work, make sure you have done the previous steps correctly or open an issue on GitHub.
 
-Now we can proceed with starting the program. Run the following command to install and start the program:
+Starting The Program
+~~~~~~~~~~~~~~~~~~~~
 
-::
+Now we can proceed with starting the program. Run the following command to install and start the program::
 
-    pip install clashogram
-    clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME> --forever
+    $ pip install clashogram
+    $ clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --chat-id <CHAT_ID> --forever
 
-Remember that channel names begin with `@` and chat_ids are numbers (often negative).
+Remember that channel names begin with ``@`` and chat_ids are numbers (often negative).
 
-If you don't want attack updates in your channel add `--mute-attacks` to the above command.
+If you don't want attack updates in your channel add ``--mute-attacks`` to the above command.
 
 In order to have messages in a different locale do the following and
-then run the program:
+then run the program::
 
-::
+    $ export LANGUAGE=<LANGUAGE_CODE>
+    # This is for Persian
+    $ export LANGUAGE=fa
 
-    export LANGUAGE=<LANGUAGE_CODE>
-    e.g.
-    export LANGUAGE=fa
+Or do it in one step::
 
-Or do it in one step:
-
-::
-
-    LANGUAGE=fa clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
+    $ LANGUAGE=fa clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --chat-id <CHAT_ID>
 
 Setting Language on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -125,9 +113,7 @@ Run as a service
 The simplest way to use Clashogram is leave it running in background
 using either `byobu <byobu.org>`__ or `GNU
 Screen <https://www.gnu.org/software/screen/>`__. Another solution is to
-install a systemd unit:
-
-::
+install a systemd unit::
 
     [Unit]
     Description=Clashogram Daemon
@@ -154,15 +140,11 @@ can replace it with anything else to have your messages sent to
 somewhere else.
 
 Fork and clone the repository and send a PR. Make sure tests pass
-beforehand:
-
-::
+beforehand::
 
     python -m unittest discover
 
-Or with ``py.test``:
-
-::
+Or with ``py.test``::
 
     pip install pytest
     py.test tests.py
@@ -170,9 +152,7 @@ Or with ``py.test``:
 I18N
 ----
 
-In order toadd or update a new language catalog do the following:
-
-::
+In order toadd or update a new language catalog do the following::
 
     pip install babel # Install the babel i18n tool first.
 
@@ -181,16 +161,12 @@ In order toadd or update a new language catalog do the following:
     pybable init -i clashogram/locales/messages.pot -d clashogram/locales -l <LANGUAGE_CODE>
     pybable update -i clashogram/locales/messages.pot -d clashogram/locales -l <LANGUAGE_CODE>
 
-For example:
-
-::
+For example::
 
     pybable init -i clashogram/locales/messages.pot -d clashogram/locales -l fa
     pybable update -i clashogram/locales/messages.pot -d clashogram/locales -l fa
 
-In case of adding new messages extract them and compile again:
-
-::
+In case of adding new messages extract them and compile again::
 
     pybabel extract clashogram/ -o clashogram/locales/messages.pot --project Clashogram --version 0.6.0
     pybabel update -i clashogram/locales/messages.pot -d clashogram/locales
@@ -226,4 +202,3 @@ You can read this document in Russian thanks to Timur from Illuminati clan. Than
 راهنمای فارسی
 -------------
 برای مطالعه راهنمای فارسی به `این آدرس <http://mehdix.ir/clashogram.html>`__ سر بزنید.
-

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """clashogram - Clash of Clans war moniting for telegram channels."""
-import os
-import time
-import json
-import shelve
-import locale
 import gettext
 import hashlib
+import json
+import locale
+import os
+import shelve
+import time
 
 import click
 import jdatetime
@@ -35,13 +35,13 @@ POLL_INTERVAL = 60
               prompt=True)
 @click.option('--bot-token',
               help='Telegram bot token. The bot must be admin on the channel.'
-                   'Reads TELEGRAM_BOT_TOKEN env var.',
+                   ' Reads TELEGRAM_BOT_TOKEN env var.',
               envvar='TELEGRAM_BOT_TOKEN',
               prompt=True)
-@click.option('--channel-name',
-              help='Name of telegram channel for updates.'
-                   'Reads TELEGRAM_CHANNEL env var.',
-              envvar='TELEGRAM_CHANNEL',
+@click.option('--chat-id',
+              help=('Numeric ID of a chat or name of a public channel with @.'
+                    ' Reads COC_CHAT_ID env var.'),
+              envvar='COC_CHAT_ID',
               prompt=True)
 @click.option('--mute-attacks',
               is_flag=True,
@@ -51,10 +51,10 @@ POLL_INTERVAL = 60
               envvar='WARLOG',
               default='warlog.db',
               type=click.Path())
-def main(coc_token, clan_tag, bot_token, channel_name, mute_attacks, warlog):
+def main(coc_token, clan_tag, bot_token, chat_id, mute_attacks, warlog):
     """Publish war updates to a telegram channel."""
     coc_api = CoCAPI(coc_token)
-    notifier = TelegramNotifier(bot_token, channel_name)
+    notifier = TelegramNotifier(bot_token, chat_id)
 
     with shelve.open(warlog, writeback=True) as db:
         dbwrapper = SimpleKVDB(db)
@@ -67,10 +67,10 @@ def main(coc_token, clan_tag, bot_token, channel_name, mute_attacks, warlog):
             db.close()
 
 
-def serverless(db, coc_token, clan_tag, bot_token, channel_name):
+def serverless(db, coc_token, clan_tag, bot_token, chat_id):
     """Publish war updates to a telegram channel."""
     coc_api = CoCAPI(coc_token)
-    notifier = TelegramNotifier(bot_token, channel_name)
+    notifier = TelegramNotifier(bot_token, chat_id)
     monitor = WarMonitor(db, coc_api, clan_tag, notifier)
     monitor.update()
 
@@ -101,17 +101,17 @@ def save_latest_data(wardata, monitor):
 ########################################################################
 
 class TelegramNotifier(object):
-    def __init__(self, bot_token, channel_name):
+    def __init__(self, bot_token, chat_id):
         self.bot_token = bot_token
-        self.channel_name = channel_name
+        self.chat_id = chat_id
 
     def send(self, msg, silent=False):
         endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?"\
-                   "parse_mode={mode}&chat_id=@{channel_name}&text={text}"\
+                   "parse_mode={mode}&chat_id={chat_id}&text={text}"\
                    "&disable_notification={silent}"\
                    .format(bot_token=self.bot_token,
                            mode='HTML',
-                           channel_name=self.channel_name,
+                           chat_id=self.chat_id,
                            text=requests.utils.quote(msg),
                            silent=silent)
         requests.post(endpoint)

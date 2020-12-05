@@ -135,11 +135,17 @@ class CoCAPI(object):
     def __init__(self, coc_token):
         self.coc_token = coc_token
 
-    def get_currentwar(self, clan_tag):
-        return WarInfo(self._call_api(self._get_currentwar_endpoint(clan_tag)))
+    def get_currentwar(self, clan_tag, war_tag=None):
+        return WarInfo(
+            self._call_api(self._get_currentwar_endpoint(clan_tag, war_tag)))
 
     def get_claninfo(self, clan_tag):
         return ClanInfo(self._call_api(self._get_claninfo_endpoint(clan_tag)))
+
+    def get_currentleague(self, clan_tag):
+        return LeagueInfo(
+            clan_tag,
+            self._call_api(self._get_currentleague_endpoint(clan_tag)))
 
     def _call_api(self, endpoint):
         s = requests.Session()
@@ -150,12 +156,20 @@ class CoCAPI(object):
         else:
             raise Exception('Error calling CoC API: %s' % res)
 
-    def _get_currentwar_endpoint(self, clan_tag):
-        return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'\
-            .format(clan_tag=requests.utils.quote(clan_tag))
+    def _get_currentwar_endpoint(self, clan_tag, war_tag):
+        if war_tag:
+            return 'https://api.clashofclans.com/v1/clanwarleagues/wars/{war_tag}'\
+                .format(war_tag=requests.utils.quote(war_tag))
+        else:
+            return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'\
+                .format(clan_tag=requests.utils.quote(clan_tag))
 
     def _get_claninfo_endpoint(self, clan_tag):
         return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
+                clan_tag=requests.utils.quote(clan_tag))
+
+    def _get_currentleague_endpoint(self, clan_tag):
+        return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar/leaguegroup'.format(
                 clan_tag=requests.utils.quote(clan_tag))
 
 
@@ -328,6 +342,105 @@ class WarInfo(object):
         return "{0}{1}{2}".format(self.data['clan']['tag'],
                                   self.data['opponent']['tag'],
                                   self.data['preparationStartTime'])
+
+
+class LeagueInfo(object):
+    """
+    {
+      "tag": "string",
+      "state": "string",
+      "season": "string",
+      "clans": [
+        {
+          "tag": "string",
+          "clanLevel": 0,
+          "name": "string",
+          "members": [
+            {
+              "tag": "string",
+              "townHallLevel": 0,
+              "name": "string"
+            }
+          ],
+          "badgeUrls": {}
+        }
+      ],
+      "rounds": [
+        {
+          "warTags": [
+            "string"
+          ]
+        }
+      ]
+    }
+    """
+    def __init__(self, clan_tag, data):
+        self.clan_tag = clan_tag
+        self.data = data
+
+        self._our_wartag = None
+        self._our_group = None
+
+    @property
+    def state(self):
+        return self.data['state']
+
+    @property
+    def season(self):
+        return self.data['season']
+
+    @property
+    def clans(self):
+        return self.data['clans']
+
+    @property
+    def rounds(self):
+        return self.data['rounds']
+
+    @property
+    def our_wartag(self):
+        return self._our_wartag
+
+    @property
+    def our_group(self):
+        return self._our_group
+
+    def refresh_our_group_and_wartag(self, api):
+        for rnd in self.rounds:
+            for war_tag in rnd['warTags']:
+                if war_tag == '#0':
+                    continue
+                try:
+                    war_info = api.get_currentwar(None, war_tag)
+                except Exception as err:
+                    if '404' in str(err):
+                        continue
+                    raise err
+                if war_info.clan_tag == self.clan_tag and not war_info.is_not_in_war():
+                    print('Found our group!')
+                    self._our_group = rnd
+                    self._our_wartag = war_tag
+                    return
+        # We have propably lost and are out.
+        self._our_group = None
+        self._our_wartag = None
+
+    def is_not_in_war(self):
+        return self.data['state'] == 'notInWar'
+
+    def is_in_preparation(self):
+        return self.data['state'] == 'preparation'
+
+    def is_in_war(self):
+        return self.data['state'] == 'inWar'
+
+    def is_war_over(self):
+        return self.data['state'] == 'warEnded'
+
+    def create_war_id(self):
+        return "{0}{1}{2}".format(self.data['season'],
+                                  len(self.data['clans']),
+                                  len(self.data['rounds']))
 
 
 ########################################################################
@@ -664,7 +777,9 @@ class WarMonitor(object):
         self._mute_attacks = value
 
     def update(self):
-        warinfo = self.coc_api.get_currentwar(self.clan_tag)
+        leagueinfo = self.coc_api.get_currentleague(self.clan_tag)
+        leagueinfo.refresh_our_group_and_wartag(self.coc_api)
+        warinfo = self.coc_api.get_currentwar(self.clan_tag, leagueinfo.our_wartag)
         #save_latest_data(warinfo.data, monitor)
         if warinfo.is_not_in_war():
             logging.debug('Not in a war.')

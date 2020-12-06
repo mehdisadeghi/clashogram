@@ -142,10 +142,13 @@ class CoCAPI(object):
     def get_claninfo(self, clan_tag):
         return ClanInfo(self._call_api(self._get_claninfo_endpoint(clan_tag)))
 
-    def get_currentleague(self, clan_tag):
-        return LeagueInfo(
+    def get_currentleague(self, clan_tag, populate_wartags=True):
+        league_info = LeagueInfo(
             clan_tag,
             self._call_api(self._get_currentleague_endpoint(clan_tag)))
+        if populate_wartags:
+            league_info.populate_wartags(self)
+        return league_info
 
     def _call_api(self, endpoint):
         s = requests.Session()
@@ -378,8 +381,7 @@ class LeagueInfo(object):
         self.clan_tag = clan_tag
         self.data = data
 
-        self._our_wartag = None
-        self._our_group = None
+        self._wartags = {}
 
     @property
     def state(self):
@@ -398,32 +400,38 @@ class LeagueInfo(object):
         return self.data['rounds']
 
     @property
-    def our_wartag(self):
-        return self._our_wartag
+    def our_wartags(self):
+        return {wartag:warinfo for wartag,warinfo in self._wartags.items() if warinfo.clan_tag == self.clan_tag} 
 
     @property
-    def our_group(self):
-        return self._our_group
+    def wartags(self):
+        return self._wartags
 
-    def refresh_our_group_and_wartag(self, api):
+    def populate_wartags(self, api):
+        if self.wartags:
+            # Already loaded
+            print('already loaded')
+            return
+
         for rnd in self.rounds:
             for war_tag in rnd['warTags']:
                 if war_tag == '#0':
                     continue
-                try:
-                    war_info = api.get_currentwar(None, war_tag)
-                except Exception as err:
-                    if '404' in str(err):
-                        continue
-                    raise err
-                if war_info.clan_tag == self.clan_tag and not war_info.is_not_in_war():
-                    print('Found our group!')
-                    self._our_group = rnd
-                    self._our_wartag = war_tag
-                    return
-        # We have propably lost and are out.
-        self._our_group = None
-        self._our_wartag = None
+                self._wartags[war_tag] = api.get_currentwar(None, war_tag)
+
+    def reset(self):
+        self._wartags.clear()
+
+    def get_current_wartag(self):
+        # Simply return the first tag which is either in preparation or inWar.
+        for wartag, warinfo in self.our_wartags.items():
+            if warinfo.is_in_war():
+                return wartag
+
+    def get_next_wartag(self):
+        for wartag, warinfo in self.our_wartags.items():
+            if warinfo.is_in_preparation():
+                return wartag
 
     def is_not_in_war(self):
         return self.data['state'] == 'notInWar'
@@ -436,6 +444,16 @@ class LeagueInfo(object):
 
     def is_war_over(self):
         return self.data['state'] == 'warEnded'
+
+    def is_win(self):
+        if self.data['clan']['stars'] > self.data['opponent']['stars']:
+            return True
+        elif self.data['clan']['stars'] == self.data['opponent']['stars'] and\
+                (self.data['clan']['destructionPercentage'] >
+                 self.data['opponent']['destructionPercentage']):
+            return True
+        else:
+            return False
 
     def create_war_id(self):
         return "{0}{1}{2}".format(self.data['season'],
@@ -776,10 +794,8 @@ class WarMonitor(object):
     def mute_attacks(self, value):
         self._mute_attacks = value
 
-    def update(self):
-        leagueinfo = self.coc_api.get_currentleague(self.clan_tag)
-        leagueinfo.refresh_our_group_and_wartag(self.coc_api)
-        warinfo = self.coc_api.get_currentwar(self.clan_tag, leagueinfo.our_wartag)
+    def update(self, wartag=None):
+        warinfo = self.coc_api.get_currentwar(self.clan_tag, wartag)
         #save_latest_data(warinfo.data, monitor)
         if warinfo.is_not_in_war():
             logging.debug('Not in a war.')
@@ -898,7 +914,16 @@ class WarMonitor(object):
         """Send war news to telegram channel."""
         while True:
             try:
-                self.update()
+                leagueinfo = self.coc_api.get_currentleague(self.clan_tag)
+                current_war_tag = leagueinfo.get_current_wartag()
+                next_war_tag = leagueinfo.get_next_wartag()
+                if current_war_tag or next_war_tag:
+                    if current_war_tag:
+                        self.update(wartag=current_war_tag)
+                    if next_war_tag:
+                        self.update(wartag=next_war_tag)
+                else:
+                    self.update()
                 time.sleep(POLL_INTERVAL)
             except Exception as err:
                 if '403' in str(err):

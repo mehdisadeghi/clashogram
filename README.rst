@@ -42,6 +42,19 @@ From Github (for development)::
     $ pip install flit
     $ flit install --symlink
 
+With Docker
+-----------
+
+In order to run the latest docker version do the following::
+
+    $ docker run -it mehdisadeghi/clashogram:latest
+
+This will prompt for the necessary parameters and start the app. Slighty better would be::
+
+    $ docker run --env-file=<ENV_FILE> --name clashogram --restart=always -d mehdisadeghi/clashogram:latest
+
+This will run the container in the background and restart it if it fails. ``ENV_FILE`` should contain one ``key=value`` per line (the app params). In my experience this works good enought, however for some reason sometimes docker does not start the container after reboot. In that case a systemd unit or similar could be used to start the ``clashogram`` container above.
+
 Usage
 -----
 

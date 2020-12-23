@@ -143,11 +143,17 @@ class CoCAPI(object):
         return ClanInfo(self._call_api(self._get_claninfo_endpoint(clan_tag)))
 
     def get_currentleague(self, clan_tag, populate_wartags=True):
-        league_info = LeagueInfo(
-            clan_tag,
-            self._call_api(self._get_currentleague_endpoint(clan_tag)))
-        if populate_wartags:
-            league_info.populate_wartags(self)
+        league_info = None
+        try:
+            league_info = LeagueInfo(
+                clan_tag,
+                self._call_api(self._get_currentleague_endpoint(clan_tag)))
+            if populate_wartags:
+                league_info.populate_wartags(self)
+        except Exception as err:
+            # Server returns 404 if the clan does not participate in league war
+            if '404' not in str(err):
+                raise err
         return league_info
 
     def _call_api(self, endpoint):
@@ -157,7 +163,7 @@ class CoCAPI(object):
         if res.status_code == requests.codes.ok:
             return json.loads(res.content.decode('utf-8'))
         else:
-            raise Exception('Error calling CoC API: %s' % res)
+            raise res.raise_for_status()
 
     def _get_currentwar_endpoint(self, clan_tag, war_tag):
         if war_tag:
@@ -408,11 +414,6 @@ class LeagueInfo(object):
         return self._wartags
 
     def populate_wartags(self, api):
-        if self.wartags:
-            # Already loaded
-            print('already loaded')
-            return
-
         for rnd in self.rounds:
             for war_tag in rnd['warTags']:
                 if war_tag == '#0':
@@ -915,9 +916,9 @@ class WarMonitor(object):
         while True:
             try:
                 leagueinfo = self.coc_api.get_currentleague(self.clan_tag)
-                current_war_tag = leagueinfo.get_current_wartag()
-                next_war_tag = leagueinfo.get_next_wartag()
-                if current_war_tag or next_war_tag:
+                if leagueinfo:
+                    current_war_tag = leagueinfo.get_current_wartag()
+                    next_war_tag = leagueinfo.get_next_wartag()
                     if current_war_tag:
                         self.update(wartag=current_war_tag)
                     if next_war_tag:

@@ -5,9 +5,11 @@ import gettext
 import unittest
 from unittest.mock import MagicMock
 
-from clashogram._clashogram import CoCAPI, ClanInfo, WarInfo, WarStats, \
-    MessageFactory, WarMonitor, TelegramNotifier
-
+from clashogram.__main__ import WarMonitor
+from clashogram.models import WarStats, ClanInfo, WarInfo, WarStats
+from clashogram.formatters import MessageFactory
+from clashogram.api import CoCAPI
+from clashogram.notifiers import TelegramNotifier
 
 class ClanInfoTestCase(unittest.TestCase):
     def setUp(self):

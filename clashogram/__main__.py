@@ -260,16 +260,16 @@ class WarMonitor(object):
                         self.notifier.send(_("Warlog must be public boss! ☠️"))
                 elif '500' in str(err):
                     print('CoC internal server error, retrying.')
-                    self.notifier.send(
-                        'CoC internal server error, retrying in {} seconds.'
-                        .format(POLL_INTERVAL * 10), silent=True)
+                    # self.notifier.send(
+                    #     'CoC internal server error, retrying in {} seconds.'
+                    #     .format(POLL_INTERVAL * 10), silent=True)
                     time.sleep(POLL_INTERVAL * 10)
                     continue
                 elif '502' in str(err):
                     print('CoC bad gateway, retrying.')
-                    self.notifier.send(
-                        'CoC bad gateway, retrying in {} seconds.'
-                        .format(POLL_INTERVAL * 10), silent=True)
+                    # self.notifier.send(
+                    #     'CoC bad gateway, retrying in {} seconds.'
+                    #     .format(POLL_INTERVAL * 10), silent=True)
                     time.sleep(POLL_INTERVAL * 10)
                     continue
                 elif '503' in str(err):

@@ -19,3 +19,9 @@ class TelegramNotifier(object):
                            text=requests.utils.quote(msg),
                            silent=silent)
         requests.post(endpoint)
+
+
+class DummyNotifier(object):
+    def send(self, msg, silent=False):
+        if not silent:
+            print(msg)

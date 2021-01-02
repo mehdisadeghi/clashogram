@@ -12,7 +12,7 @@ import click
 from .models import WarStats
 from .formatters import MessageFactory
 from .api import CoCAPI
-from .notifiers import TelegramNotifier
+from .notifiers import TelegramNotifier, DummyNotifier
 from .utils import SimpleKVDB
 
 
@@ -58,14 +58,21 @@ POLL_INTERVAL = 60
               type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR',
                                  'CRITICAL']),
               help="Set the logging level")
+@click.option('--dryrun',
+              is_flag=True,
+              help='Do not save and send anything.')
 def main(coc_token, clan_tag, bot_token, chat_id, mute_attacks, warlog,
-         loglevel):
+         loglevel, dryrun):
     """Publish war updates to a telegram channel."""
     if loglevel:
         logging.basicConfig(level=loglevel)
 
     coc_api = CoCAPI(coc_token)
     notifier = TelegramNotifier(bot_token, chat_id)
+
+    if dryrun:
+        warlog = 'dryrun.db'
+        notifier = DummyNotifier()
 
     with shelve.open(warlog, writeback=True) as db:
         dbwrapper = SimpleKVDB(db)

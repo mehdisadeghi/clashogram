@@ -12,6 +12,6 @@ RUN flit install
 
 ENV LC_ALL=C.UTF-8
 WORKDIR /app
-CMD ["clashogram"]
+ENTRYPOINT ["clashogram"]
 
 

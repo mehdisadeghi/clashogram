@@ -237,6 +237,11 @@ class LeagueInfo(object):
     def reset(self):
         self._wartags.clear()
 
+    def get_previous_wartags(self):
+        for wartag, warinfo in self.our_wartags.items():
+            if warinfo.is_war_over():
+                yield wartag
+
     def get_current_wartag(self):
         # Simply return the first tag which is either in preparation or inWar.
         for wartag, warinfo in self.our_wartags.items():

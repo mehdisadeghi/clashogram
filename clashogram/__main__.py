@@ -250,6 +250,8 @@ class WarMonitor(object):
             try:
                 leagueinfo = self.coc_api.get_currentleague(self.clan_tag)
                 if leagueinfo:
+                    for previous_wartag in leagueinfo.get_previous_wartags():
+                        self.update(wartag=previous_wartag)
                     current_war_tag = leagueinfo.get_current_wartag()
                     next_war_tag = leagueinfo.get_next_wartag()
                     if current_war_tag:

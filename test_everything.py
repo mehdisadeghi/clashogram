@@ -22,6 +22,11 @@ class ClanInfoTestCase(unittest.TestCase):
     def test_location(self):
         assert self.claninfo.location == 'Iran'
 
+    def test_notset_location(self):
+        claninfo = ClanInfo({})
+        assert claninfo.location == ''
+        assert claninfo.country_flag_imoji == ''
+
     def test_country_imoji(self):
         assert self.claninfo.country_flag_imoji == '🇮🇷'
 

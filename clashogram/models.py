@@ -8,10 +8,13 @@ class ClanInfo(object):
 
     @property
     def location(self):
-        return self.data['location']['name']
+        return self.data.get('location', {}).get('name', '')
 
     @property
     def country_flag_imoji(self):
+        if 'location' not in self.data:
+            return ''
+
         if self.data['location']['isCountry']:
             return self._get_country_flag_imoji(
                 self.data['location']['countryCode'])

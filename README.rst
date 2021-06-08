@@ -99,7 +99,7 @@ Starting The Program
 Now we can proceed with starting the program. Run the following command to install and start the program::
 
     $ pip install clashogram
-    $ clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --chat-id <CHAT_ID> --forever
+    $ clashogram --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --chat-id <CHAT_ID> --forever
 
     NOTE: Remember that channel names begin with ``@`` and chat_ids are numbers (often negative).
 
@@ -115,7 +115,7 @@ then run the program::
 
 Or do it in one step::
 
-    $ LANGUAGE=fa clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --chat-id <CHAT_ID>
+    $ LANGUAGE=fa clashogram --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --chat-id <CHAT_ID>
 
 Setting Language on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -136,7 +136,7 @@ install a systemd unit::
     [Service]
     WorkingDirectory=/path/to/clashogram/
     EnvironmentFile=/path/to/env/file
-    ExecStart=/path/to/python /path/to/clashogram.py
+    ExecStart=/path/to/python /path/to/clashogram
     Restart=on-failure
     User=someuser
 

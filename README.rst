@@ -10,6 +10,8 @@ Clash of Clans war moniting for telegram channels.
     NOTE: Clash of Clans API data is always 10 minutes behind the game
     events. This is not a bug in this program.
 
+    NOTE: Your warlog must be public.
+
 ``clashogram`` monitors your clan's warlog and posts the following
 messages to a Telegram channel:
 

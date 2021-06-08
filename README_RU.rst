@@ -57,7 +57,7 @@ clashogram |Build Status| |Build status| |Pypi status|
 ::
 
     pip install clashogram
-    clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME> --forever
+    clashogram --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME> --forever
 
 В случае, если вам требуется изменить язык сообщений, используйте команды:
 
@@ -71,7 +71,7 @@ clashogram |Build Status| |Build status| |Pypi status|
 
 ::
 
-    LANGUAGE=ru clashogram.py --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
+    LANGUAGE=ru clashogram --coc-token <COC_API_TOKEN> --clan-tag <CLAN_TAG> --bot-token <TELEGRAM_BOT_TOKEN> --channel-name <TELEGRAM_CHANNEL_NAME>
 
 Проблемы при использовании Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -91,7 +91,7 @@ Screen <https://www.gnu.org/software/screen/>`__. Другое решение - 
     [Service]
     WorkingDirectory=/path/to/clashogram/
     EnvironmentFile=/path/to/env/file
-    ExecStart=/path/to/python /path/to/clashogram.py
+    ExecStart=/path/to/python /path/to/clashogram
     Restart=on-failure
     User=someuser
 

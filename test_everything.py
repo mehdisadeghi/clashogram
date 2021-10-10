@@ -223,6 +223,7 @@ class MessageFactoryTestCase(unittest.TestCase):
         self._setlocale('fa_IR.UTF-8')
 
     def test_format_time_default(self):
+        os.environ['LANG'] = 'en'
         os.environ['LANGUAGE'] = 'en'
         timestr = self.msg_factory.format_time('20170603T191148.000Z')
         self.assertEqual(timestr, 'Sat, 03 Jun 2017 19:11:48')

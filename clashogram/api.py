@@ -33,9 +33,8 @@ class CoCAPI(object):
         return league_info
 
     def _call_api(self, endpoint):
-        s = requests.Session()
-        res = s.get(endpoint,
-                    headers={'Authorization': 'Bearer %s' % self.coc_token})
+        res = requests.get(endpoint,
+                    headers={'Authorization': f'Bearer {self.coc_token}'})
         if res.status_code == requests.codes.ok:
             return json.loads(res.content.decode('utf-8'))
         else:

@@ -174,13 +174,13 @@ In order toadd or update a new language catalog do the following::
 
 ::
 
-    pybable init -i clashogram/locales/messages.pot -d clashogram/locales -l <LANGUAGE_CODE>
-    pybable update -i clashogram/locales/messages.pot -d clashogram/locales -l <LANGUAGE_CODE>
+    pybabel init -i clashogram/locales/messages.pot -d clashogram/locales -l <LANGUAGE_CODE>
+    pybabel update -i clashogram/locales/messages.pot -d clashogram/locales -l <LANGUAGE_CODE>
 
 For example::
 
-    pybable init -i clashogram/locales/messages.pot -d clashogram/locales -l fa
-    pybable update -i clashogram/locales/messages.pot -d clashogram/locales -l fa
+    pybabel init -i clashogram/locales/messages.pot -d clashogram/locales -l fa
+    pybabel update -i clashogram/locales/messages.pot -d clashogram/locales -l fa
 
 In case of adding new messages extract them and compile again::
 

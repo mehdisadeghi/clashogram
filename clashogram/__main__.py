@@ -2,6 +2,7 @@
 """clashogram - Clash of Clans war moniting for telegram channels."""
 import gettext
 import hashlib
+import json
 import logging
 import os
 import time
@@ -82,6 +83,36 @@ def main(coc_token, clan_tag, bot_token, chat_id, mute_attacks, warlog,
 
 
 @click.command()
+@click.argument('warlog_path', type=click.Path(exists=True))
+@click.argument('archive_path', type=click.Path())
+def export_wars(warlog_path, archive_path):
+    """Write the archived wars out as one json object per line."""
+    written = 0
+    with Storage(warlog_path) as db, \
+            open(archive_path, 'w', encoding='utf-8') as out:
+        for war_id, payload in db.archived_wars():
+            out.write(json.dumps({'war_id': war_id, 'war': payload},
+                                 ensure_ascii=False) + '\n')
+            written += 1
+    click.echo(f'Exported {written} wars.')
+
+
+@click.command()
+@click.argument('archive_path', type=click.Path(exists=True))
+@click.argument('warlog_path', type=click.Path())
+def import_wars(archive_path, warlog_path):
+    """Read back an archive written by clashogram-export."""
+    read = 0
+    with Storage(warlog_path) as db, \
+            open(archive_path, encoding='utf-8') as archive:
+        for line in archive:
+            record = json.loads(line)
+            db.archive_war(record['war_id'], record['war'])
+            read += 1
+    click.echo(f'Imported {read} wars.')
+
+
+@click.command()
 @click.argument('shelve_path', type=click.Path(exists=True))
 @click.argument('warlog_path', type=click.Path())
 def import_warlog(shelve_path, warlog_path):
@@ -138,7 +169,6 @@ class WarMonitor:
     def update(self, warinfo=None):
         if warinfo is None:
             warinfo = self.coc_api.get_currentwar(self.clan_tag)
-        # save_latest_data(warinfo.data, monitor)
         if warinfo.is_not_in_war():
             logger.debug('Not in a war.')
             if self.warinfo is not None:
@@ -157,6 +187,7 @@ class WarMonitor:
                 self.send_attack_msgs()
         elif warinfo.is_war_over():
             logger.debug('War is over.')
+            self.db.archive_war(self.get_war_id(), warinfo.data)
             if not self.mute_attacks:
                 self.send_attack_msgs()
             self.send_war_over_msg()

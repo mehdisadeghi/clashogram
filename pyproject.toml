@@ -34,6 +34,8 @@ Home = 'https://github.com/mehdisadeghi/clashogram'
 [project.scripts]
 clashogram = 'clashogram:main'
 clashogram-import = 'clashogram:import_warlog'
+clashogram-export-wars = 'clashogram:export_wars'
+clashogram-import-wars = 'clashogram:import_wars'
 
 [tool.ruff]
 line-length = 79

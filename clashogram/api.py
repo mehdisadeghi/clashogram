@@ -14,7 +14,7 @@ class CoCAPI(object):
     def get_currentwar(self, clan_tag, war_tag=None):
         return WarInfo(
             self._call_api(self._get_currentwar_endpoint(clan_tag, war_tag)),
-            clan_tag)
+            clan_tag, war_tag)
 
     def get_claninfo(self, clan_tag):
         return ClanInfo(self._call_api(self._get_claninfo_endpoint(clan_tag)))

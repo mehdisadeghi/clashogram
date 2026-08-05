@@ -38,8 +38,9 @@ class ClanInfo(object):
 
 
 class WarInfo(object):
-    def __init__(self, wardata, clan_tag=None):
+    def __init__(self, wardata, clan_tag=None, war_tag=None):
         self.data = wardata
+        self.war_tag = war_tag
         self.us, self.them = self._take_sides(clan_tag)
         self.clan_members = {}
         self.opponent_members = {}
@@ -115,6 +116,13 @@ class WarInfo(object):
     @property
     def team_size(self):
         return self.data['teamSize']
+
+    @property
+    def attacks_per_member(self):
+        # League wars give everyone a single attack and do not always say so.
+        if self.war_tag:
+            return 1
+        return self.data.get('attacksPerMember', 2)
 
     def _populate(self):
         if self.is_not_in_war():

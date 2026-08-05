@@ -6,8 +6,16 @@ import time
 
 import requests
 
-from .models import ClanInfo, LeagueInfo, WarInfo
+from .models import (
+    ClanCapital,
+    ClanInfo,
+    LeagueInfo,
+    PlayerInfo,
+    WarInfo,
+    WarLog,
+)
 
+BASE_URL = 'https://api.clashofclans.com/v1'
 RETRIES = 3
 RETRY_AFTER = 5
 
@@ -40,6 +48,24 @@ class CoCAPI:
 
     def get_claninfo(self, clan_tag):
         return ClanInfo(self._call_api(self._get_claninfo_endpoint(clan_tag)))
+
+    def get_warlog(self, clan_tag):
+        return WarLog(self._call_api(self._clan_endpoint(clan_tag, 'warlog')))
+
+    def get_capitalraidseasons(self, clan_tag):
+        return ClanCapital(
+            self._call_api(self._clan_endpoint(clan_tag, 'capitalraidseasons')))
+
+    def get_playerinfo(self, player_tag):
+        return PlayerInfo(self._call_api(
+            f'{BASE_URL}/players/{requests.utils.quote(player_tag)}'))
+
+    def get_warleagues(self):
+        return self._call_api(f'{BASE_URL}/warleagues')['items']
+
+    def get_leaguetiers(self):
+        # /leaguetiers replaced /leagues in the ranked league rework.
+        return self._call_api(f'{BASE_URL}/leaguetiers')['items']
 
     def get_currentleague(self, clan_tag, populate_wartags=True):
         league_info = None
@@ -75,6 +101,10 @@ class CoCAPI:
         else:
             return f'https://api.clashofclans.com/v1/clans/{requests.utils.quote(clan_tag)}/currentwar'\
                 
+
+    def _clan_endpoint(self, clan_tag, resource):
+        return (f'{BASE_URL}/clans/{requests.utils.quote(clan_tag)}'
+                f'/{resource}')
 
     def _get_claninfo_endpoint(self, clan_tag):
         return f'https://api.clashofclans.com/v1/clans/{requests.utils.quote(clan_tag)}'

@@ -337,6 +337,89 @@ class LeagueStandings:
         return None
 
 
+class LeaguePlayerStats:
+    """Per player totals across the league rounds our clan has played."""
+
+    def __init__(self, leagueinfo):
+        self.leagueinfo = leagueinfo
+
+    def rows(self):
+        totals = {}
+        for warinfo in self.leagueinfo.our_wartags.values():
+            if not (warinfo.is_in_war() or warinfo.is_war_over()):
+                continue
+            for tag, member in warinfo.clan_members.items():
+                attacks = warinfo.get_player_attacks(member)
+                row = totals.setdefault(tag, {'tag': tag,
+                                              'name': member['name'],
+                                              'stars': 0,
+                                              'destruction': 0.0,
+                                              'attacks': 0,
+                                              'missed': 0,
+                                              'rounds': 0})
+                row['attacks'] += len(attacks)
+                row['missed'] += warinfo.attacks_per_member - len(attacks)
+                row['stars'] += sum(a['stars'] for a in attacks)
+                row['destruction'] += sum(a['destructionPercentage']
+                                          for a in attacks)
+                row['rounds'] += 1
+        return sorted(totals.values(),
+                      key=lambda row: (-row['stars'], -row['destruction']))
+
+
+def unused_attacks(warinfo):
+    """Who still has attacks left, for answering rather than announcing."""
+    return sorted(
+        (member for member in warinfo.clan_members.values()
+         if len(warinfo.get_player_attacks(member)) < warinfo.attacks_per_member),
+        key=lambda member: member['mapPosition'])
+
+
+class ClanCapital:
+    """A page of /capitalraidseasons."""
+
+    def __init__(self, data):
+        self.data = data
+
+    @property
+    def seasons(self):
+        return self.data['items']
+
+
+class WarLog:
+    """A page of /warlog."""
+
+    def __init__(self, data):
+        self.data = data
+
+    @property
+    def wars(self):
+        return self.data['items']
+
+
+class PlayerInfo:
+    """A /players/{tag} response."""
+
+    def __init__(self, data):
+        self.data = data
+
+    @property
+    def name(self):
+        return self.data['name']
+
+    @property
+    def town_hall(self):
+        return self.data['townHallLevel']
+
+    @property
+    def clan_tag(self):
+        return self.data.get('clan', {}).get('tag')
+
+    @property
+    def war_stars(self):
+        return self.data['warStars']
+
+
 ########################################################################
 # War statistics
 ########################################################################

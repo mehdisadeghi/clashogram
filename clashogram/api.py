@@ -1,10 +1,16 @@
 ########################################################################
 # CoC API Calls
 ########################################################################
+import time
+
 import requests
 import json
 
 from .models import WarInfo, ClanInfo, LeagueInfo
+
+
+RETRIES = 3
+RETRY_AFTER = 5
 
 
 class CoCAPI(object):
@@ -34,12 +40,17 @@ class CoCAPI(object):
         return league_info
 
     def _call_api(self, endpoint):
-        res = requests.get(endpoint,
+        for _ in range(RETRIES):
+            res = requests.get(endpoint,
                     headers={'Authorization': f'Bearer {self.coc_token}'})
-        if res.status_code == requests.codes.ok:
-            return json.loads(res.content.decode('utf-8'))
-        else:
-            raise res.raise_for_status()
+            if res.status_code != requests.codes.too_many_requests:
+                break
+            time.sleep(self._retry_after(res))
+        res.raise_for_status()
+        return json.loads(res.content.decode('utf-8'))
+
+    def _retry_after(self, res):
+        return int(res.headers.get('Retry-After', RETRY_AFTER))
 
     def _get_currentwar_endpoint(self, clan_tag, war_tag):
         if war_tag:

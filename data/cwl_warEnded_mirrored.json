@@ -2736,5 +2736,6 @@
   "attacksPerMember": 1,
   "preparationStartTime": "20170715T194010.000Z",
   "startTime": "20170716T184010.000Z",
-  "endTime": "20170717T184010.000Z"
+  "endTime": "20170717T184010.000Z",
+  "battleModifier": "hardMode"
 }

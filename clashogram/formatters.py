@@ -51,6 +51,10 @@ Have fun! {final_emoji}
             clanwinstreak=clan_extra_info.winstreak,
             opwinstreak=op_extra_info.winstreak,
             cwidth=max(len(ourclan), len(opclan)))
+        # Appended rather than folded into the template above, which would
+        # change its msgid and drop the existing fa and ru translations.
+        if self.warinfo.is_hard_mode():
+            msg += _('⚔️ This one is hard mode.')
         return msg
 
     def create_players_msg(self):

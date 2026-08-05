@@ -179,6 +179,12 @@ class LeagueWarPerspectiveTestCase(unittest.TestCase):
         self.assertEqual(WarInfo(self.wardata, self.clan_tag)
                          .attacks_per_member, 1)
 
+    def test_is_hard_mode(self):
+        regular = json.loads(open(os.path.join('data', 'inWar_40.json'),
+                                  'r', encoding='utf8').read())
+        self.assertTrue(WarInfo(self.wardata, self.clan_tag).is_hard_mode())
+        self.assertFalse(WarInfo(regular, self.clan_tag).is_hard_mode())
+
     def test_war_id_ignores_perspective(self):
         self.assertEqual(WarInfo(self.wardata, self.clan_tag).create_war_id(),
                          WarInfo(self.wardata).create_war_id())

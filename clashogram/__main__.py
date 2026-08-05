@@ -4,7 +4,6 @@ import gettext
 import hashlib
 import logging
 import os
-import shelve
 import time
 
 import click
@@ -14,7 +13,8 @@ from .api import CoCAPI
 from .formatters import MessageFactory
 from .models import WarStats
 from .notifiers import DummyNotifier, TelegramNotifier
-from .utils import SimpleKVDB
+from .storage import Storage
+from .storage import import_shelve as import_shelve_warlog
 
 gettext.bindtextdomain('messages',
                        localedir=os.path.join(
@@ -75,15 +75,20 @@ def main(coc_token, clan_tag, bot_token, chat_id, mute_attacks, warlog,
         warlog = 'dryrun.db'
         notifier = DummyNotifier()
 
-    with shelve.open(warlog, writeback=True) as db:
-        dbwrapper = SimpleKVDB(db)
-        monitor = WarMonitor(dbwrapper, coc_api, clan_tag, notifier)
+    with Storage(warlog) as db:
+        monitor = WarMonitor(db, coc_api, clan_tag, notifier)
         monitor.mute_attacks = mute_attacks
-        try:
-            monitor.start()
-        finally:
-            db.sync()
-            db.close()
+        monitor.start()
+
+
+@click.command()
+@click.argument('shelve_path', type=click.Path(exists=True))
+@click.argument('warlog_path', type=click.Path())
+def import_warlog(shelve_path, warlog_path):
+    """Import a pre-sqlite shelve warlog into a sqlite one."""
+    with Storage(warlog_path) as db:
+        click.echo(f'Imported {import_shelve_warlog(shelve_path, db)}'
+                   ' messages.')
 
 
 def serverless(db, coc_token, clan_tag, bot_token, chat_id):
@@ -161,8 +166,6 @@ class WarMonitor:
         self.warinfo = warinfo
         self.warstats = WarStats(warinfo)
         self.msg_factory = MessageFactory(self.coc_api, warinfo)
-        if self.get_war_id() not in self.db:
-            self.db[self.get_war_id()] = {}
 
     def get_war_id(self):
         if not self.warinfo:
@@ -204,12 +207,10 @@ class WarMonitor:
                 msg_id='clan_full_destruction')
 
     def is_msg_sent(self, msg_id):
-        return self.db[self.get_war_id()].get(msg_id, False)
+        return self.db.is_sent(self.get_war_id(), msg_id)
 
     def mark_msg_as_sent(self, msg_id):
-        tmp = self.db[self.get_war_id()]
-        tmp[msg_id] = True
-        self.db[self.get_war_id()] = tmp
+        self.db.mark_sent(self.get_war_id(), msg_id)
 
     def get_attack_id(self, attack):
         return "attack{}{}".format(attack['attackerTag'][1:],

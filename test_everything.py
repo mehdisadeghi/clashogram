@@ -2,6 +2,9 @@
 import gettext
 import json
 import os
+import shelve
+import shutil
+import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -12,6 +15,7 @@ from clashogram.api import CoCAPI
 from clashogram.formatters import MessageFactory
 from clashogram.models import ClanInfo, LeagueInfo, WarInfo, WarStats
 from clashogram.notifiers import TelegramNotifier
+from clashogram.storage import Storage, import_shelve
 
 
 def load_wardata(name):
@@ -210,14 +214,41 @@ class TelegramNotifierTestCase(unittest.TestCase):
             sleep.assert_called_once_with(7)
 
     def test_undelivered_message_is_not_marked_sent(self):
-        monitor = WarMonitor({}, MagicMock(), '#TAG', MagicMock())
+        monitor = WarMonitor(Storage(':memory:'), MagicMock(), '#TAG',
+                             MagicMock())
         monitor.warinfo = MagicMock()
         monitor.warinfo.create_war_id.return_value = 'W1'
-        monitor.db['W1'] = {}
         monitor.notifier.send.side_effect = requests.HTTPError('429')
         with self.assertRaises(requests.HTTPError):
             monitor.send_once('hi', msg_id='m1')
         self.assertFalse(monitor.is_msg_sent('m1'))
+
+
+class StorageTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.path = os.path.join(self.tmpdir, 'warlog.db')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_sent_flags_survive_a_restart(self):
+        with Storage(self.path) as db:
+            db.mark_sent('war1', 'preparation_msg')
+        with Storage(self.path) as db:
+            self.assertTrue(db.is_sent('war1', 'preparation_msg'))
+            self.assertFalse(db.is_sent('war1', 'war_over_msg'))
+            self.assertFalse(db.is_sent('war2', 'preparation_msg'))
+
+    def test_import_shelve_carries_sent_flags_over(self):
+        old = os.path.join(self.tmpdir, 'old')
+        with shelve.open(old) as legacy:
+            legacy['war1'] = {'preparation_msg': True, 'war_msg': True}
+            legacy['war2'] = {'preparation_msg': True}
+        with Storage(self.path) as db:
+            self.assertEqual(import_shelve(old, db), 3)
+            self.assertTrue(db.is_sent('war1', 'war_msg'))
+            self.assertTrue(db.is_sent('war2', 'preparation_msg'))
 
 
 class WarStatsTestCase(unittest.TestCase):
@@ -331,7 +362,7 @@ class WarMonitorTestCase(unittest.TestCase):
         coc_api.get_claninfo = MagicMock(return_value=our_claninfo)
         notifier = TelegramNotifier(None, None)
         notifier.send = MagicMock()
-        self.monitor = WarMonitor({}, coc_api, '', notifier)
+        self.monitor = WarMonitor(Storage(':memory:'), coc_api, '', notifier)
         self.monitor.update()
 
         self.clan_attack = {

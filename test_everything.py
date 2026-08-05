@@ -376,6 +376,35 @@ class LeaguePlayerStatsTestCase(unittest.TestCase):
                          ['two'])
 
 
+class CommandBotTestCase(unittest.TestCase):
+    def setUp(self):
+        self.monitor = WarMonitor(Storage(':memory:'), MagicMock(), '#US',
+                                  MagicMock())
+        self.monitor.warinfo = None
+        self.monitor.leagueinfo = None
+
+    def test_unknown_command_is_not_silently_ignored(self):
+        self.assertIn('/help', self.monitor.commands.answer('/nope'))
+
+    def test_commands_answer_without_a_war(self):
+        for command in ('/war', '/missing', '/standings', '/stats'):
+            self.assertTrue(self.monitor.commands.answer(command))
+
+    def test_group_suffix_is_stripped(self):
+        # Telegram sends /missing@thebot in groups.
+        self.assertEqual(self.monitor.commands.answer('/missing@clashogram'),
+                         self.monitor.commands.answer('/missing'))
+
+    def test_idle_loop_does_not_spin(self):
+        self.monitor.notifier.receive.return_value = []
+        with patch('clashogram.__main__.time.sleep') as sleep:
+            deadline = [0, 5]
+            with patch('clashogram.__main__.time.monotonic',
+                       side_effect=lambda: deadline.pop(0)):
+                self.monitor.answer_commands_until(3)
+        sleep.assert_called_once()
+
+
 class WarStatsTestCase(unittest.TestCase):
     def setUp(self):
         warinfo = WarInfo(load_wardata('warEnded_50.json'))

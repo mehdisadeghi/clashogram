@@ -24,6 +24,25 @@ def create_standings_msg(rows):
     return "<pre>" + msg + "</pre>"
 
 
+def create_player_stats_msg(rows):
+    msg = "📊" + _(" League season")
+    msg += "\n▪️" + _("Stars, used, missed, name")
+    width = max((len(row['name']) for row in rows), default=1)
+    for row in rows:
+        msg += "\n▫️{stars: <3} {attacks: <2} {missed: <2} " \
+               "{name: <{width}}".format(width=width, **row)
+    return "<pre>" + msg + "</pre>"
+
+
+def create_unused_attacks_msg(members):
+    if not members:
+        return _('Everyone has attacked.')
+    msg = "⏳" + _(" Attacks left")
+    for member in members:
+        msg += "\n▫️{mapPosition: <2d} {name}".format(**member)
+    return "<pre>" + msg + "</pre>"
+
+
 class MessageFactory:
     def __init__(self, coc_api, warinfo):
         self.coc_api = coc_api

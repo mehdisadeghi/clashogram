@@ -33,9 +33,9 @@ class CoCAPI(object):
                 self._call_api(self._get_currentleague_endpoint(clan_tag)))
             if populate_wartags:
                 league_info.populate_wartags(self)
-        except Exception as err:
-            # Server returns 404 if the clan does not participate in league war
-            if '404' not in str(err):
+        except requests.HTTPError as err:
+            # 404 is how the server says the clan is in no league group.
+            if err.response.status_code != 404:
                 raise err
         return league_info
 

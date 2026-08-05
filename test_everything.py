@@ -1,17 +1,23 @@
 '''Clashogram tests.'''
-import os
-import json
 import gettext
+import json
+import os
 import unittest
 from unittest.mock import MagicMock, patch
 
 import requests
 
 from clashogram.__main__ import WarMonitor
-from clashogram.models import WarStats, ClanInfo, WarInfo, WarStats, LeagueInfo
-from clashogram.formatters import MessageFactory
 from clashogram.api import CoCAPI
+from clashogram.formatters import MessageFactory
+from clashogram.models import ClanInfo, LeagueInfo, WarInfo, WarStats
 from clashogram.notifiers import TelegramNotifier
+
+
+def load_wardata(name):
+    with open(os.path.join('data', name), encoding='utf8') as fixture:
+        return json.load(fixture)
+
 
 class ClanInfoTestCase(unittest.TestCase):
     def setUp(self):
@@ -41,9 +47,7 @@ class ClanInfoTestCase(unittest.TestCase):
 
 class WarInfoTestCase(unittest.TestCase):
     def setUp(self):
-        self.warinfo = WarInfo(
-            json.loads(open(os.path.join('data', 'inWar_40.json'),
-                            'r', encoding='utf8').read()))
+        self.warinfo = WarInfo(load_wardata('inWar_40.json'))
         self.op_member = {
             "tag": "#2GCR2YLP8",
             "name": "captain spock",
@@ -93,8 +97,8 @@ class WarInfoTestCase(unittest.TestCase):
         assert self.warinfo.get_player_attacks(player) == []
 
     def test_get_player_info(self):
-        with self.assertRaises(Exception):
-            self.warinfo.players['#2GCZZZZP8']
+        with self.assertRaises(KeyError):
+            self.warinfo.get_player_info('#2GCZZZZP8')
 
     def test_is_not_in_war(self):
         assert not self.warinfo.is_not_in_war()
@@ -125,9 +129,7 @@ class WarInfoTestCase(unittest.TestCase):
 
 class WarInfoNotInWarTestCase(unittest.TestCase):
     def setUp(self):
-        self.warinfo = WarInfo(json.loads(
-            open(os.path.join('data', 'notInWar.json'),
-                 'r', encoding='utf8').read()))
+        self.warinfo = WarInfo(load_wardata('notInWar.json'))
 
     def test_clan_stats(self):
         self.assertEqual(self.warinfo.clan_level, 0)
@@ -149,9 +151,7 @@ class LeagueWarPerspectiveTestCase(unittest.TestCase):
     """A league war may list us as the opponent rather than the clan."""
     def setUp(self):
         self.clan_tag = '#YVL0C8UY'
-        self.wardata = json.loads(
-            open(os.path.join('data', 'cwl_warEnded_mirrored.json'),
-                 'r', encoding='utf8').read())
+        self.wardata = load_wardata('cwl_warEnded_mirrored.json')
 
     def test_our_wartags_include_the_opponent_slot(self):
         leagueinfo = LeagueInfo(self.clan_tag,
@@ -168,8 +168,7 @@ class LeagueWarPerspectiveTestCase(unittest.TestCase):
         self.assertFalse(warinfo.is_win())
 
     def test_attacks_per_member(self):
-        regular = json.loads(open(os.path.join('data', 'inWar_40.json'),
-                                  'r', encoding='utf8').read())
+        regular = load_wardata('inWar_40.json')
         # A league war is one attack each, whatever the payload says.
         self.assertEqual(WarInfo(regular, self.clan_tag, '#WAR1')
                          .attacks_per_member, 1)
@@ -180,8 +179,7 @@ class LeagueWarPerspectiveTestCase(unittest.TestCase):
                          .attacks_per_member, 1)
 
     def test_is_hard_mode(self):
-        regular = json.loads(open(os.path.join('data', 'inWar_40.json'),
-                                  'r', encoding='utf8').read())
+        regular = load_wardata('inWar_40.json')
         self.assertTrue(WarInfo(self.wardata, self.clan_tag).is_hard_mode())
         self.assertFalse(WarInfo(regular, self.clan_tag).is_hard_mode())
 
@@ -224,9 +222,7 @@ class TelegramNotifierTestCase(unittest.TestCase):
 
 class WarStatsTestCase(unittest.TestCase):
     def setUp(self):
-        warinfo = WarInfo(json.loads(
-            open(os.path.join('data', 'warEnded_50.json'),
-                 'r', encoding='utf8').read()))
+        warinfo = WarInfo(load_wardata('warEnded_50.json'))
         self.stats = WarStats(warinfo)
         self.attack161 = {
             "destructionPercentage": 53,

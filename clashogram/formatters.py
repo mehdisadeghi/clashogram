@@ -1,20 +1,20 @@
 ########################################################################
 # Message formatters
 ########################################################################
-import os
-import locale
 import gettext
-from dateutil.parser import parse as dateutil_parse
+import locale
+import os
 
-import pytz
 import jdatetime
+import pytz
+from dateutil.parser import parse as dateutil_parse
 
 from .models import WarStats
 
 _ = gettext.gettext
 
 
-class MessageFactory(object):
+class MessageFactory:
     def __init__(self, coc_api, warinfo):
         self.coc_api = coc_api
         self.warinfo = warinfo
@@ -171,9 +171,9 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
 
     def format_time(self, timestamp):
         utc_time = dateutil_parse(timestamp, fuzzy=True)
-        langs = set([locale.getlocale()[0],
-                    os.environ.get('LANG'),
-                    os.environ.get('LANGUAGE')])
+        langs = {locale.getlocale()[0],
+                 os.environ.get('LANG'),
+                 os.environ.get('LANGUAGE')}
         if langs.intersection(['fa_IR', 'fa', 'fa_IR.UTF-8', 'Persian_Iran']):
             tehran_time = utc_time.astimezone(pytz.timezone("Asia/Tehran"))
             fmt = jdatetime.datetime.fromgregorian(

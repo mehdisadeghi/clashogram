@@ -36,3 +36,10 @@ clashogram = 'clashogram:main'
 
 [tool.ruff]
 line-length = 79
+
+[tool.ruff.lint]
+# SIM114 folds the win/draw ladders into one condition that leans on and/or
+# precedence and runs past 150 characters. Less readable, not more.
+# E501 is left to the formatter, which cannot break the long data[...] chains
+# or the message templates without hurting them.
+ignore = ['SIM114', 'E501']

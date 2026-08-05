@@ -2,7 +2,7 @@
 # Models according to CoC API
 ########################################################################
 
-class ClanInfo(object):
+class ClanInfo:
     def __init__(self, clandata):
         self.data = clandata
 
@@ -25,8 +25,7 @@ class ClanInfo(object):
             return ''
 
     def _get_country_flag_imoji(self, country_code):
-        return "{}{}".format(chr(127397 + ord(country_code[0])),
-                             chr(127397 + ord(country_code[1])))
+        return f"{chr(127397 + ord(country_code[0]))}{chr(127397 + ord(country_code[1]))}"
 
     @property
     def winstreak(self):
@@ -37,7 +36,7 @@ class ClanInfo(object):
         return self.data['isWarLogPublic']
 
 
-class WarInfo(object):
+class WarInfo:
     def __init__(self, wardata, clan_tag=None, war_tag=None):
         self.data = wardata
         self.war_tag = war_tag
@@ -150,7 +149,7 @@ class WarInfo(object):
 
     def get_player_info(self, tag):
         if tag not in self.players:
-            raise Exception('Player %s not found.' % tag)
+            raise KeyError(f'Player {tag} not found.')
         return self.players[tag]
 
     def is_not_in_war(self):
@@ -176,13 +175,10 @@ class WarInfo(object):
                             self.data['opponent'].get('tag'))
 
     def is_win(self):
-        if self.data[self.us]['stars'] > self.data[self.them]['stars']:
-            return True
-        elif self.data[self.us]['stars'] == self.data[self.them]['stars'] and\
-                (self.data[self.us]['destructionPercentage'] > self.data[self.them]['destructionPercentage']):
-            return True
-        else:
-            return False
+        if self.data[self.us]['stars'] != self.data[self.them]['stars']:
+            return self.data[self.us]['stars'] > self.data[self.them]['stars']
+        return (self.data[self.us]['destructionPercentage'] >
+                self.data[self.them]['destructionPercentage'])
 
     def is_draw(self):
         return \
@@ -192,12 +188,12 @@ class WarInfo(object):
     def create_war_id(self):
         # Keyed on the payload's own slot order, never on ours, so that the
         # same war yields one id no matter which clan is asking.
-        return "{0}{1}{2}".format(self.data['clan']['tag'],
-                                  self.data['opponent']['tag'],
-                                  self.data['preparationStartTime'])
+        return "{}{}{}".format(self.data['clan']['tag'],
+                               self.data['opponent']['tag'],
+                               self.data['preparationStartTime'])
 
 
-class LeagueInfo(object):
+class LeagueInfo:
     """
     {
       "tag": "string",
@@ -296,26 +292,12 @@ class LeagueInfo(object):
     def is_war_over(self):
         return self.data['state'] == 'warEnded'
 
-    def is_win(self):
-        if self.data['clan']['stars'] > self.data['opponent']['stars']:
-            return True
-        elif self.data['clan']['stars'] == self.data['opponent']['stars'] and\
-                (self.data['clan']['destructionPercentage'] > self.data['opponent']['destructionPercentage']):
-            return True
-        else:
-            return False
-
-    def create_war_id(self):
-        return "{0}{1}{2}".format(self.data['season'],
-                                  len(self.data['clans']),
-                                  len(self.data['rounds']))
-
 
 ########################################################################
 # War statistics
 ########################################################################
 
-class WarStats(object):
+class WarStats:
     def __init__(self, warinfo):
         self.warinfo = warinfo
 
@@ -373,7 +355,7 @@ class WarStats(object):
     def get_best_attack_destruction_upto(self, in_attack):
         best_score = 0
         for order in range(1, in_attack['order'] + 1):
-            player, attack = self.warinfo.ordered_attacks[order]
+            _, attack = self.warinfo.ordered_attacks[order]
             if attack['defenderTag'] == in_attack['defenderTag'] and\
                attack['destructionPercentage'] > best_score and\
                attack['attackerTag'] != in_attack['attackerTag']:
@@ -391,7 +373,7 @@ class WarStats(object):
     def get_best_attack_stars_upto(self, in_attack):
         best_score = 0
         for order in range(1, in_attack['order'] + 1):
-            player, attack = self.warinfo.ordered_attacks[order]
+            _, attack = self.warinfo.ordered_attacks[order]
             if attack['defenderTag'] == in_attack['defenderTag'] and\
                attack['stars'] > best_score and\
                attack['attackerTag'] != in_attack['attackerTag']:

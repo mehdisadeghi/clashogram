@@ -1,19 +1,18 @@
 ########################################################################
 # CoC API Calls
 ########################################################################
+import json
 import time
 
 import requests
-import json
 
-from .models import WarInfo, ClanInfo, LeagueInfo
-
+from .models import ClanInfo, LeagueInfo, WarInfo
 
 RETRIES = 3
 RETRY_AFTER = 5
 
 
-class CoCAPI(object):
+class CoCAPI:
     def __init__(self, coc_token):
         self.coc_token = coc_token
 
@@ -36,7 +35,7 @@ class CoCAPI(object):
         except requests.HTTPError as err:
             # 404 is how the server says the clan is in no league group.
             if err.response.status_code != 404:
-                raise err
+                raise
         return league_info
 
     def _call_api(self, endpoint):
@@ -54,16 +53,14 @@ class CoCAPI(object):
 
     def _get_currentwar_endpoint(self, clan_tag, war_tag):
         if war_tag:
-            return 'https://api.clashofclans.com/v1/clanwarleagues/wars/{war_tag}'\
-                .format(war_tag=requests.utils.quote(war_tag))
+            return f'https://api.clashofclans.com/v1/clanwarleagues/wars/{requests.utils.quote(war_tag)}'\
+                
         else:
-            return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar'\
-                .format(clan_tag=requests.utils.quote(clan_tag))
+            return f'https://api.clashofclans.com/v1/clans/{requests.utils.quote(clan_tag)}/currentwar'\
+                
 
     def _get_claninfo_endpoint(self, clan_tag):
-        return 'https://api.clashofclans.com/v1/clans/{clan_tag}'.format(
-            clan_tag=requests.utils.quote(clan_tag))
+        return f'https://api.clashofclans.com/v1/clans/{requests.utils.quote(clan_tag)}'
 
     def _get_currentleague_endpoint(self, clan_tag):
-        return 'https://api.clashofclans.com/v1/clans/{clan_tag}/currentwar/leaguegroup'.format(
-            clan_tag=requests.utils.quote(clan_tag))
+        return f'https://api.clashofclans.com/v1/clans/{requests.utils.quote(clan_tag)}/currentwar/leaguegroup'

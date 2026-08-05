@@ -13,13 +13,30 @@ RETRY_AFTER = 5
 
 
 class CoCAPI:
-    def __init__(self, coc_token):
+    def __init__(self, coc_token, cache=None):
         self.coc_token = coc_token
+        self.cache = cache
 
     def get_currentwar(self, clan_tag, war_tag=None):
         return WarInfo(
             self._call_api(self._get_currentwar_endpoint(clan_tag, war_tag)),
             clan_tag, war_tag)
+
+    def get_league_war(self, war_tag, clan_tag):
+        """Fetch one war of a league group.
+
+        A group is 8 clans over 7 rounds, so 28 war tags. Every one of
+        them is followed, not only ours, because the standings need all
+        eight clans. A finished war cannot move, so once it has ended it
+        is read from the warlog and never asked for again."""
+        payload = self.cache and self.cache.finished_war(war_tag)
+        if payload is None:
+            payload = self._call_api(
+                self._get_currentwar_endpoint(None, war_tag))
+            if self.cache:
+                self.cache.remember_war(
+                    war_tag, payload, payload['state'] == 'warEnded')
+        return WarInfo(payload, clan_tag, war_tag)
 
     def get_claninfo(self, clan_tag):
         return ClanInfo(self._call_api(self._get_claninfo_endpoint(clan_tag)))

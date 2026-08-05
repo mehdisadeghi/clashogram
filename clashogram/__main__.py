@@ -68,7 +68,6 @@ def main(coc_token, clan_tag, bot_token, chat_id, mute_attacks, warlog,
     if loglevel:
         logging.basicConfig(level=loglevel)
 
-    coc_api = CoCAPI(coc_token)
     notifier = TelegramNotifier(bot_token, chat_id)
 
     if dryrun:
@@ -76,6 +75,7 @@ def main(coc_token, clan_tag, bot_token, chat_id, mute_attacks, warlog,
         notifier = DummyNotifier()
 
     with Storage(warlog) as db:
+        coc_api = CoCAPI(coc_token, cache=db)
         monitor = WarMonitor(db, coc_api, clan_tag, notifier)
         monitor.mute_attacks = mute_attacks
         monitor.start()
@@ -134,8 +134,9 @@ class WarMonitor:
     def mute_attacks(self, value):
         self._mute_attacks = value
 
-    def update(self, wartag=None):
-        warinfo = self.coc_api.get_currentwar(self.clan_tag, wartag)
+    def update(self, warinfo=None):
+        if warinfo is None:
+            warinfo = self.coc_api.get_currentwar(self.clan_tag)
         # save_latest_data(warinfo.data, monitor)
         if warinfo.is_not_in_war():
             logger.debug('Not in a war.')
@@ -252,14 +253,16 @@ class WarMonitor:
             try:
                 leagueinfo = self.coc_api.get_currentleague(self.clan_tag)
                 if leagueinfo:
-                    for previous_wartag in leagueinfo.get_previous_wartags():
-                        self.update(wartag=previous_wartag)
-                    current_war_tag = leagueinfo.get_current_wartag()
-                    next_war_tag = leagueinfo.get_next_wartag()
-                    if current_war_tag:
-                        self.update(wartag=current_war_tag)
-                    if next_war_tag:
-                        self.update(wartag=next_war_tag)
+                    # These are already fetched, so they are not asked for
+                    # a second time.
+                    for previous_war in leagueinfo.get_previous_wars():
+                        self.update(previous_war)
+                    current_war = leagueinfo.get_current_war()
+                    next_war = leagueinfo.get_next_war()
+                    if current_war:
+                        self.update(current_war)
+                    if next_war:
+                        self.update(next_war)
                 else:
                     self.update()
                 time.sleep(POLL_INTERVAL)

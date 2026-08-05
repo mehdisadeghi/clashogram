@@ -1,6 +1,7 @@
 ########################################################################
 # Persistence
 ########################################################################
+import json
 import shelve
 import sqlite3
 
@@ -9,6 +10,12 @@ CREATE TABLE IF NOT EXISTS sent (
     war_id TEXT NOT NULL,
     msg_id TEXT NOT NULL,
     PRIMARY KEY (war_id, msg_id)
+);
+CREATE TABLE IF NOT EXISTS war (
+    war_tag TEXT PRIMARY KEY,
+    clan_tag TEXT NOT NULL,
+    opponent_tag TEXT NOT NULL,
+    payload TEXT
 );
 """
 
@@ -33,6 +40,26 @@ class Storage:
             'INSERT OR IGNORE INTO sent (war_id, msg_id) VALUES (?, ?)',
             (war_id, msg_id))
         self._db.commit()
+
+    def remember_war(self, war_tag, payload, keep_payload):
+        """Note a league war, keeping the war itself once it has ended.
+
+        The payload is only worth keeping once the war is over and can
+        no longer move. Until then only the two clans are recorded."""
+        self._db.execute(
+            'INSERT INTO war (war_tag, clan_tag, opponent_tag, payload) '
+            'VALUES (?, ?, ?, ?) '
+            'ON CONFLICT(war_tag) DO UPDATE SET payload = excluded.payload',
+            (war_tag, payload['clan']['tag'], payload['opponent']['tag'],
+             json.dumps(payload) if keep_payload else None))
+        self._db.commit()
+
+    def finished_war(self, war_tag):
+        row = self._db.execute(
+            'SELECT payload FROM war WHERE war_tag = ?', (war_tag,)).fetchone()
+        if row is None or row[0] is None:
+            return None
+        return json.loads(row[0])
 
     def close(self):
         self._db.close()

@@ -251,6 +251,51 @@ class StorageTestCase(unittest.TestCase):
             self.assertTrue(db.is_sent('war2', 'preparation_msg'))
 
 
+class LeagueWarCacheTestCase(unittest.TestCase):
+    """Most of a league group is other clans' wars, fetched once."""
+
+    def setUp(self):
+        self.db = Storage(':memory:')
+        self.fetched = []
+        self.rounds = [{'warTags': ['#OURSDONE', '#THEIRSA']},
+                       {'warTags': ['#OURSLIVE', '#THEIRSB']}]
+
+    def _api(self):
+        api = CoCAPI('token', cache=self.db)
+        api._call_api = self._payload
+        return api
+
+    def _payload(self, endpoint):
+        war_tag = '#' + endpoint.rsplit('%23', 1)[-1]
+        self.fetched.append(war_tag)
+        return {'state': 'inWar' if war_tag.endswith('LIVE') else 'warEnded',
+                'teamSize': 15, 'preparationStartTime': 'T',
+                'clan': {'tag': '#US' if war_tag.startswith('#OURS')
+                                else '#OTHER' + war_tag,
+                         'name': 'a', 'members': []},
+                'opponent': {'tag': '#THEM' + war_tag, 'name': 'b',
+                             'members': []}}
+
+    def _populate(self):
+        leagueinfo = LeagueInfo('#US', {'rounds': self.rounds})
+        leagueinfo.populate_wartags(self._api())
+        return leagueinfo
+
+    def test_only_our_wars_are_kept(self):
+        self.assertEqual(sorted(self._populate().our_wartags),
+                         ['#OURSDONE', '#OURSLIVE'])
+
+    def test_second_pass_only_refetches_unfinished_wars(self):
+        self._populate()
+        self.assertEqual(len(self.fetched), 4)
+        self.fetched.clear()
+        # A finished war cannot move, so it is read back from the warlog.
+        # The live ones are still followed, including other clans', which
+        # the standings need.
+        self._populate()
+        self.assertEqual(self.fetched, ['#OURSLIVE'])
+
+
 class WarStatsTestCase(unittest.TestCase):
     def setUp(self):
         warinfo = WarInfo(load_wardata('warEnded_50.json'))

@@ -258,27 +258,27 @@ class LeagueInfo:
             for war_tag in rnd['warTags']:
                 if war_tag == '#0':
                     continue
-                self._wartags[war_tag] = api.get_currentwar(self.clan_tag,
-                                                            war_tag)
+                self._wartags[war_tag] = api.get_league_war(
+                    war_tag, self.clan_tag)
 
     def reset(self):
         self._wartags.clear()
 
-    def get_previous_wartags(self):
-        for wartag, warinfo in self.our_wartags.items():
+    def get_previous_wars(self):
+        for warinfo in self.our_wartags.values():
             if warinfo.is_war_over():
-                yield wartag
+                yield warinfo
 
-    def get_current_wartag(self):
-        # Simply return the first tag which is either in preparation or inWar.
-        for wartag, warinfo in self.our_wartags.items():
+    def get_current_war(self):
+        # Simply return the first war which is either in preparation or inWar.
+        for warinfo in self.our_wartags.values():
             if warinfo.is_in_war():
-                return wartag
+                return warinfo
 
-    def get_next_wartag(self):
-        for wartag, warinfo in self.our_wartags.items():
+    def get_next_war(self):
+        for warinfo in self.our_wartags.values():
             if warinfo.is_in_preparation():
-                return wartag
+                return warinfo
 
     def is_not_in_war(self):
         return self.data['state'] == 'notInWar'

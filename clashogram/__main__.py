@@ -11,6 +11,7 @@ import click
 import requests
 
 from .api import CoCAPI
+from .commands import CommandBot
 from .formatters import MessageFactory, create_standings_msg
 from .models import LeagueStandings, WarStats
 from .notifiers import DummyNotifier, TelegramNotifier
@@ -25,6 +26,7 @@ gettext.textdomain('messages')
 _ = gettext.gettext
 
 POLL_INTERVAL = 60
+IDLE_TICK = 1
 logger = logging.getLogger(__name__)
 
 
@@ -156,6 +158,7 @@ class WarMonitor:
         self.msg_factory = None
         self.warstats = None
         self.leagueinfo = None
+        self.commands = CommandBot(self)
         self._mute_attacks = False
 
     @property
@@ -264,6 +267,25 @@ class WarMonitor:
         self.send_once(
             self.msg_factory.create_war_over_msg(), msg_id='war_over_msg')
 
+    def answer_commands_until(self, deadline):
+        """Wait out the poll interval answering whoever asks.
+
+        The chat is served while the war poll sleeps, so a question
+        does not wait a minute for an answer and the poll does not
+        wait behind the chat."""
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return
+            answered = False
+            for chat_id, text in self.notifier.receive():
+                self.notifier.reply(chat_id, self.commands.answer(text))
+                answered = True
+            if not answered:
+                # A notifier that does not block waiting for messages
+                # would spin here otherwise.
+                time.sleep(min(remaining, IDLE_TICK))
+
     def send_standings_msg(self):
         """Post the table once per round, keyed to the round that ended."""
         if not self.leagueinfo:
@@ -307,7 +329,7 @@ class WarMonitor:
                         self.update(next_war)
                 else:
                     self.update()
-                time.sleep(POLL_INTERVAL)
+                self.answer_commands_until(time.monotonic() + POLL_INTERVAL)
             except requests.HTTPError as err:
                 status = err.response.status_code
                 if status in (500, 502, 504):

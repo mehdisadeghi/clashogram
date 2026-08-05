@@ -1,13 +1,15 @@
 [build-system]
-requires = ['flit_core >=2,<4']
+requires = ['flit_core >=3.2,<4']
 build-backend = 'flit_core.buildapi'
 
-[tool.flit.metadata]
-module = 'clashogram'
-author = 'Mehdi Sadeghi'
-author-email = 'mehdi@mehdix.org'
-home-page = 'https://github.com/mehdisadeghi/clashogram'
-requires-python = '>=3.5'
+[project]
+name = 'clashogram'
+authors = [{name = 'Mehdi Sadeghi', email = 'mehdi@mehdix.org'}]
+readme = 'README.rst'
+license = {file = 'LICENSE.txt'}
+requires-python = '>=3.10'
+keywords = ['coc', 'telegram', 'clashofclans']
+dynamic = ['version', 'description']
 classifiers = [
     'Environment :: Console',
     'Natural Language :: Persian',
@@ -16,17 +18,21 @@ classifiers = [
     'Programming Language :: Python :: 3',
     'Intended Audience :: End Users/Desktop',
     'License :: OSI Approved :: MIT License']
-description-file = 'README.rst'
-keywords = 'coc telegram clashofclans'
-requires = ['requests',
-            'jdatetime',
-            'pytz',
-            'python-dateutil',
-            'click']
+dependencies = ['requests',
+                'jdatetime',
+                'pytz',
+                'python-dateutil',
+                'click']
 
-[tool.flit.metadata.requires-extra]
+[project.optional-dependencies]
 test = ['pytest']
 i18n = ['babel']
 
-[tool.flit.scripts]
+[project.urls]
+Home = 'https://github.com/mehdisadeghi/clashogram'
+
+[project.scripts]
 clashogram = 'clashogram:main'
+
+[tool.ruff]
+line-length = 79

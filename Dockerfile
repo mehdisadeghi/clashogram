@@ -1,17 +1,13 @@
-FROM frolvlad/alpine-python3
-RUN pip --no-cache-dir install --upgrade --no-compile flit
+FROM python:3.13-alpine
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-ENV FLIT_ROOT_INSTALL=1
 WORKDIR /app
 
 ADD pyproject.toml .
 ADD LICENSE.txt .
 ADD README.rst .
 ADD clashogram ./clashogram
-RUN flit install
+RUN uv pip install --system --no-cache .
 
 ENV LC_ALL=C.UTF-8
-WORKDIR /app
 ENTRYPOINT ["clashogram"]
-
-

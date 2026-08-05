@@ -171,15 +171,12 @@ Clan {opponentclan: <{cwidth}} L {theirlevel: <2}
                     os.environ.get('LANG'),
                     os.environ.get('LANGUAGE')])
         if langs.intersection(['fa_IR', 'fa', 'fa_IR.UTF-8', 'Persian_Iran']):
-            self.patch_jdatetime()
             tehran_time = utc_time.astimezone(pytz.timezone("Asia/Tehran"))
             fmt = jdatetime.datetime.fromgregorian(
-                datetime=tehran_time).strftime("%a، %d %b %Y %H:%M:%S")
+                datetime=tehran_time,
+                locale=jdatetime.FA_LOCALE).strftime("%a، %d %B %Y %H:%M:%S")
             return self.convert_to_persian_numbers(fmt)
         return utc_time.strftime("%a, %d %b %Y %H:%M:%S")
-
-    def patch_jdatetime(self):
-        jdatetime.date._is_fa_locale = lambda self: True
 
     def convert_to_persian_numbers(self, text):
         # Supper intelligent and super efficient :)

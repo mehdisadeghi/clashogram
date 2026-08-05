@@ -293,6 +293,50 @@ class LeagueInfo:
         return self.data['state'] == 'warEnded'
 
 
+class LeagueStandings:
+    """Cumulative results for every clan in a league group.
+
+    A league war hands the winner ten bonus stars, and those are what
+    order the table rather than the stars earned in the attacks."""
+
+    BONUS_STARS = 10
+
+    def __init__(self, leagueinfo):
+        self.leagueinfo = leagueinfo
+
+    def rows(self):
+        totals = {}
+        for warinfo in self.leagueinfo.wartags.values():
+            if not warinfo.is_war_over():
+                continue
+            winner = self._winning_side(warinfo.data)
+            for side in ('clan', 'opponent'):
+                clan = warinfo.data[side]
+                row = totals.setdefault(clan['tag'],
+                                        {'tag': clan['tag'],
+                                         'name': clan['name'],
+                                         'stars': 0,
+                                         'destruction': 0.0,
+                                         'rounds': 0})
+                row['stars'] += clan['stars']
+                if side == winner:
+                    row['stars'] += self.BONUS_STARS
+                row['destruction'] += clan['destructionPercentage']
+                row['rounds'] += 1
+        for row in totals.values():
+            # Averaged, because a running total past 100% reads as a bug.
+            row['destruction'] /= row['rounds']
+        return sorted(totals.values(),
+                      key=lambda row: (-row['stars'], -row['destruction']))
+
+    def _winning_side(self, data):
+        for field in ('stars', 'destructionPercentage'):
+            if data['clan'][field] != data['opponent'][field]:
+                return ('clan' if data['clan'][field] > data['opponent'][field]
+                        else 'opponent')
+        return None
+
+
 ########################################################################
 # War statistics
 ########################################################################

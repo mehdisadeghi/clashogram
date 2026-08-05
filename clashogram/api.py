@@ -25,10 +25,10 @@ class CoCAPI:
     def get_league_war(self, war_tag, clan_tag):
         """Fetch one war of a league group.
 
-        A group is 8 clans over 7 rounds, so 28 war tags. Every one of
-        them is followed, not only ours, because the standings need all
-        eight clans. A finished war cannot move, so once it has ended it
-        is read from the warlog and never asked for again."""
+        Every war in the group is followed, not only ours, because the
+        standings need all eight clans. A finished war cannot move, so
+        once it has ended it is read from the warlog and never asked
+        for again."""
         payload = self.cache and self.cache.finished_war(war_tag)
         if payload is None:
             payload = self._call_api(

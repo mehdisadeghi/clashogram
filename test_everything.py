@@ -13,7 +13,13 @@ import requests
 from clashogram.__main__ import WarMonitor
 from clashogram.api import CoCAPI
 from clashogram.formatters import MessageFactory
-from clashogram.models import ClanInfo, LeagueInfo, WarInfo, WarStats
+from clashogram.models import (
+    ClanInfo,
+    LeagueInfo,
+    LeagueStandings,
+    WarInfo,
+    WarStats,
+)
 from clashogram.notifiers import TelegramNotifier
 from clashogram.storage import Storage, import_shelve
 
@@ -294,6 +300,38 @@ class LeagueWarCacheTestCase(unittest.TestCase):
         # the standings need.
         self._populate()
         self.assertEqual(self.fetched, ['#OURSLIVE'])
+
+
+class LeagueStandingsTestCase(unittest.TestCase):
+    def _war(self, a, a_stars, b, b_stars, state='warEnded'):
+        return WarInfo({'state': state, 'teamSize': 15,
+                        'preparationStartTime': 'T',
+                        'clan': {'tag': '#' + a, 'name': a, 'members': [],
+                                 'stars': a_stars, 'destructionPercentage': 90},
+                        'opponent': {'tag': '#' + b, 'name': b, 'members': [],
+                                     'stars': b_stars,
+                                     'destructionPercentage': 80}})
+
+    def _standings(self, wars):
+        leagueinfo = LeagueInfo('#A', {'rounds': []})
+        leagueinfo.wartags.update(dict(enumerate(wars)))
+        return LeagueStandings(leagueinfo).rows()
+
+    def test_winner_takes_the_bonus_stars(self):
+        rows = self._standings([self._war('A', 30, 'B', 25)])
+        self.assertEqual([(r['name'], r['stars']) for r in rows],
+                         [('A', 40), ('B', 25)])
+
+    def test_a_draw_hands_out_no_bonus(self):
+        # Equal stars and unequal destruction is a win, so force both equal.
+        war = self._war('A', 30, 'B', 30)
+        war.data['opponent']['destructionPercentage'] = 90
+        rows = self._standings([war])
+        self.assertEqual([r['stars'] for r in rows], [30, 30])
+
+    def test_unfinished_wars_are_not_counted(self):
+        self.assertEqual(
+            self._standings([self._war('A', 30, 'B', 25, state='inWar')]), [])
 
 
 class WarStatsTestCase(unittest.TestCase):

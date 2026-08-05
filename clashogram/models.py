@@ -38,13 +38,23 @@ class ClanInfo(object):
 
 
 class WarInfo(object):
-    def __init__(self, wardata):
+    def __init__(self, wardata, clan_tag=None):
         self.data = wardata
+        self.us, self.them = self._take_sides(clan_tag)
         self.clan_members = {}
         self.opponent_members = {}
         self.players = {}
         self.ordered_attacks = None
         self._populate()
+
+    def _take_sides(self, clan_tag):
+        """Find which slot we occupy.
+
+        A regular war always puts us in `clan`, but a league war names
+        the two sides arbitrarily, so we may be either one."""
+        if clan_tag and self.data['opponent'].get('tag') == clan_tag:
+            return 'opponent', 'clan'
+        return 'clan', 'opponent'
 
     @property
     def state(self):
@@ -52,51 +62,51 @@ class WarInfo(object):
 
     @property
     def clan_tag(self):
-        return self.data['clan']['tag']
+        return self.data[self.us]['tag']
 
     @property
     def op_tag(self):
-        return self.data['opponent']['tag']
+        return self.data[self.them]['tag']
 
     @property
     def clan_name(self):
-        return self.data['clan']['name']
+        return self.data[self.us]['name']
 
     @property
     def op_name(self):
-        return self.data['opponent']['name']
+        return self.data[self.them]['name']
 
     @property
     def clan_level(self):
-        return self.data['clan']['clanLevel']
+        return self.data[self.us]['clanLevel']
 
     @property
     def op_level(self):
-        return self.data['opponent']['clanLevel']
+        return self.data[self.them]['clanLevel']
 
     @property
     def clan_destruction(self):
-        return self.data['clan']['destructionPercentage']
+        return self.data[self.us]['destructionPercentage']
 
     @property
     def op_destruction(self):
-        return self.data['opponent']['destructionPercentage']
+        return self.data[self.them]['destructionPercentage']
 
     @property
     def clan_stars(self):
-        return self.data['clan']['stars']
+        return self.data[self.us]['stars']
 
     @property
     def op_stars(self):
-        return self.data['opponent']['stars']
+        return self.data[self.them]['stars']
 
     @property
     def clan_attacks(self):
-        return self.data['clan']['attacks']
+        return self.data[self.us]['attacks']
 
     @property
     def op_attacks(self):
-        return self.data['opponent']['attacks']
+        return self.data[self.them]['attacks']
 
     @property
     def start_time(self):
@@ -109,10 +119,10 @@ class WarInfo(object):
     def _populate(self):
         if self.is_not_in_war():
             return
-        for member in self.data['clan']['members']:
+        for member in self.data[self.us]['members']:
             self.clan_members[member['tag']] = member
             self.players[member['tag']] = member
-        for opponent in self.data['opponent']['members']:
+        for opponent in self.data[self.them]['members']:
             self.opponent_members[opponent['tag']] = opponent
             self.players[opponent['tag']] = opponent
         self.ordered_attacks = self.get_ordered_attacks()
@@ -150,21 +160,27 @@ class WarInfo(object):
     def is_clan_member(self, player):
         return player['tag'] in self.clan_members
 
+    def is_participant(self, clan_tag):
+        return clan_tag in (self.data['clan'].get('tag'),
+                            self.data['opponent'].get('tag'))
+
     def is_win(self):
-        if self.data['clan']['stars'] > self.data['opponent']['stars']:
+        if self.data[self.us]['stars'] > self.data[self.them]['stars']:
             return True
-        elif self.data['clan']['stars'] == self.data['opponent']['stars'] and\
-                (self.data['clan']['destructionPercentage'] > self.data['opponent']['destructionPercentage']):
+        elif self.data[self.us]['stars'] == self.data[self.them]['stars'] and\
+                (self.data[self.us]['destructionPercentage'] > self.data[self.them]['destructionPercentage']):
             return True
         else:
             return False
 
     def is_draw(self):
         return \
-            self.data['clan']['stars'] == self.data['opponent']['stars'] and\
-            (self.data['clan']['destructionPercentage'] == self.data['opponent']['destructionPercentage'])
+            self.data[self.us]['stars'] == self.data[self.them]['stars'] and\
+            (self.data[self.us]['destructionPercentage'] == self.data[self.them]['destructionPercentage'])
 
     def create_war_id(self):
+        # Keyed on the payload's own slot order, never on ours, so that the
+        # same war yields one id no matter which clan is asking.
         return "{0}{1}{2}".format(self.data['clan']['tag'],
                                   self.data['opponent']['tag'],
                                   self.data['preparationStartTime'])
@@ -224,7 +240,7 @@ class LeagueInfo(object):
 
     @property
     def our_wartags(self):
-        return {wartag: warinfo for wartag, warinfo in self._wartags.items() if warinfo.clan_tag == self.clan_tag}
+        return {wartag: warinfo for wartag, warinfo in self._wartags.items() if warinfo.is_participant(self.clan_tag)}
 
     @property
     def wartags(self):
@@ -235,7 +251,8 @@ class LeagueInfo(object):
             for war_tag in rnd['warTags']:
                 if war_tag == '#0':
                     continue
-                self._wartags[war_tag] = api.get_currentwar(None, war_tag)
+                self._wartags[war_tag] = api.get_currentwar(self.clan_tag,
+                                                            war_tag)
 
     def reset(self):
         self._wartags.clear()

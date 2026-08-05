@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from clashogram.__main__ import WarMonitor
-from clashogram.models import WarStats, ClanInfo, WarInfo, WarStats
+from clashogram.models import WarStats, ClanInfo, WarInfo, WarStats, LeagueInfo
 from clashogram.formatters import MessageFactory
 from clashogram.api import CoCAPI
 from clashogram.notifiers import TelegramNotifier
@@ -141,6 +141,33 @@ class WarInfoNotInWarTestCase(unittest.TestCase):
 
     def test_players(self):
         self.assertEqual(self.warinfo.players, {})
+
+
+class LeagueWarPerspectiveTestCase(unittest.TestCase):
+    """A league war may list us as the opponent rather than the clan."""
+    def setUp(self):
+        self.clan_tag = '#YVL0C8UY'
+        self.wardata = json.loads(
+            open(os.path.join('data', 'cwl_warEnded_mirrored.json'),
+                 'r', encoding='utf8').read())
+
+    def test_our_wartags_include_the_opponent_slot(self):
+        leagueinfo = LeagueInfo(self.clan_tag,
+                                {'rounds': [{'warTags': ['#WAR1']}]})
+        api = MagicMock()
+        api.get_currentwar.return_value = WarInfo(self.wardata, self.clan_tag)
+        leagueinfo.populate_wartags(api)
+        self.assertEqual(list(leagueinfo.our_wartags), ['#WAR1'])
+
+    def test_reads_us_from_the_opponent_slot(self):
+        warinfo = WarInfo(self.wardata, self.clan_tag)
+        self.assertEqual(warinfo.clan_name, 'iran')
+        self.assertEqual(warinfo.op_name, 'KINGS EMPIRE')
+        self.assertFalse(warinfo.is_win())
+
+    def test_war_id_ignores_perspective(self):
+        self.assertEqual(WarInfo(self.wardata, self.clan_tag).create_war_id(),
+                         WarInfo(self.wardata).create_war_id())
 
 
 class WarStatsTestCase(unittest.TestCase):

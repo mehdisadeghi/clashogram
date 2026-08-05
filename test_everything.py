@@ -3,7 +3,9 @@ import os
 import json
 import gettext
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+import requests
 
 from clashogram.__main__ import WarMonitor
 from clashogram.models import WarStats, ClanInfo, WarInfo, WarStats, LeagueInfo
@@ -180,6 +182,38 @@ class LeagueWarPerspectiveTestCase(unittest.TestCase):
     def test_war_id_ignores_perspective(self):
         self.assertEqual(WarInfo(self.wardata, self.clan_tag).create_war_id(),
                          WarInfo(self.wardata).create_war_id())
+
+
+class TelegramNotifierTestCase(unittest.TestCase):
+    def _response(self, status_code, body=None):
+        res = MagicMock()
+        res.status_code = status_code
+        res.json.return_value = body or {}
+        res.raise_for_status.side_effect = (
+            None if status_code == requests.codes.ok
+            else requests.HTTPError(str(status_code)))
+        return res
+
+    def test_retries_after_rate_limit(self):
+        notifier = TelegramNotifier('token', 'chat')
+        with patch('clashogram.notifiers.requests.post') as post, \
+             patch('clashogram.notifiers.time.sleep') as sleep:
+            post.side_effect = [
+                self._response(429, {'parameters': {'retry_after': 7}}),
+                self._response(200)]
+            notifier.send('hi')
+            self.assertEqual(post.call_count, 2)
+            sleep.assert_called_once_with(7)
+
+    def test_undelivered_message_is_not_marked_sent(self):
+        monitor = WarMonitor({}, MagicMock(), '#TAG', MagicMock())
+        monitor.warinfo = MagicMock()
+        monitor.warinfo.create_war_id.return_value = 'W1'
+        monitor.db['W1'] = {}
+        monitor.notifier.send.side_effect = requests.HTTPError('429')
+        with self.assertRaises(requests.HTTPError):
+            monitor.send_once('hi', msg_id='m1')
+        self.assertFalse(monitor.is_msg_sent('m1'))
 
 
 class WarStatsTestCase(unittest.TestCase):

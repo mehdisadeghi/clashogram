@@ -1,7 +1,13 @@
 ########################################################################
 # Notifiers
 ########################################################################
+import time
+
 import requests
+
+
+RETRIES = 3
+RETRY_AFTER = 5
 
 
 class TelegramNotifier(object):
@@ -18,7 +24,16 @@ class TelegramNotifier(object):
                            chat_id=self.chat_id,
                            text=requests.utils.quote(msg),
                            silent=silent)
-        requests.post(endpoint)
+        for _ in range(RETRIES):
+            res = requests.post(endpoint)
+            if res.status_code != requests.codes.too_many_requests:
+                break
+            time.sleep(self._retry_after(res))
+        # Raising leaves the message unmarked, so the next poll resends it.
+        res.raise_for_status()
+
+    def _retry_after(self, res):
+        return res.json().get('parameters', {}).get('retry_after', RETRY_AFTER)
 
 
 class DummyNotifier(object):

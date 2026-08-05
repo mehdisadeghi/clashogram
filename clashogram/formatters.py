@@ -123,7 +123,7 @@ Result: {stars} | {destruction_percentage}%
         op_attack_count = war_stats['op_used_attacks']
 
         return template.format(
-            total=self.warinfo.team_size * 2,
+            total=self.warinfo.team_size * self.warinfo.attacks_per_member,
             clan_attack_count=clan_attack_count,
             opponent_attack_count=op_attack_count,
             clan_stars=clan_stars,

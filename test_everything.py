@@ -165,6 +165,18 @@ class LeagueWarPerspectiveTestCase(unittest.TestCase):
         self.assertEqual(warinfo.op_name, 'KINGS EMPIRE')
         self.assertFalse(warinfo.is_win())
 
+    def test_attacks_per_member(self):
+        regular = json.loads(open(os.path.join('data', 'inWar_40.json'),
+                                  'r', encoding='utf8').read())
+        # A league war is one attack each, whatever the payload says.
+        self.assertEqual(WarInfo(regular, self.clan_tag, '#WAR1')
+                         .attacks_per_member, 1)
+        # A regular war predating the field is two.
+        self.assertEqual(WarInfo(regular, self.clan_tag).attacks_per_member, 2)
+        # Otherwise trust the payload.
+        self.assertEqual(WarInfo(self.wardata, self.clan_tag)
+                         .attacks_per_member, 1)
+
     def test_war_id_ignores_perspective(self):
         self.assertEqual(WarInfo(self.wardata, self.clan_tag).create_war_id(),
                          WarInfo(self.wardata).create_war_id())

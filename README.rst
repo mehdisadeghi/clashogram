@@ -148,6 +148,16 @@ install a systemd unit::
 Search internet for more information on installing systemd units on your
 OS.
 
+Upgrading an older warlog
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The warlog is a sqlite database now. Import an older one once before the
+first run, otherwise the current war gets announced again::
+
+    $ clashogram-import warlog.db warlog-new.db
+
+See `UPGRADING.rst <UPGRADING.rst>`__ if you run under docker.
+
 Contribution (PRs welcome!)
 ---------------------------
 

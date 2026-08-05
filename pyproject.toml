@@ -33,6 +33,7 @@ Home = 'https://github.com/mehdisadeghi/clashogram'
 
 [project.scripts]
 clashogram = 'clashogram:main'
+clashogram-import = 'clashogram:import_warlog'
 
 [tool.ruff]
 line-length = 79

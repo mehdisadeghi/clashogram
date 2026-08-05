@@ -10,8 +10,8 @@ import click
 import requests
 
 from .api import CoCAPI
-from .formatters import MessageFactory
-from .models import WarStats
+from .formatters import MessageFactory, create_standings_msg
+from .models import LeagueStandings, WarStats
 from .notifiers import DummyNotifier, TelegramNotifier
 from .storage import Storage
 from .storage import import_shelve as import_shelve_warlog
@@ -124,6 +124,7 @@ class WarMonitor:
         self.warinfo = None
         self.msg_factory = None
         self.warstats = None
+        self.leagueinfo = None
         self._mute_attacks = False
 
     @property
@@ -159,6 +160,7 @@ class WarMonitor:
             if not self.mute_attacks:
                 self.send_attack_msgs()
             self.send_war_over_msg()
+            self.send_standings_msg()
             self.reset()
         else:
             print("Current war status is uknown. We stay quiet.")
@@ -231,6 +233,14 @@ class WarMonitor:
         self.send_once(
             self.msg_factory.create_war_over_msg(), msg_id='war_over_msg')
 
+    def send_standings_msg(self):
+        """Post the table once per round, keyed to the round that ended."""
+        if not self.leagueinfo:
+            return
+        rows = LeagueStandings(self.leagueinfo).rows()
+        if rows:
+            self.send_once(create_standings_msg(rows), msg_id='standings_msg')
+
     def reset(self):
         self.warinfo = None
         self.warstats = None
@@ -252,6 +262,7 @@ class WarMonitor:
         while True:
             try:
                 leagueinfo = self.coc_api.get_currentleague(self.clan_tag)
+                self.leagueinfo = leagueinfo
                 if leagueinfo:
                     # These are already fetched, so they are not asked for
                     # a second time.

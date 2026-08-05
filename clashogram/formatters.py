@@ -14,6 +14,16 @@ from .models import WarStats
 _ = gettext.gettext
 
 
+def create_standings_msg(rows):
+    msg = "🏆" + _(" League standings")
+    msg += "\n▪️" + _("Rank, stars, destruction, rounds, clan")
+    width = max(len(row['name']) for row in rows)
+    for rank, row in enumerate(rows, 1):
+        msg += "\n▫️{rank: <2} {stars: <3} {destruction: >7.2f}% {rounds} " \
+               "{name: <{width}}".format(rank=rank, width=width, **row)
+    return "<pre>" + msg + "</pre>"
+
+
 class MessageFactory:
     def __init__(self, coc_api, warinfo):
         self.coc_api = coc_api

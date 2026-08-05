@@ -165,6 +165,9 @@ class WarInfo(object):
     def is_war_over(self):
         return self.data['state'] == 'warEnded'
 
+    def is_hard_mode(self):
+        return self.data.get('battleModifier') == 'hardMode'
+
     def is_clan_member(self, player):
         return player['tag'] in self.clan_members
 

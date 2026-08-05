@@ -248,6 +248,14 @@ class StorageTestCase(unittest.TestCase):
             self.assertFalse(db.is_sent('war1', 'war_over_msg'))
             self.assertFalse(db.is_sent('war2', 'preparation_msg'))
 
+    def test_archived_wars_round_trip(self):
+        payload = {'state': 'warEnded', 'clan': {'name': 'ایران'}}
+        with Storage(self.path) as db:
+            db.archive_war('war1', payload)
+            db.archive_war('war1', payload)  # replays must not duplicate
+        with Storage(self.path) as db:
+            self.assertEqual(list(db.archived_wars()), [('war1', payload)])
+
     def test_import_shelve_carries_sent_flags_over(self):
         old = os.path.join(self.tmpdir, 'old')
         with shelve.open(old) as legacy:

@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS sent (
     msg_id TEXT NOT NULL,
     PRIMARY KEY (war_id, msg_id)
 );
+CREATE TABLE IF NOT EXISTS archive (
+    war_id TEXT PRIMARY KEY,
+    payload TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS war (
     war_tag TEXT PRIMARY KEY,
     clan_tag TEXT NOT NULL,
@@ -53,6 +57,18 @@ class Storage:
             (war_tag, payload['clan']['tag'], payload['opponent']['tag'],
              json.dumps(payload) if keep_payload else None))
         self._db.commit()
+
+    def archive_war(self, war_id, payload):
+        """Keep a finished war so later seasons can be recomputed."""
+        self._db.execute(
+            'INSERT OR REPLACE INTO archive (war_id, payload) VALUES (?, ?)',
+            (war_id, json.dumps(payload, ensure_ascii=False)))
+        self._db.commit()
+
+    def archived_wars(self):
+        for war_id, payload in self._db.execute(
+                'SELECT war_id, payload FROM archive ORDER BY war_id'):
+            yield war_id, json.loads(payload)
 
     def finished_war(self, war_tag):
         row = self._db.execute(

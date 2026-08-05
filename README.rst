@@ -2,8 +2,8 @@
    :depth: 3
 ..
 
-clashogram |Build Status| |Build status| |Pypi status|
-======================================================
+clashogram |Build Status| |Pypi status|
+=======================================
 
 Clash of Clans war moniting for telegram channels.
 
@@ -23,7 +23,7 @@ messages to a Telegram channel:
 Requirements
 ------------
 
-To run the program you need to have python 3.3 or higher. You will also
+To run the program you need to have python 3.10 or higher. You will also
 need ``pip`` to install python dependencies. Moreover, using a
 `virtualenv <https://virtualenv.pypa.io/en/stable/>`__ makes
 installation much easier, otherwise you have to install everything
@@ -201,10 +201,8 @@ License
 
 MIT
 
-.. |Build Status| image:: https://travis-ci.org/mehdisadeghi/clashogram.svg?branch=master
-   :target: https://travis-ci.org/mehdisadeghi/clashogram
-.. |Build status| image:: https://ci.appveyor.com/api/projects/status/ovixrhmsp3og4nt4/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/mehdisadeghi/clashogram/branch/master
+.. |Build Status| image:: https://github.com/mehdisadeghi/clashogram/actions/workflows/ci.yml/badge.svg?branch=master
+   :target: https://github.com/mehdisadeghi/clashogram/actions/workflows/ci.yml
 .. |Pypi status| image:: https://img.shields.io/pypi/v/clashogram.svg
    :target: https://pypi.python.org/pypi/clashogram
 

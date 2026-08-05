@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 """clashogram - Clash of Clans war moniting for telegram channels."""
-import os
-import time
-import shelve
 import gettext
 import hashlib
 import logging
+import os
+import shelve
+import time
 
 import click
 import requests
 
-from .models import WarStats
-from .formatters import MessageFactory
 from .api import CoCAPI
-from .notifiers import TelegramNotifier, DummyNotifier
+from .formatters import MessageFactory
+from .models import WarStats
+from .notifiers import DummyNotifier, TelegramNotifier
 from .utils import SimpleKVDB
-
 
 gettext.bindtextdomain('messages',
                        localedir=os.path.join(
@@ -25,6 +24,7 @@ gettext.textdomain('messages')
 _ = gettext.gettext
 
 POLL_INTERVAL = 60
+logger = logging.getLogger(__name__)
 
 
 @click.command()
@@ -98,7 +98,7 @@ def serverless(db, coc_token, clan_tag, bot_token, chat_id):
 # Main war monitor class
 ########################################################################
 
-class WarMonitor(object):
+class WarMonitor:
     def __init__(self, db, api, tag, notifier):
         """Scan warlog for war updates.
 
@@ -133,7 +133,7 @@ class WarMonitor(object):
         warinfo = self.coc_api.get_currentwar(self.clan_tag, wartag)
         # save_latest_data(warinfo.data, monitor)
         if warinfo.is_not_in_war():
-            logging.debug('Not in a war.')
+            logger.debug('Not in a war.')
             if self.warinfo is not None:
                 self.send_war_over_msg()
             self.reset()
@@ -141,15 +141,15 @@ class WarMonitor(object):
 
         self.populate_warinfo(warinfo)
         if warinfo.is_in_preparation():
-            logging.debug('War preparation.')
+            logger.debug('War preparation.')
             self.send_preparation_msg()
         elif warinfo.is_in_war():
-            logging.debug('In a war.')
+            logger.debug('In a war.')
             self.send_war_msg()
             if not self.mute_attacks:
                 self.send_attack_msgs()
         elif warinfo.is_war_over():
-            logging.debug('War is over.')
+            logger.debug('War is over.')
             if not self.mute_attacks:
                 self.send_attack_msgs()
             self.send_war_over_msg()
@@ -265,14 +265,14 @@ class WarMonitor(object):
             except requests.HTTPError as err:
                 status = err.response.status_code
                 if status in (500, 502, 504):
-                    print('CoC server error {}, retrying.'.format(status))
+                    print(f'CoC server error {status}, retrying.')
                     time.sleep(POLL_INTERVAL * 10)
                     continue
                 elif status == 503:
                     print('CoC maintenance error, retrying.')
                     self.notifier.send(
-                        'CoC maintenance error, retrying in {} seconds.'
-                        .format(POLL_INTERVAL * 10), silent=True)
+                        f'CoC maintenance error, retrying in {POLL_INTERVAL * 10} seconds.'
+                        , silent=True)
                     time.sleep(POLL_INTERVAL * 10)
                     continue
                 elif status == 403:

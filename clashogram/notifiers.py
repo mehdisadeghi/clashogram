@@ -5,12 +5,11 @@ import time
 
 import requests
 
-
 RETRIES = 3
 RETRY_AFTER = 5
 
 
-class TelegramNotifier(object):
+class TelegramNotifier:
     def __init__(self, bot_token, chat_id):
         self.bot_token = bot_token
         self.chat_id = chat_id
@@ -36,7 +35,7 @@ class TelegramNotifier(object):
         return res.json().get('parameters', {}).get('retry_after', RETRY_AFTER)
 
 
-class DummyNotifier(object):
+class DummyNotifier:
     def send(self, msg, silent=False):
         if not silent:
             print(msg)

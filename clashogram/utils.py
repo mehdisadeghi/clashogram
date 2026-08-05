@@ -1,36 +1,34 @@
 ########################################################################
 # Helper functions
 ########################################################################
-import os
 import json
+import os
 
 
 def save_wardata(wardata):
     if wardata['state'] != 'notInWar':
-        war_id = "{0}{1}".format(wardata['clan']['tag'][1:],
+        war_id = "{}{}".format(wardata['clan']['tag'][1:],
                                  wardata['preparationStartTime'])
         if not os.path.exists('warlog'):
             os.mkdir('warlog')
         path = os.path.join('warlog', war_id)
-        json.dump(wardata,
-                  open(path, 'w', encoding='utf-8'), ensure_ascii=False)
+        with open(path, 'w', encoding='utf-8') as out:
+            json.dump(wardata, out, ensure_ascii=False)
 
 
 def save_latest_data(wardata, monitor):
     if wardata:
         save_wardata(wardata)
-        json.dump(wardata,
-                  open('latest_downloaded_wardata.json',
-                       'w',
-                       encoding='utf-8'),
-                  ensure_ascii=False)
+        with open('latest_downloaded_wardata.json',
+                  'w', encoding='utf-8') as out:
+            json.dump(wardata, out, ensure_ascii=False)
 
 
 ########################################################################
 # DB helper classes (mainly to faciliate serveress)
 ########################################################################
 
-class SimpleKVDB(object):
+class SimpleKVDB:
     def __init__(self, db):
         self._db = db
 

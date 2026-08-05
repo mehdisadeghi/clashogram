@@ -16,9 +16,11 @@ from clashogram.formatters import MessageFactory
 from clashogram.models import (
     ClanInfo,
     LeagueInfo,
+    LeaguePlayerStats,
     LeagueStandings,
     WarInfo,
     WarStats,
+    unused_attacks,
 )
 from clashogram.notifiers import TelegramNotifier
 from clashogram.storage import Storage, import_shelve
@@ -332,6 +334,38 @@ class LeagueStandingsTestCase(unittest.TestCase):
     def test_unfinished_wars_are_not_counted(self):
         self.assertEqual(
             self._standings([self._war('A', 30, 'B', 25, state='inWar')]), [])
+
+
+class LeaguePlayerStatsTestCase(unittest.TestCase):
+    def setUp(self):
+        member = {'tag': '#P1', 'name': 'one', 'mapPosition': 1,
+                  'townhallLevel': 15,
+                  'attacks': [{'stars': 3, 'destructionPercentage': 100,
+                               'order': 1, 'attackerTag': '#P1',
+                               'defenderTag': '#X'}]}
+        idle = {'tag': '#P2', 'name': 'two', 'mapPosition': 2,
+                'townhallLevel': 14}
+        self.warinfo = WarInfo({'state': 'warEnded', 'teamSize': 2,
+                                'preparationStartTime': 'T',
+                                'clan': {'tag': '#US', 'name': 'us',
+                                         'members': [member, idle]},
+                                'opponent': {'tag': '#THEM', 'name': 'them',
+                                             'members': []}},
+                               '#US', '#WAR1')
+        self.leagueinfo = LeagueInfo('#US', {'rounds': []})
+        self.leagueinfo.wartags['#WAR1'] = self.warinfo
+
+    def test_counts_attacks_used_and_missed(self):
+        rows = {row['name']: row for row in
+                LeaguePlayerStats(self.leagueinfo).rows()}
+        self.assertEqual((rows['one']['attacks'], rows['one']['missed'],
+                          rows['one']['stars']), (1, 0, 3))
+        self.assertEqual((rows['two']['attacks'], rows['two']['missed']),
+                         (0, 1))
+
+    def test_unused_attacks_lists_only_the_idle(self):
+        self.assertEqual([m['name'] for m in unused_attacks(self.warinfo)],
+                         ['two'])
 
 
 class WarStatsTestCase(unittest.TestCase):

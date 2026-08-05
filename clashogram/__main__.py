@@ -8,6 +8,7 @@ import hashlib
 import logging
 
 import click
+import requests
 
 from .models import WarStats
 from .formatters import MessageFactory
@@ -261,44 +262,31 @@ class WarMonitor(object):
                 else:
                     self.update()
                 time.sleep(POLL_INTERVAL)
-            except Exception as err:
-                if '403' in str(err):
-                    # Check whether warlog is public
-                    if not self.coc_api.get_claninfo(self.clan_tag).is_warlog_public:
-                        print('Warlog must be public. Exiting.')
-                        self.notifier.send(_("Warlog must be public boss! ☠️"))
-                elif '500' in str(err):
-                    print('CoC internal server error, retrying.')
-                    # self.notifier.send(
-                    #     'CoC internal server error, retrying in {} seconds.'
-                    #     .format(POLL_INTERVAL * 10), silent=True)
+            except requests.HTTPError as err:
+                status = err.response.status_code
+                if status in (500, 502, 504):
+                    print('CoC server error {}, retrying.'.format(status))
                     time.sleep(POLL_INTERVAL * 10)
                     continue
-                elif '502' in str(err):
-                    print('CoC bad gateway, retrying.')
-                    # self.notifier.send(
-                    #     'CoC bad gateway, retrying in {} seconds.'
-                    #     .format(POLL_INTERVAL * 10), silent=True)
-                    time.sleep(POLL_INTERVAL * 10)
-                    continue
-                elif '503' in str(err):
+                elif status == 503:
                     print('CoC maintenance error, retrying.')
                     self.notifier.send(
                         'CoC maintenance error, retrying in {} seconds.'
                         .format(POLL_INTERVAL * 10), silent=True)
                     time.sleep(POLL_INTERVAL * 10)
                     continue
-                elif '504' in str(err):
-                    print('504 Gateway Timeout, retrying.')
-                    # self.notifier.send(
-                    #     '504 Gateway Timeout, retrying in {} seconds.'
-                    #     .format(POLL_INTERVAL * 10), silent=True)
-                    time.sleep(POLL_INTERVAL * 10)
-                    continue
-
+                elif status == 403:
+                    # Check whether warlog is public
+                    if not self.coc_api.get_claninfo(self.clan_tag).is_warlog_public:
+                        print('Warlog must be public. Exiting.')
+                        self.notifier.send(_("Warlog must be public boss! ☠️"))
                 else:
                     self.notifier.send(
                         _("☠️ 😵 App is broken boss! Come over and fix me please!"))
+                raise
+            except Exception:
+                self.notifier.send(
+                    _("☠️ 😵 App is broken boss! Come over and fix me please!"))
                 raise
 
 

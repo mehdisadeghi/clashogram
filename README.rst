@@ -2,8 +2,8 @@
    :depth: 3
 ..
 
-clashogram |Build Status| |Pypi status|
-=======================================
+clashogram |Build Status| |Pypi status| |Container|
+===================================================
 
 Clash of Clans war moniting for telegram channels.
 
@@ -215,6 +215,8 @@ MIT
    :target: https://github.com/mehdisadeghi/clashogram/actions/workflows/ci.yml
 .. |Pypi status| image:: https://img.shields.io/pypi/v/clashogram.svg
    :target: https://pypi.python.org/pypi/clashogram
+.. |Container| image:: https://img.shields.io/badge/ghcr.io-clashogram-blue?logo=docker&logoColor=white
+   :target: https://github.com/mehdisadeghi/clashogram/pkgs/container/clashogram
 
 
 Russian Translations

@@ -1,31 +1,56 @@
 ########################################################################
 # Notifiers
 ########################################################################
+import dataclasses
 import time
 
 import requests
 
+# Statuses that mean the bot is in the chat and can post there.
+PRESENT = ('member', 'administrator', 'creator')
+
 RETRIES = 3
 RETRY_AFTER = 5
+
+
+@dataclasses.dataclass
+class Command:
+    """Somebody asked the bot to do something."""
+    chat_id: object
+    from_id: object
+    text: str
+    chat_type: str = ''
+
+
+@dataclasses.dataclass
+class Membership:
+    """The bot was added to a chat or removed from one.
+
+    Being told rather than having to ask is what makes a channel usable:
+    a channel post has no author, so the operator can never be recognised
+    inside one and has to be handed its id somewhere else."""
+    chat_id: object
+    title: str
+    chat_type: str
+    joined: bool
 # Long enough that a quiet chat costs one request per interval, short
 # enough that the war poll is not held up waiting behind it.
 LONG_POLL = 10
 
 
 class TelegramNotifier:
-    def __init__(self, bot_token, chat_id):
+    def __init__(self, bot_token):
         self.bot_token = bot_token
-        self.chat_id = chat_id
         self.offset = None
         self._api = f'https://api.telegram.org/bot{bot_token}'
 
-    def send(self, msg, silent=False):
+    def send(self, msg, chat_id, silent=False):
         endpoint = "https://api.telegram.org/bot{bot_token}/sendMessage?"\
                    "parse_mode={mode}&chat_id={chat_id}&text={text}"\
                    "&disable_notification={silent}"\
                    .format(bot_token=self.bot_token,
                            mode='HTML',
-                           chat_id=self.chat_id,
+                           chat_id=chat_id,
                            text=requests.utils.quote(msg),
                            silent=silent)
         for _ in range(RETRIES):
@@ -37,11 +62,18 @@ class TelegramNotifier:
         res.raise_for_status()
 
     def receive(self):
-        """Yield (chat_id, text) for each command sent to the bot.
+        """Yield a Command or a Membership for each update worth acting on.
 
         This and `reply` are the inbound half of the seam that `send`
         already provides: a notifier for another chat service supplies
-        its own and the commands themselves do not change."""
+        its own and the commands themselves do not change.
+
+        A post made in a channel arrives as `channel_post` rather than
+        `message` and carries no author, so `from_id` is None there and
+        nobody can be recognised as the operator from a channel.
+
+        `my_chat_member` needs no asking for: getUpdates delivers it by
+        default, unlike `chat_member` for other people."""
         params = {'timeout': LONG_POLL}
         if self.offset is not None:
             params['offset'] = self.offset
@@ -52,21 +84,42 @@ class TelegramNotifier:
         if updates:
             self.offset = updates[-1]['update_id'] + 1
         for update in updates:
-            message = update.get('message') or {}
-            if message.get('text', '').startswith('/'):
-                yield message['chat']['id'], message['text']
+            event = self._as_event(update)
+            if event is not None:
+                yield event
+
+    def _as_event(self, update):
+        membership = update.get('my_chat_member')
+        if membership:
+            chat = membership['chat']
+            status = membership['new_chat_member']['status']
+            return Membership(chat_id=chat['id'],
+                              title=chat.get('title') or '',
+                              chat_type=chat.get('type') or '',
+                              joined=status in PRESENT)
+        message = update.get('message') or update.get('channel_post') or {}
+        if message.get('text', '').startswith('/'):
+            sender = message.get('from') or {}
+            return Command(chat_id=message['chat']['id'],
+                           from_id=sender.get('id'), text=message['text'],
+                           chat_type=message['chat'].get('type') or '')
+        return None
 
     def reply(self, chat_id, msg):
-        requests.post(f'{self._api}/sendMessage',
-                      data={'chat_id': chat_id, 'text': msg,
-                            'parse_mode': 'HTML'})
+        # Raising matters more than it looks: replies go out with HTML
+        # parsing, so one stray angle bracket is a 400, and swallowing it
+        # means the bot silently answers nobody.
+        res = requests.post(f'{self._api}/sendMessage',
+                            data={'chat_id': chat_id, 'text': msg,
+                                  'parse_mode': 'HTML'})
+        res.raise_for_status()
 
     def _retry_after(self, res):
         return res.json().get('parameters', {}).get('retry_after', RETRY_AFTER)
 
 
 class DummyNotifier:
-    def send(self, msg, silent=False):
+    def send(self, msg, chat_id, silent=False):
         if not silent:
             print(msg)
 

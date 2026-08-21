@@ -5,13 +5,11 @@ import hashlib
 import json
 import logging
 import os
-import time
 
 import click
-import requests
 
+from . import commands, registry, runner
 from .api import CoCAPI
-from .commands import CommandBot
 from .formatters import MessageFactory, create_standings_msg
 from .models import LeagueStandings, WarStats
 from .notifiers import DummyNotifier, TelegramNotifier
@@ -25,8 +23,6 @@ gettext.bindtextdomain('messages',
 gettext.textdomain('messages')
 _ = gettext.gettext
 
-POLL_INTERVAL = 60
-IDLE_TICK = 1
 logger = logging.getLogger(__name__)
 
 
@@ -36,9 +32,9 @@ logger = logging.getLogger(__name__)
               envvar='COC_API_TOKEN',
               prompt=True)
 @click.option('--clan-tag',
-              help='Tag of clan without hash. Reads COC_CLAN_TAG env var.',
-              envvar='COC_CLAN_TAG',
-              prompt=True)
+              help='Tag of clan with hash. With --chat-id, followed at'
+                   ' startup. Reads COC_CLAN_TAG env var.',
+              envvar='COC_CLAN_TAG')
 @click.option('--bot-token',
               help='Telegram bot token. The bot must be admin on the channel.'
                    ' Reads TELEGRAM_BOT_TOKEN env var.',
@@ -46,9 +42,22 @@ logger = logging.getLogger(__name__)
               prompt=True)
 @click.option('--chat-id',
               help=('Numeric ID of a chat or name of a public channel with @.'
-                    ' Reads COC_CHAT_ID env var.'),
-              envvar='TELEGRAM_CHAT_ID',
-              prompt=True)
+                    ' Reads TELEGRAM_CHAT_ID env var.'),
+              envvar='TELEGRAM_CHAT_ID')
+@click.option('--admin-id',
+              help='Numeric Telegram user id allowed to run the operator'
+                   ' commands. Reads TELEGRAM_ADMIN_ID env var.',
+              envvar='TELEGRAM_ADMIN_ID')
+@click.option('--archive/--no-archive',
+              default=False,
+              help='Keep finished wars so they can be exported.'
+                   ' Reads ARCHIVE env var.',
+              envvar='ARCHIVE')
+@click.option('--open-requests/--no-open-requests',
+              default=False,
+              help='Let anyone ask for a clan to be followed.'
+                   ' Reads OPEN_REQUESTS env var.',
+              envvar='OPEN_REQUESTS')
 @click.option('--mute-attacks',
               is_flag=True,
               help='Do not send attack updates.')
@@ -65,23 +74,37 @@ logger = logging.getLogger(__name__)
 @click.option('--dryrun',
               is_flag=True,
               help='Do not save and send anything.')
-def main(coc_token, clan_tag, bot_token, chat_id, mute_attacks, warlog,
-         loglevel, dryrun):
-    """Publish war updates to a telegram channel."""
+def main(coc_token, clan_tag, bot_token, chat_id, admin_id, archive,
+         open_requests, mute_attacks, warlog, loglevel, dryrun):
+    """Publish war updates to telegram chats."""
     if loglevel:
         logging.basicConfig(level=loglevel)
 
-    notifier = TelegramNotifier(bot_token, chat_id)
+    if bool(clan_tag) != bool(chat_id):
+        raise click.UsageError(
+            '--clan-tag and --chat-id are followed as a pair; give both or'
+            ' neither and manage clans over Telegram instead.')
+
+    notifier = TelegramNotifier(bot_token)
 
     if dryrun:
         warlog = 'dryrun.db'
         notifier = DummyNotifier()
 
-    with Storage(warlog) as db:
+    with Storage(warlog, bootstrap_chat_id=chat_id) as db:
         coc_api = CoCAPI(coc_token, cache=db)
-        monitor = WarMonitor(db, coc_api, clan_tag, notifier)
-        monitor.mute_attacks = mute_attacks
-        monitor.start()
+        if clan_tag:
+            registry.subscribe(db, clan_tag, chat_id)
+
+        def build_monitor(tag, chat_ids):
+            monitor = WarMonitor(db, coc_api, tag, notifier, chat_ids,
+                                 archive=archive)
+            monitor.mute_attacks = mute_attacks
+            return monitor
+
+        ctx = commands.Context(db=db, monitors={}, admin_id=admin_id,
+                               open_requests=open_requests, coc_api=coc_api)
+        runner.run(ctx, build_monitor, notifier)
 
 
 @click.command()
@@ -117,18 +140,23 @@ def import_wars(archive_path, warlog_path):
 @click.command()
 @click.argument('shelve_path', type=click.Path(exists=True))
 @click.argument('warlog_path', type=click.Path())
-def import_warlog(shelve_path, warlog_path):
-    """Import a pre-sqlite shelve warlog into a sqlite one."""
+@click.argument('chat_id')
+def import_warlog(shelve_path, warlog_path, chat_id):
+    """Import a pre-sqlite shelve warlog into a sqlite one.
+
+    The chat the old warlog was sent to has to be named, because delivery
+    is now recorded per chat and the shelve did not record one."""
     with Storage(warlog_path) as db:
-        click.echo(f'Imported {import_shelve_warlog(shelve_path, db)}'
-                   ' messages.')
+        click.echo(
+            f'Imported {import_shelve_warlog(shelve_path, db, chat_id)}'
+            ' messages.')
 
 
 def serverless(db, coc_token, clan_tag, bot_token, chat_id):
     """Publish war updates to a telegram channel."""
     coc_api = CoCAPI(coc_token)
-    notifier = TelegramNotifier(bot_token, chat_id)
-    monitor = WarMonitor(db, coc_api, clan_tag, notifier)
+    notifier = TelegramNotifier(bot_token)
+    monitor = WarMonitor(db, coc_api, clan_tag, notifier, [chat_id])
     monitor.update()
 
 
@@ -137,28 +165,30 @@ def serverless(db, coc_token, clan_tag, bot_token, chat_id):
 ########################################################################
 
 class WarMonitor:
-    def __init__(self, db, api, tag, notifier):
+    def __init__(self, db, api, tag, notifier, chat_ids=(), archive=False):
         """Scan warlog for war updates.
 
-        This is the top most class that puts everything together.
-        Calling `start` method will block forever. Calling `update`
-        will fetch one update, notify the changes and return.
+        Calling `update` will fetch one update, notify the changes and
+        return. The loop that calls it lives in `runner`.
 
         Arguments:
             db -- A persistant dictionary-like object.
             api -- Api object
             tag -- Clantag
             notifier -- Notifier object
+            chat_ids -- Chats this clan is reported to
+            archive -- Whether finished wars are kept
         """
         self.db = db
         self.clan_tag = tag
         self.coc_api = api
         self.notifier = notifier
+        self.chat_ids = list(chat_ids)
+        self.archive = archive
         self.warinfo = None
         self.msg_factory = None
         self.warstats = None
         self.leagueinfo = None
-        self.commands = CommandBot(self)
         self._mute_attacks = False
 
     @property
@@ -190,7 +220,8 @@ class WarMonitor:
                 self.send_attack_msgs()
         elif warinfo.is_war_over():
             logger.debug('War is over.')
-            self.db.archive_war(self.get_war_id(), warinfo.data)
+            if self.archive:
+                self.db.archive_war(self.get_war_id(), warinfo.data)
             if not self.mute_attacks:
                 self.send_attack_msgs()
             self.send_war_over_msg()
@@ -208,6 +239,11 @@ class WarMonitor:
         if not self.warinfo:
             raise ValueError('Warinfo is empty.')
         return self.warinfo.create_war_id()
+
+    def current_war_id(self):
+        """The war under way, or None. Unlike `get_war_id` it may be asked
+        before there is one, which is what subscribing needs."""
+        return self.warinfo.create_war_id() if self.warinfo else None
 
     def send_preparation_msg(self):
         self.send_once(
@@ -243,11 +279,11 @@ class WarMonitor:
                     attacker, attack, war_stats),
                 msg_id='clan_full_destruction')
 
-    def is_msg_sent(self, msg_id):
-        return self.db.is_sent(self.get_war_id(), msg_id)
+    def is_msg_sent(self, msg_id, chat_id):
+        return self.db.is_sent(self.get_war_id(), msg_id, chat_id)
 
-    def mark_msg_as_sent(self, msg_id):
-        self.db.mark_sent(self.get_war_id(), msg_id)
+    def mark_msg_as_sent(self, msg_id, chat_id):
+        self.db.mark_sent(self.get_war_id(), msg_id, chat_id)
 
     def get_attack_id(self, attack):
         return "attack{}{}".format(attack['attackerTag'][1:],
@@ -267,25 +303,6 @@ class WarMonitor:
         self.send_once(
             self.msg_factory.create_war_over_msg(), msg_id='war_over_msg')
 
-    def answer_commands_until(self, deadline):
-        """Wait out the poll interval answering whoever asks.
-
-        The chat is served while the war poll sleeps, so a question
-        does not wait a minute for an answer and the poll does not
-        wait behind the chat."""
-        while True:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                return
-            answered = False
-            for chat_id, text in self.notifier.receive():
-                self.notifier.reply(chat_id, self.commands.answer(text))
-                answered = True
-            if not answered:
-                # A notifier that does not block waiting for messages
-                # would spin here otherwise.
-                time.sleep(min(remaining, IDLE_TICK))
-
     def send_standings_msg(self):
         """Post the table once per round, keyed to the round that ended."""
         if not self.leagueinfo:
@@ -300,62 +317,25 @@ class WarMonitor:
         self.msg_factory = None
 
     def send_once(self, msg, msg_id=None):
+        """Send to every chat that has not had this message yet.
+
+        Delivery is recorded per chat, so a chat added part way through a
+        war is not held to what the others have already seen, and two
+        clans meeting in the same war do not mark each other's messages
+        as sent."""
         if not msg_id:
             msg_id = hashlib.md5(msg.encode('utf-8')).hexdigest()
 
-        if not self.is_msg_sent(msg_id):
-            self.send(msg)
-            self.mark_msg_as_sent(msg_id)
+        for chat_id in self.chat_ids:
+            if not self.is_msg_sent(msg_id, chat_id):
+                self.notifier.send(msg, chat_id)
+                self.mark_msg_as_sent(msg_id, chat_id)
 
-    def send(self, msg):
-        self.notifier.send(msg)
-
-    def start(self):
-        """Send war news to telegram channel."""
-        while True:
-            try:
-                leagueinfo = self.coc_api.get_currentleague(self.clan_tag)
-                self.leagueinfo = leagueinfo
-                if leagueinfo:
-                    # These are already fetched, so they are not asked for
-                    # a second time.
-                    for previous_war in leagueinfo.get_previous_wars():
-                        self.update(previous_war)
-                    current_war = leagueinfo.get_current_war()
-                    next_war = leagueinfo.get_next_war()
-                    if current_war:
-                        self.update(current_war)
-                    if next_war:
-                        self.update(next_war)
-                else:
-                    self.update()
-                self.answer_commands_until(time.monotonic() + POLL_INTERVAL)
-            except requests.HTTPError as err:
-                status = err.response.status_code
-                if status in (500, 502, 504):
-                    print(f'CoC server error {status}, retrying.')
-                    time.sleep(POLL_INTERVAL * 10)
-                    continue
-                elif status == 503:
-                    print('CoC maintenance error, retrying.')
-                    self.notifier.send(
-                        f'CoC maintenance error, retrying in {POLL_INTERVAL * 10} seconds.'
-                        , silent=True)
-                    time.sleep(POLL_INTERVAL * 10)
-                    continue
-                elif status == 403:
-                    # Check whether warlog is public
-                    if not self.coc_api.get_claninfo(self.clan_tag).is_warlog_public:
-                        print('Warlog must be public. Exiting.')
-                        self.notifier.send(_("Warlog must be public boss! ☠️"))
-                else:
-                    self.notifier.send(
-                        _("☠️ 😵 App is broken boss! Come over and fix me please!"))
-                raise
-            except Exception:
-                self.notifier.send(
-                    _("☠️ 😵 App is broken boss! Come over and fix me please!"))
-                raise
+    def send(self, msg, silent=False):
+        """Tell every chat, without recording it. For news about the bot
+        itself rather than about a war."""
+        for chat_id in self.chat_ids:
+            self.notifier.send(msg, chat_id, silent=silent)
 
 
 if __name__ == '__main__':

@@ -20,6 +20,7 @@ class Command:
     from_id: object
     text: str
     chat_type: str = ''
+    from_name: str = ''
 
 
 @dataclasses.dataclass
@@ -102,7 +103,9 @@ class TelegramNotifier:
             sender = message.get('from') or {}
             return Command(chat_id=message['chat']['id'],
                            from_id=sender.get('id'), text=message['text'],
-                           chat_type=message['chat'].get('type') or '')
+                           chat_type=message['chat'].get('type') or '',
+                           from_name=sender.get('username')
+                           or sender.get('first_name') or '')
         return None
 
     def reply(self, chat_id, msg):

@@ -42,7 +42,7 @@ def handle(ctx, event):
     if isinstance(event, Membership):
         return on_membership(ctx, event)
     return answer(ctx, event.chat_id, event.from_id, event.text,
-                  event.chat_type)
+                  event.chat_type, event.from_name)
 
 
 def on_membership(ctx, event):
@@ -68,11 +68,15 @@ def on_membership(ctx, event):
                                                 chat=event.chat_id))]
 
 
-def answer(ctx, chat_id, from_id, text, chat_type=''):
+def answer(ctx, chat_id, from_id, text, chat_type='', from_name=''):
     """Answer one command as a list of (chat_id, message) pairs.
 
     More than one pair because approving a request tells both the
     operator and the chat that asked."""
+    # Free, since they are talking to us anyway. Only for people whose
+    # name gets shown, so passers-by leave nothing behind.
+    if from_name and _is_admin(ctx, from_id):
+        ctx.db.note_person_name(from_id, from_name)
     parts = text.split()
     name = parts[0].lstrip('/').split('@')[0]
     # Telegram puts the mention on the command, but people also type it
@@ -266,8 +270,19 @@ def _cmd_clans(ctx, chat_id, args):
     grouped = registry.clans_with_chats(ctx.db)
     if not grouped:
         return [(chat_id, _('No clan is followed.'))]
-    lines = [f'{clan_tag} -> {", ".join(chats)}'
-             for clan_tag, chats in sorted(grouped.items())]
+    names = ctx.db.clan_names()
+    lines = []
+    for clan_tag, chats in sorted(grouped.items()):
+        if clan_tag not in names:
+            # Bootstrapped clans never passed through /add. One request,
+            # cached, and remembered from then on.
+            found = _clan_name(ctx, clan_tag)
+            if found:
+                ctx.db.remember_clan_name(clan_tag, found)
+                names[clan_tag] = found
+        known = names.get(clan_tag)
+        label = f'{known} ({clan_tag})' if known else clan_tag
+        lines.append(f'{label} -> {", ".join(chats)}')
     return [(chat_id, '\n'.join(lines))]
 
 
@@ -282,6 +297,7 @@ def _cmd_add(ctx, chat_id, args):
             clan=clan_tag))]
     monitor = ctx.monitors.get(clan_tag)
     war_id = monitor.current_war_id() if monitor else None
+    ctx.db.remember_clan_name(clan_tag, name)
     registry.subscribe(ctx.db, clan_tag, target, war_id)
     return [(chat_id, _('Following {name} ({clan}) in {chat}.').format(
         name=name, clan=clan_tag, chat=target))]
@@ -348,8 +364,12 @@ def _resolve(ctx, chat_id, args, approved):
 
 
 def _cmd_operators(ctx, chat_id, args):
-    lines = [_('{owner} (owner)').format(owner=ctx.admin_id)]
-    lines += registry.operators(ctx.db)
+    names = ctx.db.person_names()
+    def label(user_id):
+        known = names.get(str(user_id))
+        return f'{known} ({user_id})' if known else str(user_id)
+    lines = [_('{who} (owner)').format(who=label(ctx.admin_id))]
+    lines += [label(o) for o in registry.operators(ctx.db)]
     return [(chat_id, '\n'.join(lines))]
 
 
@@ -404,6 +424,7 @@ def _cmd_request(ctx, chat_id, from_id, args):
     if name is None:
         return [(chat_id, _('No clan is tagged {clan}.').format(
             clan=clan_tag))]
+    ctx.db.remember_clan_name(clan_tag, name)
     request_id = registry.file_request(ctx.db, clan_tag, chat_id, from_id)
     if request_id is None:
         return [(chat_id, _('That is already waiting.'))]

@@ -22,6 +22,17 @@ CREATE TABLE IF NOT EXISTS operator (
     user_id TEXT PRIMARY KEY,
     added_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS person (
+    user_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL
+);
+-- Names are kept because they are had for free: the clan's when /add
+-- verifies the tag, the operator's whenever they say anything. Asking
+-- for them at listing time would spend a request to relabel a row.
+CREATE TABLE IF NOT EXISTS clan (
+    clan_tag TEXT PRIMARY KEY,
+    name TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS request (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     clan_tag TEXT NOT NULL,
@@ -152,6 +163,28 @@ class Storage:
             (clan_tag, str(chat_id)))
         self._db.commit()
         return cursor.rowcount
+
+    def remember_clan_name(self, clan_tag, name):
+        self._db.execute(
+            'INSERT INTO clan (clan_tag, name) VALUES (?, ?) '
+            'ON CONFLICT(clan_tag) DO UPDATE SET name = excluded.name',
+            (clan_tag, name))
+        self._db.commit()
+
+    def clan_names(self):
+        return dict(self._db.execute('SELECT clan_tag, name FROM clan'))
+
+    def note_person_name(self, user_id, name):
+        """The owner is not in `operator`, so names live apart from
+        membership or the owner would never have one."""
+        self._db.execute(
+            'INSERT INTO person (user_id, name) VALUES (?, ?) '
+            'ON CONFLICT(user_id) DO UPDATE SET name = excluded.name',
+            (str(user_id), name))
+        self._db.commit()
+
+    def person_names(self):
+        return dict(self._db.execute('SELECT user_id, name FROM person'))
 
     def operators(self):
         return [row[0] for row in self._db.execute(

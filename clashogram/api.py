@@ -18,12 +18,18 @@ from .models import (
 BASE_URL = 'https://api.clashofclans.com/v1'
 RETRIES = 3
 RETRY_AFTER = 5
+# /clan is answerable by anyone in a followed chat, so it is the one
+# command that can spend requests as fast as somebody can type. A clan's
+# name and streak do not move within a poll.
+CLANINFO_TTL = 60
+CLANINFO_MAX = 64
 
 
 class CoCAPI:
     def __init__(self, coc_token, cache=None):
         self.coc_token = coc_token
         self.cache = cache
+        self._claninfo = {}
 
     def get_currentwar(self, clan_tag, war_tag=None):
         return WarInfo(
@@ -47,7 +53,15 @@ class CoCAPI:
         return WarInfo(payload, clan_tag, war_tag)
 
     def get_claninfo(self, clan_tag):
-        return ClanInfo(self._call_api(self._get_claninfo_endpoint(clan_tag)))
+        now = time.monotonic()
+        fetched_at, info = self._claninfo.get(clan_tag, (0, None))
+        if info is not None and now - fetched_at < CLANINFO_TTL:
+            return info
+        info = ClanInfo(self._call_api(self._get_claninfo_endpoint(clan_tag)))
+        if len(self._claninfo) >= CLANINFO_MAX:
+            self._claninfo.clear()
+        self._claninfo[clan_tag] = (now, info)
+        return info
 
     def get_warlog(self, clan_tag):
         return WarLog(self._call_api(self._clan_endpoint(clan_tag, 'warlog')))

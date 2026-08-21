@@ -9,3 +9,5 @@ warlog*
 dist
 .venv
 uv.lock
+k8s/secret.env
+k8s/secret.yaml

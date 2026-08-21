@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clashogram
+  namespace: clashogram
+spec:
+  replicas: 1
+  # The bot is a single long poller. Two of them fight over getUpdates and
+  # the one that loses is answered with 409, so the old pod must be gone
+  # before the new one starts rather than overlapping with it.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: clashogram
+  template:
+    metadata:
+      labels:
+        app: clashogram
+    spec:
+      containers:
+        - name: clashogram
+          image: ghcr.io/mehdisadeghi/clashogram:latest
+          imagePullPolicy: Always
+          args: [--warlog, /data/warlog.db]
+          envFrom:
+            - secretRef:
+                name: clashogram
+          volumeMounts:
+            - name: warlog
+              mountPath: /data
+      volumes:
+        - name: warlog
+          persistentVolumeClaim:
+            claimName: warlog

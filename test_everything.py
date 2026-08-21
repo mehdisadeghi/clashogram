@@ -4,12 +4,14 @@ import json
 import os
 import shelve
 import shutil
+import sqlite3
 import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
 import requests
 
+from clashogram import commands, registry, runner
 from clashogram.__main__ import WarMonitor
 from clashogram.api import CoCAPI
 from clashogram.formatters import MessageFactory
@@ -22,7 +24,7 @@ from clashogram.models import (
     WarStats,
     unused_attacks,
 )
-from clashogram.notifiers import TelegramNotifier
+from clashogram.notifiers import Membership, TelegramNotifier
 from clashogram.storage import Storage, import_shelve
 
 
@@ -211,25 +213,25 @@ class TelegramNotifierTestCase(unittest.TestCase):
         return res
 
     def test_retries_after_rate_limit(self):
-        notifier = TelegramNotifier('token', 'chat')
+        notifier = TelegramNotifier('token')
         with patch('clashogram.notifiers.requests.post') as post, \
              patch('clashogram.notifiers.time.sleep') as sleep:
             post.side_effect = [
                 self._response(429, {'parameters': {'retry_after': 7}}),
                 self._response(200)]
-            notifier.send('hi')
+            notifier.send('hi', 'chat')
             self.assertEqual(post.call_count, 2)
             sleep.assert_called_once_with(7)
 
     def test_undelivered_message_is_not_marked_sent(self):
         monitor = WarMonitor(Storage(':memory:'), MagicMock(), '#TAG',
-                             MagicMock())
+                             MagicMock(), ['c1'])
         monitor.warinfo = MagicMock()
         monitor.warinfo.create_war_id.return_value = 'W1'
         monitor.notifier.send.side_effect = requests.HTTPError('429')
         with self.assertRaises(requests.HTTPError):
             monitor.send_once('hi', msg_id='m1')
-        self.assertFalse(monitor.is_msg_sent('m1'))
+        self.assertFalse(monitor.is_msg_sent('m1', 'c1'))
 
 
 class StorageTestCase(unittest.TestCase):
@@ -242,11 +244,11 @@ class StorageTestCase(unittest.TestCase):
 
     def test_sent_flags_survive_a_restart(self):
         with Storage(self.path) as db:
-            db.mark_sent('war1', 'preparation_msg')
+            db.mark_sent('war1', 'preparation_msg', 'c1')
         with Storage(self.path) as db:
-            self.assertTrue(db.is_sent('war1', 'preparation_msg'))
-            self.assertFalse(db.is_sent('war1', 'war_over_msg'))
-            self.assertFalse(db.is_sent('war2', 'preparation_msg'))
+            self.assertTrue(db.is_sent('war1', 'preparation_msg', 'c1'))
+            self.assertFalse(db.is_sent('war1', 'war_over_msg', 'c1'))
+            self.assertFalse(db.is_sent('war2', 'preparation_msg', 'c1'))
 
     def test_archived_wars_round_trip(self):
         payload = {'state': 'warEnded', 'clan': {'name': 'ایران'}}
@@ -262,9 +264,9 @@ class StorageTestCase(unittest.TestCase):
             legacy['war1'] = {'preparation_msg': True, 'war_msg': True}
             legacy['war2'] = {'preparation_msg': True}
         with Storage(self.path) as db:
-            self.assertEqual(import_shelve(old, db), 3)
-            self.assertTrue(db.is_sent('war1', 'war_msg'))
-            self.assertTrue(db.is_sent('war2', 'preparation_msg'))
+            self.assertEqual(import_shelve(old, db, 'c1'), 3)
+            self.assertTrue(db.is_sent('war1', 'war_msg', 'c1'))
+            self.assertTrue(db.is_sent('war2', 'preparation_msg', 'c1'))
 
 
 class LeagueWarCacheTestCase(unittest.TestCase):
@@ -378,30 +380,39 @@ class LeaguePlayerStatsTestCase(unittest.TestCase):
 
 class CommandBotTestCase(unittest.TestCase):
     def setUp(self):
-        self.monitor = WarMonitor(Storage(':memory:'), MagicMock(), '#US',
-                                  MagicMock())
+        self.db = Storage(':memory:')
+        self.monitor = WarMonitor(self.db, MagicMock(), '#US', MagicMock(),
+                                  ['c1'])
         self.monitor.warinfo = None
         self.monitor.leagueinfo = None
+        registry.subscribe(self.db, '#US', 'c1')
+        self.ctx = commands.Context(db=self.db,
+                                    monitors={'#US': self.monitor})
+
+    def answer(self, text, chat_id='c1', from_id=None):
+        return [message for _target, message
+                in commands.answer(self.ctx, chat_id, from_id, text)]
 
     def test_unknown_command_is_not_silently_ignored(self):
-        self.assertIn('/help', self.monitor.commands.answer('/nope'))
+        self.assertIn('/help', self.answer('/nope')[0])
 
     def test_commands_answer_without_a_war(self):
         for command in ('/war', '/missing', '/standings', '/stats'):
-            self.assertTrue(self.monitor.commands.answer(command))
+            self.assertTrue(self.answer(command)[0])
 
     def test_group_suffix_is_stripped(self):
         # Telegram sends /missing@thebot in groups.
-        self.assertEqual(self.monitor.commands.answer('/missing@clashogram'),
-                         self.monitor.commands.answer('/missing'))
+        self.assertEqual(self.answer('/missing@clashogram'),
+                         self.answer('/missing'))
 
     def test_idle_loop_does_not_spin(self):
-        self.monitor.notifier.receive.return_value = []
-        with patch('clashogram.__main__.time.sleep') as sleep:
+        notifier = MagicMock()
+        notifier.receive.return_value = []
+        with patch('clashogram.runner.time.sleep') as sleep:
             deadline = [0, 5]
-            with patch('clashogram.__main__.time.monotonic',
+            with patch('clashogram.runner.time.monotonic',
                        side_effect=lambda: deadline.pop(0)):
-                self.monitor.answer_commands_until(3)
+                runner.answer_until(self.ctx, notifier, 3)
         sleep.assert_called_once()
 
 
@@ -514,9 +525,10 @@ class WarMonitorTestCase(unittest.TestCase):
                                  'warWinStreak': 0})
         coc_api.get_currentwar = MagicMock(return_value=self.warinfo)
         coc_api.get_claninfo = MagicMock(return_value=our_claninfo)
-        notifier = TelegramNotifier(None, None)
+        notifier = TelegramNotifier(None)
         notifier.send = MagicMock()
-        self.monitor = WarMonitor(Storage(':memory:'), coc_api, '', notifier)
+        self.monitor = WarMonitor(Storage(':memory:'), coc_api, '', notifier,
+                                  ['c1'])
         self.monitor.update()
 
         self.clan_attack = {
@@ -540,36 +552,36 @@ class WarMonitorInWarTestCase(WarMonitorTestCase):
     def test_send_preparation_msg(self):
         self.monitor.send_preparation_msg()
 
-        self.assertTrue(self.monitor.is_msg_sent('preparation_msg'))
-        self.assertTrue(self.monitor.is_msg_sent('players_msg'))
+        self.assertTrue(self.monitor.is_msg_sent('preparation_msg', 'c1'))
+        self.assertTrue(self.monitor.is_msg_sent('players_msg', 'c1'))
 
     def test_send_war_msg(self):
         self.monitor.send_war_msg()
 
-        self.assertTrue(self.monitor.is_msg_sent('war_msg'))
+        self.assertTrue(self.monitor.is_msg_sent('war_msg', 'c1'))
 
     def test_is_attack_msg_sent(self):
         self.assertTrue(self.monitor.is_msg_sent(
-            self.monitor.get_attack_id(self.clan_attack)))
+            self.monitor.get_attack_id(self.clan_attack), 'c1'))
 
     def test_get_attack_id(self):
         self.assertEqual(self.monitor.get_attack_id(self.clan_attack),
                          'attack98VVJ8LV88CCLRP2JC')
 
     def test_is_war_over_msg_sent(self):
-        self.assertFalse(self.monitor.is_msg_sent('war_over_msg'))
+        self.assertFalse(self.monitor.is_msg_sent('war_over_msg', 'c1'))
 
     def test_mark_msg_as_sent(self):
-        self.monitor.mark_msg_as_sent('my_msg')
+        self.monitor.mark_msg_as_sent('my_msg', 'c1')
 
-        self.assertTrue(self.monitor.is_msg_sent('my_msg'))
-        self.assertFalse(self.monitor.is_msg_sent('nonexistent_msg'))
+        self.assertTrue(self.monitor.is_msg_sent('my_msg', 'c1'))
+        self.assertFalse(self.monitor.is_msg_sent('nonexistent_msg', 'c1'))
 
     def test_full_destruction_msg_sent(self):
-        self.assertFalse(self.monitor.is_msg_sent('clan_full_destruction'))
+        self.assertFalse(self.monitor.is_msg_sent('clan_full_destruction', 'c1'))
 
     def test_op_destruction_msg_sent(self):
-        self.assertFalse(self.monitor.is_msg_sent('op_full_destruction'))
+        self.assertFalse(self.monitor.is_msg_sent('op_full_destruction', 'c1'))
 
 
 class WarMonitorFullDestructionTestCase(WarMonitorTestCase):
@@ -579,7 +591,7 @@ class WarMonitorFullDestructionTestCase(WarMonitorTestCase):
                  'r', encoding='utf8').read()))
 
     def test_full_destruction_msg_sent(self):
-        self.assertTrue(self.monitor.is_msg_sent('clan_full_destruction'))
+        self.assertTrue(self.monitor.is_msg_sent('clan_full_destruction', 'c1'))
 
 
 class WarMonitorOpFullDestructionTestCase(WarMonitorTestCase):
@@ -589,7 +601,7 @@ class WarMonitorOpFullDestructionTestCase(WarMonitorTestCase):
                  'r', encoding='utf8').read()))
 
     def test_op_full_destruction_msg_sent(self):
-        self.assertTrue(self.monitor.is_msg_sent('op_full_destruction'))
+        self.assertTrue(self.monitor.is_msg_sent('op_full_destruction', 'c1'))
 
 
 class WarMonitorOnWarOverTestCase(WarMonitorTestCase):
@@ -600,11 +612,279 @@ class WarMonitorOnWarOverTestCase(WarMonitorTestCase):
 
     def test_reset_on_ended_war(self):
         with self.assertRaises(ValueError):
-            self.monitor.is_msg_sent('war_over_msg')
+            self.monitor.is_msg_sent('war_over_msg', 'c1')
 
     def test_is_war_over_msg_sent(self):
         self.monitor.warinfo = self.warinfo
-        self.assertTrue(self.monitor.is_msg_sent('war_over_msg'))
+        self.assertTrue(self.monitor.is_msg_sent('war_over_msg', 'c1'))
+
+
+
+class TwoClansInOneWarTestCase(unittest.TestCase):
+    def test_neither_clan_suppresses_the_other(self):
+        # Both sides resolve a war to one id on purpose, so delivery has
+        # to be counted per chat or the second clan is told it has
+        # already posted what it never posted.
+        db = Storage(':memory:')
+        notifier = MagicMock()
+        ours = WarMonitor(db, MagicMock(), '#US', notifier, ['chat_us'])
+        theirs = WarMonitor(db, MagicMock(), '#THEM', notifier, ['chat_them'])
+        for monitor in (ours, theirs):
+            monitor.warinfo = MagicMock()
+            monitor.warinfo.create_war_id.return_value = 'SHARED'
+            monitor.send_once('war is on', msg_id='war_msg')
+        self.assertEqual(
+            sorted(call.args[1] for call in notifier.send.call_args_list),
+            ['chat_them', 'chat_us'])
+
+    def test_a_chat_added_midwar_is_not_read_the_war_so_far(self):
+        db = Storage(':memory:')
+        registry.subscribe(db, '#US', 'first')
+        db.mark_sent('W1', 'war_msg', 'first')
+        registry.subscribe(db, '#US', 'second', war_id='W1')
+        self.assertTrue(db.is_sent('W1', 'war_msg', 'second'))
+        self.assertFalse(db.is_sent('W1', 'attack_later', 'second'))
+
+
+class OperatorTestCase(unittest.TestCase):
+    def setUp(self):
+        self.db = Storage(':memory:')
+        self.ctx = commands.Context(db=self.db, monitors={}, admin_id='42')
+
+    def answer(self, text, from_id, chat_id='c1'):
+        return commands.answer(self.ctx, chat_id, from_id, text)
+
+    def test_operator_follows_and_unfollows(self):
+        self.answer('/add #US', from_id='42')
+        self.assertEqual(self.db.subscriptions(), [('#US', 'c1')])
+        self.answer('/remove #US', from_id='42')
+        self.assertEqual(self.db.subscriptions(), [])
+
+    def test_anybody_else_changes_nothing(self):
+        answers = self.answer('/add #US', from_id='7')
+        self.assertEqual(self.db.subscriptions(), [])
+        self.assertIn('operator', answers[0][1])
+
+    def test_a_channel_post_is_never_the_operator(self):
+        # Channel posts carry no author, so from_id is None there.
+        self.answer('/add #US', from_id=None)
+        self.assertEqual(self.db.subscriptions(), [])
+
+    def test_operator_commands_are_offered_to_the_operator_alone(self):
+        self.assertNotIn('/remove', self.answer('/help', '7')[0][1])
+        self.assertIn('/remove', self.answer('/help', '42')[0][1])
+
+    def test_telegram_start_button_is_answered(self):
+        self.assertNotIn('Unknown', self.answer('/start', '7')[0][1])
+
+    def test_an_unfollowed_chat_gets_no_war_data(self):
+        self.assertIn('follows no clan', self.answer('/war', '7')[0][1])
+
+
+class RequestTestCase(unittest.TestCase):
+    def setUp(self):
+        self.db = Storage(':memory:')
+
+    def _ctx(self, open_requests):
+        return commands.Context(db=self.db, monitors={}, admin_id='42',
+                                open_requests=open_requests)
+
+    def test_a_closed_instance_records_nothing(self):
+        commands.answer(self._ctx(False), 'c1', '7', '/request #US')
+        self.assertEqual(self.db.pending_requests(), [])
+
+    def test_an_open_instance_files_it_without_granting_it(self):
+        commands.answer(self._ctx(True), 'c1', '7', '/request #US')
+        self.assertEqual(len(self.db.pending_requests()), 1)
+        self.assertEqual(self.db.subscriptions(), [])
+
+    def test_approving_is_what_grants_it(self):
+        ctx = self._ctx(True)
+        commands.answer(ctx, 'c1', '7', '/request #US')
+        request_id = self.db.pending_requests()[0]['id']
+        commands.answer(ctx, 'admin', '42', f'/approve {request_id}')
+        self.assertEqual(self.db.subscriptions(), [('#US', 'c1')])
+
+
+class AddValidationTestCase(unittest.TestCase):
+    def setUp(self):
+        self.db = Storage(':memory:')
+
+    def _ctx(self, known):
+        coc_api = MagicMock()
+        if known:
+            coc_api.get_claninfo.return_value = ClanInfo({'name': 'iran'})
+        else:
+            response = MagicMock()
+            response.status_code = 404
+            coc_api.get_claninfo.side_effect = requests.HTTPError(
+                '404', response=response)
+        return commands.Context(db=self.db, monitors={}, admin_id='42',
+                                coc_api=coc_api)
+
+    def test_an_unknown_tag_is_refused_rather_than_stored(self):
+        commands.answer(self._ctx(False), 'c1', '42', '/add #NOPE')
+        self.assertEqual(self.db.subscriptions(), [])
+
+    def test_a_mention_is_never_part_of_an_argument(self):
+        commands.answer(self._ctx(True), 'c1', '42', '/add #US@Clashogram')
+        self.assertEqual(self.db.subscriptions(), [('#US', 'c1')])
+
+
+class MembershipTestCase(unittest.TestCase):
+    def setUp(self):
+        self.db = Storage(':memory:')
+        self.ctx = commands.Context(db=self.db, monitors={}, admin_id='42')
+
+    def test_joining_hands_the_operator_the_id(self):
+        # The only way to learn a channel's id, since nobody can be
+        # recognised as the operator inside one.
+        target, message = commands.handle(self.ctx, Membership(
+            -100448, 'Clan Wars', 'channel', joined=True))[0]
+        self.assertEqual(target, '42')
+        self.assertIn('-100448', message)
+
+    def test_being_removed_stops_the_posting(self):
+        registry.subscribe(self.db, '#US', '-100448')
+        commands.handle(self.ctx, Membership(
+            -100448, 'Clan Wars', 'channel', joined=False))
+        self.assertEqual(self.db.subscriptions(), [])
+
+
+class ReceiveTestCase(unittest.TestCase):
+    def _updates(self, *updates):
+        notifier = TelegramNotifier('token')
+        response = MagicMock()
+        response.json.return_value = {'result': list(updates)}
+        with patch('clashogram.notifiers.requests.get', return_value=response):
+            return list(notifier.receive())
+
+    def test_a_channel_post_is_a_command_without_an_author(self):
+        event, = self._updates({'update_id': 1, 'channel_post': {
+            'text': '/chatid', 'chat': {'id': -100448, 'type': 'channel'}}})
+        self.assertEqual((event.chat_id, event.from_id), (-100448, None))
+
+    def test_membership_carries_whether_the_bot_is_still_there(self):
+        for status, joined in (('administrator', True), ('left', False)):
+            event, = self._updates({'update_id': 1, 'my_chat_member': {
+                'chat': {'id': -1, 'type': 'channel', 'title': 'x'},
+                'new_chat_member': {'status': status}}})
+            self.assertEqual(event.joined, joined)
+
+    def test_chatter_is_not_an_event(self):
+        self.assertEqual(self._updates({'update_id': 1, 'message': {
+            'text': 'hello', 'chat': {'id': -987, 'type': 'group'}}}), [])
+
+
+class ArchiveTestCase(unittest.TestCase):
+    def _run_a_finished_war(self, archive):
+        db = Storage(':memory:')
+        coc_api = CoCAPI(None)
+        coc_api.get_currentwar = MagicMock(
+            return_value=WarInfo(load_wardata('warEnded_50.json')))
+        coc_api.get_claninfo = MagicMock(return_value=ClanInfo(
+            {'location': {'name': 'Iran', 'isCountry': 'true',
+                          'countryCode': 'IR'}, 'warWinStreak': 0}))
+        monitor = WarMonitor(db, coc_api, '', MagicMock(), ['c1'],
+                             archive=archive)
+        monitor.update()
+        return list(db.archived_wars())
+
+    def test_the_flag_decides_whether_wars_are_kept(self):
+        self.assertEqual(self._run_a_finished_war(False), [])
+        self.assertEqual(len(self._run_a_finished_war(True)), 1)
+
+
+class SentMigrationTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.path = os.path.join(self.tmpdir, 'warlog.db')
+        db = sqlite3.connect(self.path)
+        db.executescript("""
+            CREATE TABLE sent (
+                war_id TEXT NOT NULL, msg_id TEXT NOT NULL,
+                PRIMARY KEY (war_id, msg_id));
+            INSERT INTO sent VALUES ('W1', 'war_msg');
+        """)
+        db.commit()
+        db.close()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_old_rows_go_to_the_bootstrap_chat(self):
+        with Storage(self.path, bootstrap_chat_id='c1') as db:
+            self.assertTrue(db.is_sent('W1', 'war_msg', 'c1'))
+
+    def test_unattributable_rows_go_rather_than_silence_a_chat(self):
+        with Storage(self.path) as db:
+            self.assertEqual(db.sent_msg_ids('W1', 'c1'), [])
+
+
+class CoOperatorTestCase(unittest.TestCase):
+    def setUp(self):
+        self.db = Storage(':memory:')
+        self.ctx = commands.Context(db=self.db, monitors={}, admin_id='42')
+
+    def answer(self, text, from_id):
+        return commands.answer(self.ctx, 'c1', from_id, text)
+
+    def test_owner_lets_somebody_help_and_stops_letting_them(self):
+        self.answer('/addoperator 77', from_id='42')
+        self.answer('/add #US', from_id='77')
+        self.assertEqual(self.db.subscriptions(), [('#US', 'c1')])
+        self.answer('/removeoperator 77', from_id='42')
+        self.answer('/remove #US', from_id='77')
+        self.assertEqual(self.db.subscriptions(), [('#US', 'c1')])
+
+    def test_a_co_operator_cannot_unseat_the_owner(self):
+        self.answer('/addoperator 77', from_id='42')
+        self.answer('/removeoperator 42', from_id='77')
+        self.answer('/addoperator 99', from_id='77')
+        self.assertEqual(self.db.operators(), ['77'])
+
+
+class NetworkBlipTestCase(unittest.TestCase):
+    def test_a_dns_blip_does_not_kill_the_poll(self):
+        # What crash-looped the deployed bot 28 times: ConnectionError is
+        # not an HTTPError, so it fell through to a bare except that tried
+        # to send a message, which failed the same way, and died.
+        monitor = MagicMock()
+        monitor.coc_api.get_currentleague.side_effect = \
+            requests.ConnectionError('cannot resolve api.clashofclans.com')
+        self.assertEqual(runner.poll(monitor, MagicMock()), runner.BACKOFF)
+
+    def test_telegram_being_unreachable_does_not_kill_the_loop(self):
+        notifier = MagicMock()
+        notifier.receive.side_effect = requests.ConnectionError('no dns')
+        ctx = commands.Context(db=Storage(':memory:'), monitors={})
+        with patch('clashogram.runner.time.sleep') as sleep, \
+             patch('clashogram.runner.time.monotonic',
+                   side_effect=[0, 5]):
+            runner.answer_until(ctx, notifier, 3)
+        sleep.assert_called_once()
+
+
+class HtmlSafetyTestCase(unittest.TestCase):
+    def test_nothing_the_bot_says_looks_like_markup(self):
+        # Replies go out with parse_mode=HTML, so a literal <clan tag>
+        # is a 400 and the answer is lost. reply() used to swallow it.
+        ctx = commands.Context(db=Storage(':memory:'), monitors={},
+                               admin_id='42')
+        for command in ('/chatid', '/start', '/help', '/add', '/remove',
+                        '/approve', '/request', '/addoperator',
+                        '/removeoperator', '/clans', '/operators'):
+            for _target, message in commands.answer(ctx, -1, 42, command):
+                self.assertNotIn('<', message, command)
+
+    def test_a_clan_named_with_a_bracket_is_escaped(self):
+        coc_api = MagicMock()
+        coc_api.get_claninfo.return_value = ClanInfo({'name': 'a<b'})
+        db = Storage(':memory:')
+        ctx = commands.Context(db=db, monitors={}, admin_id='42',
+                               coc_api=coc_api)
+        message = commands.answer(ctx, 'c1', '42', '/add #US')[0][1]
+        self.assertIn('a&lt;b', message)
 
 
 if __name__ == '__main__':

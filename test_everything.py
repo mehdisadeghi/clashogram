@@ -390,8 +390,8 @@ class CommandBotTestCase(unittest.TestCase):
                                     monitors={'#US': self.monitor})
 
     def answer(self, text, chat_id='c1', from_id=None):
-        return [message for _target, message
-                in commands.answer(self.ctx, chat_id, from_id, text)]
+        return [a.text for a in
+                commands.answer(self.ctx, chat_id, from_id, text)]
 
     def test_unknown_command_is_not_silently_ignored(self):
         self.assertIn('/help', self.answer('/nope')[0])
@@ -663,7 +663,7 @@ class OperatorTestCase(unittest.TestCase):
     def test_anybody_else_changes_nothing(self):
         answers = self.answer('/add #US', from_id='7')
         self.assertEqual(self.db.subscriptions(), [])
-        self.assertIn('operator', answers[0][1])
+        self.assertIn('Operators only', answers[0].text)
 
     def test_a_channel_post_is_never_the_operator(self):
         # Channel posts carry no author, so from_id is None there.
@@ -671,14 +671,14 @@ class OperatorTestCase(unittest.TestCase):
         self.assertEqual(self.db.subscriptions(), [])
 
     def test_operator_commands_are_offered_to_the_operator_alone(self):
-        self.assertNotIn('/remove', self.answer('/help', '7')[0][1])
-        self.assertIn('/remove', self.answer('/help', '42')[0][1])
+        self.assertNotIn('/remove', self.answer('/help', '7')[0].text)
+        self.assertIn('/remove', self.answer('/help', '42')[0].text)
 
     def test_telegram_start_button_is_answered(self):
-        self.assertNotIn('Unknown', self.answer('/start', '7')[0][1])
+        self.assertNotIn('Unknown', self.answer('/start', '7')[0].text)
 
     def test_an_unfollowed_chat_gets_no_war_data(self):
-        self.assertIn('follows no clan', self.answer('/war', '7')[0][1])
+        self.assertIn('No clan followed', self.answer('/war', '7')[0].text)
 
 
 class RequestTestCase(unittest.TestCase):
@@ -739,8 +739,9 @@ class MembershipTestCase(unittest.TestCase):
     def test_joining_hands_the_operator_the_id(self):
         # The only way to learn a channel's id, since nobody can be
         # recognised as the operator inside one.
-        target, message = commands.handle(self.ctx, Membership(
+        answer = commands.handle(self.ctx, Membership(
             -100448, 'Clan Wars', 'channel', joined=True))[0]
+        target, message = answer.chat_id, answer.text
         self.assertEqual(target, '42')
         self.assertIn('-100448', message)
 
@@ -874,8 +875,8 @@ class HtmlSafetyTestCase(unittest.TestCase):
         for command in ('/chatid', '/start', '/help', '/add', '/remove',
                         '/approve', '/request', '/addoperator',
                         '/removeoperator', '/clans', '/operators'):
-            for _target, message in commands.answer(ctx, -1, 42, command):
-                self.assertNotIn('<', message, command)
+            for answer in commands.answer(ctx, -1, 42, command):
+                self.assertNotIn('<', answer.text, command)
 
     def test_a_clan_named_with_a_bracket_is_escaped(self):
         coc_api = MagicMock()
@@ -883,8 +884,29 @@ class HtmlSafetyTestCase(unittest.TestCase):
         db = Storage(':memory:')
         ctx = commands.Context(db=db, monitors={}, admin_id='42',
                                coc_api=coc_api)
-        message = commands.answer(ctx, 'c1', '42', '/add #US')[0][1]
+        message = commands.answer(ctx, 'c1', '42', '/add #US')[0].text
         self.assertIn('a&lt;b', message)
+
+
+class AnswerShapeTestCase(unittest.TestCase):
+    def test_every_command_answers_with_answers(self):
+        # The runner reads .chat_id off each one. A bare tuple raises
+        # AttributeError there, which is not a network error, so it
+        # escapes the loop and takes the process with it.
+        db = Storage(':memory:')
+        coc = MagicMock()
+        coc.get_claninfo.return_value = ClanInfo({'name': 'iran'})
+        ctx = commands.Context(db=db, monitors={}, admin_id='42',
+                               coc_api=coc, open_requests=True)
+        commands.answer(ctx, 'g1', 7, '/request #US')
+        for command in ('/addoperator 77', '/removeoperator 77', '/operators',
+                        '/clans', '/add #US', '/remove #US', '/requests',
+                        '/requests open', '/requests close', '/approve 1',
+                        '/deny 1', '/request #US', '/help', '/start',
+                        '/chatid', '/war', '/nope'):
+            for answer in commands.answer(ctx, 'g1', 42, command, 'group',
+                                          'mehdi'):
+                self.assertIsInstance(answer, commands.Answer, command)
 
 
 if __name__ == '__main__':

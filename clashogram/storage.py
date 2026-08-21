@@ -29,6 +29,14 @@ CREATE TABLE IF NOT EXISTS person (
 -- Names are kept because they are had for free: the clan's when /add
 -- verifies the tag, the operator's whenever they say anything. Asking
 -- for them at listing time would spend a request to relabel a row.
+CREATE TABLE IF NOT EXISTS chat (
+    chat_id TEXT PRIMARY KEY,
+    title TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS setting (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS clan (
     clan_tag TEXT PRIMARY KEY,
     name TEXT NOT NULL
@@ -163,6 +171,28 @@ class Storage:
             (clan_tag, str(chat_id)))
         self._db.commit()
         return cursor.rowcount
+
+    def remember_chat_title(self, chat_id, title):
+        self._db.execute(
+            'INSERT INTO chat (chat_id, title) VALUES (?, ?) '
+            'ON CONFLICT(chat_id) DO UPDATE SET title = excluded.title',
+            (str(chat_id), title))
+        self._db.commit()
+
+    def chat_titles(self):
+        return dict(self._db.execute('SELECT chat_id, title FROM chat'))
+
+    def setting(self, key):
+        row = self._db.execute(
+            'SELECT value FROM setting WHERE key = ?', (key,)).fetchone()
+        return row[0] if row else None
+
+    def set_setting(self, key, value):
+        self._db.execute(
+            'INSERT INTO setting (key, value) VALUES (?, ?) '
+            'ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+            (key, value))
+        self._db.commit()
 
     def remember_clan_name(self, clan_tag, name):
         self._db.execute(

@@ -2,6 +2,7 @@
 # Notifiers
 ########################################################################
 import dataclasses
+import json
 import time
 
 import requests
@@ -90,6 +91,17 @@ class TelegramNotifier:
                 yield event
 
     def _as_event(self, update):
+        tap = update.get('callback_query')
+        if tap:
+            self._settle(tap)
+            message = tap.get('message') or {}
+            chat = message.get('chat') or {}
+            sender = tap.get('from') or {}
+            return Command(chat_id=chat.get('id'), from_id=sender.get('id'),
+                           text=tap.get('data') or '',
+                           chat_type=chat.get('type') or '',
+                           from_name=sender.get('username')
+                           or sender.get('first_name') or '')
         membership = update.get('my_chat_member')
         if membership:
             chat = membership['chat']
@@ -108,14 +120,29 @@ class TelegramNotifier:
                            or sender.get('first_name') or '')
         return None
 
-    def reply(self, chat_id, msg):
-        # Raising matters more than it looks: replies go out with HTML
-        # parsing, so one stray angle bracket is a 400, and swallowing it
-        # means the bot silently answers nobody.
-        res = requests.post(f'{self._api}/sendMessage',
-                            data={'chat_id': chat_id, 'text': msg,
-                                  'parse_mode': 'HTML'})
+    def reply(self, chat_id, msg, choices=()):
+        """Answer, optionally offering choices as buttons.
+
+        A choice carries the command it stands for, so tapping it is the
+        same as typing it: same handler, same permission check."""
+        data = {'chat_id': chat_id, 'text': msg, 'parse_mode': 'HTML'}
+        if choices:
+            data['reply_markup'] = json.dumps({'inline_keyboard': [
+                [{'text': label, 'callback_data': command}
+                 for label, command in choices]]})
+        res = requests.post(f'{self._api}/sendMessage', data=data)
         res.raise_for_status()
+
+    def _settle(self, tap):
+        """Stop Telegram's spinner and take the buttons away, so a
+        settled request cannot be tapped a second time."""
+        requests.post(f'{self._api}/answerCallbackQuery',
+                      data={'callback_query_id': tap['id']})
+        message = tap.get('message') or {}
+        if message.get('message_id'):
+            requests.post(f'{self._api}/editMessageReplyMarkup',
+                          data={'chat_id': message['chat']['id'],
+                                'message_id': message['message_id']})
 
     def _retry_after(self, res):
         return res.json().get('parameters', {}).get('retry_after', RETRY_AFTER)
@@ -129,5 +156,5 @@ class DummyNotifier:
     def receive(self):
         return []
 
-    def reply(self, chat_id, msg):
+    def reply(self, chat_id, msg, choices=()):
         print(msg)

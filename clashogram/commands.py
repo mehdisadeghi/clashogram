@@ -29,6 +29,18 @@ _ = gettext.gettext
 
 
 @dataclasses.dataclass
+class Answer:
+    """Something to say, and optionally the choices that go with it.
+
+    A choice is a label and the command it stands for. Rendering them is
+    the notifier's business; another chat service may show them however
+    it likes, or not at all."""
+    chat_id: object
+    text: str
+    choices: tuple = ()
+
+
+@dataclasses.dataclass
 class Context:
     db: object
     monitors: dict
@@ -53,18 +65,17 @@ def on_membership(ctx, event):
     at all."""
     if ctx.admin_id is None:
         return []
-    title = html.escape(event.title)
-    where = f'{event.chat_type} «{title}»' if event.title \
+    if event.joined and event.title:
+        ctx.db.remember_chat_title(event.chat_id, event.title)
+    where = f'{event.chat_type} «{_safe(event.title)}»' if event.title \
         else str(event.chat_type)
     if not event.joined:
         dropped = ctx.db.forget_chat(event.chat_id)
-        return [(ctx.admin_id,
-                 _('Removed from {where} ({chat}). Stopped following {count} '
-                   'clan(s) there.').format(where=where, chat=event.chat_id,
+        return [Answer(ctx.admin_id,
+                 _('Out of {where} ({chat}). Dropped {count} clan(s).').format(where=where, chat=event.chat_id,
                                             count=dropped))]
-    return [(ctx.admin_id,
-             _('Added to {where} ({chat}).\nTo follow a clan there:\n'
-               '/add CLAN_TAG {chat}').format(where=where,
+    return [Answer(ctx.admin_id,
+             _('I am in {where} ({chat}).\nFollow a clan there:\n/add CLAN_TAG {chat}').format(where=where,
                                                 chat=event.chat_id))]
 
 
@@ -84,31 +95,35 @@ def answer(ctx, chat_id, from_id, text, chat_type='', from_name=''):
     args = [part.split('@')[0] for part in parts[1:]]
 
     if name == 'chatid':
-        return [(chat_id, _chatid(ctx, chat_id, chat_type, from_id))]
+        return [Answer(chat_id, _chatid(ctx, chat_id, chat_type, from_id))]
     if name in OWNER_COMMANDS:
         if not _is_owner(ctx, from_id):
-            return [(chat_id, _('Only the owner can do that.'))]
+            return [_refuse(ctx, chat_id, from_id, owner_only=True)]
         return OWNER_COMMANDS[name](ctx, chat_id, args)
     if name in ADMIN_COMMANDS:
         if not _is_admin(ctx, from_id):
-            return [(chat_id, _('Only an operator can do that.'))]
+            return [_refuse(ctx, chat_id, from_id)]
+        # Settling requests is an operator's job; deciding whether the
+        # instance takes any at all is the owner's.
+        if name == 'requests' and args and not _is_owner(ctx, from_id):
+            return [_refuse(ctx, chat_id, from_id, owner_only=True)]
         return ADMIN_COMMANDS[name](ctx, chat_id, args)
     if name == 'request':
-        return _cmd_request(ctx, chat_id, from_id, args)
+        return _cmd_request(ctx, chat_id, from_id, args, from_name)
     # Telegram sends /start itself, from the button it shows on first
     # contact, so it is the one command that has to answer for the bot.
     if name in ('help', 'start'):
-        return [(chat_id, _usage(ctx, chat_id, from_id))]
+        return [Answer(chat_id, _usage(ctx, chat_id, from_id, chat_type))]
 
     handler = WAR_COMMANDS.get(name)
     if handler is None:
-        return [(chat_id, _('Unknown command. Try /help.'))]
+        return [Answer(chat_id, _('Unknown command. Try /help.'))]
     monitors = _monitors_for_chat(ctx, chat_id)
     if not monitors:
-        return [(chat_id, _('This chat follows no clan yet.'))]
+        return [Answer(chat_id, _('No clan followed here yet.'))]
     if len(monitors) == 1:
-        return [(chat_id, handler(monitors[0]))]
-    return [(chat_id, '\n\n'.join(f'{m.clan_tag}\n{handler(m)}'
+        return [Answer(chat_id, handler(monitors[0]))]
+    return [Answer(chat_id, '\n\n'.join(f'{m.clan_tag}\n{handler(m)}'
                                   for m in monitors))]
 
 
@@ -117,14 +132,61 @@ def _chatid(ctx, chat_id, chat_type, from_id):
     run /add sends most of them at a command they cannot use."""
     lines = [_('This chat is {chat}.').format(chat=chat_id)]
     if chat_type == 'private':
-        lines.append(_('Being a direct chat, that is also your user id.'))
+        lines.append(_('That is your own user id too.'))
     if _is_admin(ctx, from_id):
         lines += [_('To follow a clan here:'),
                   _('/add CLAN_TAG {chat}').format(chat=chat_id)]
-    elif ctx.open_requests:
+    elif _requests_open(ctx):
         lines += [_('To ask for a clan here:'),
                   _('/request CLAN_TAG')]
     return '\n'.join(lines)
+
+
+def _safe(value):
+    """Anything the bot did not write itself.
+
+    Replies go out with parse_mode=HTML, so a clan tag, a Telegram
+    first name or a chat title is markup unless it is escaped. Escaping
+    happens here, at the point of use, rather than on the way into the
+    database: what is stored stays true."""
+    return html.escape(str(value))
+
+
+def _refuse(ctx, chat_id, from_id, owner_only=False):
+    """Say why, and what to do instead.
+
+    In a channel this is not about rank at all: the post carries no
+    author, so nobody is recognised there, operator or not."""
+    if from_id is None:
+        return Answer(chat_id, _('No names on channel posts, so I cannot tell it is you boss! Send it to me directly and add this chat: {chat}').format(chat=chat_id))
+    if owner_only:
+        return Answer(chat_id, _('Owner only boss! Ask them.'))
+    if _requests_open(ctx):
+        return Answer(chat_id, _('Operators only! Ask for your clan instead: /request CLAN_TAG'))
+    return Answer(chat_id, _('Operators only! Ask one to add your clan here.'))
+
+
+def _who(ctx, user_id):
+    known = ctx.db.person_names().get(str(user_id))
+    return f'{_safe(known)} ({user_id})' if known else str(user_id)
+
+
+def _where(ctx, chat_id, here=None):
+    """Naming a chat by its number is unreadable when it is the one
+    being spoken in."""
+    if here is not None and str(chat_id) == str(here):
+        return _('this chat ({chat})').format(chat=chat_id)
+    known = ctx.db.chat_titles().get(str(chat_id))
+    return f'«{_safe(known)}» ({chat_id})' if known else str(chat_id)
+
+
+def _requests_open(ctx):
+    """The flag is the default. The owner can change it over Telegram,
+    which is the whole point of not having to touch the deployment."""
+    stored = ctx.db.setting('open_requests')
+    if stored is None:
+        return ctx.open_requests
+    return stored == 'on'
 
 
 def _is_owner(ctx, from_id):
@@ -156,7 +218,7 @@ def _normalise(clan_tag):
     return clan_tag if clan_tag.startswith('#') else f'#{clan_tag}'
 
 
-def _usage(ctx, chat_id, from_id):
+def _usage(ctx, chat_id, from_id, chat_type=''):
     """What this chat can ask for, and what it is following.
 
     Written out per chat rather than as one fixed list, because most of
@@ -164,10 +226,10 @@ def _usage(ctx, chat_id, from_id):
     until a clan is followed here, and the operator commands are noise
     to everybody but the operator."""
     followed = registry.clans_for_chat(ctx.db, chat_id)
-    lines = [_('Clashogram follows Clash of Clans wars and reports them.'), '']
+    lines = [_('I follow Clash of Clans wars and post them here.'), '']
 
     if followed:
-        lines += [_('This chat follows {clans}.').format(
+        lines += [_('Following {clans} here.').format(
             clans=', '.join(followed)), '',
             _('About the war:'),
             _('  /war        how it stands'),
@@ -176,19 +238,20 @@ def _usage(ctx, chat_id, from_id):
             _('  /stats      league attack stats'),
             _('  /clan       the clan itself')]
     else:
-        lines.append(_('This chat follows no clan yet.'))
+        lines.append(_('No clan followed here yet.'))
         # The operator is told how to fix that in their own section
         # below, so they are not sent to ask themselves.
         operator = _is_admin(ctx, from_id)
-        if not operator and ctx.open_requests:
+        if not operator and _requests_open(ctx):
             lines += ['', _('To ask for one:'),
-                      _('  /request CLAN_TAG    ask for a clan to be followed here')]
+                      _('  /request CLAN_TAG    ask for a clan here')]
         elif not operator:
-            lines.append(_('Requests are closed, so ask the operator.'))
+            lines.append(_('Requests are closed. Ask an operator!'))
 
+    if chat_type == 'channel':
+        lines += ['', _('No names on channel posts, so I cannot tell who you are here. Anything that changes things, send to me directly and add this chat ({chat}).').format(chat=chat_id)]
     lines += ['', _('Anywhere:'),
-              _('  /chatid     this chat\'s id; in a direct chat with the'
-                ' bot it is also your own user id'),
+              _('  /chatid     this chat\'s id, and yours if we talk directly'),
               _('  /help       this message')]
 
     if _is_owner(ctx, from_id):
@@ -196,8 +259,8 @@ def _usage(ctx, chat_id, from_id):
                   _('  /operators              who may operate'),
                   _('  /addoperator USER_ID    let somebody help'),
                   _('  /removeoperator USER_ID stop letting them'),
-                  _('They send /chatid to the bot in a direct chat to'
-                    ' find their user id.')]
+                  _('  /requests open|close    take requests, or stop'),
+                  _('They send me /chatid directly to find their user id.')]
     if _is_admin(ctx, from_id):
         lines += ['', _('Operator:'),
                   _('  /clans                     what is followed where'),
@@ -205,16 +268,14 @@ def _usage(ctx, chat_id, from_id):
                   _('  /remove CLAN_TAG [CHAT]    stop following')]
         # Advertising them while nobody can file one describes a
         # workflow that cannot happen.
-        if ctx.open_requests:
+        if _requests_open(ctx):
             lines += [_('  /requests                  who has asked'),
                       _('  /approve ID, /deny ID      settle a request')]
         else:
             lines.append(
-                _('Requests are closed, so only you add clans.'))
+                _('Requests are closed, so clans are yours to add.'))
         lines += ['',
-                  _('A channel post has no author, so operator commands do'
-                    ' not work inside a channel. Add the bot there, then'
-                    ' send /add here with the id it reports.')]
+                  _('I cannot tell who posts in a channel. Add me there, then send /add here with the id I report.')]
     return '\n'.join(lines)
 
 
@@ -269,9 +330,9 @@ WAR_COMMANDS = {
 def _cmd_clans(ctx, chat_id, args):
     grouped = registry.clans_with_chats(ctx.db)
     if not grouped:
-        return [(chat_id, _('No clan is followed.'))]
+        return [Answer(chat_id, _('No clans followed.'))]
     names = ctx.db.clan_names()
-    lines = []
+    answers = []
     for clan_tag, chats in sorted(grouped.items()):
         if clan_tag not in names:
             # Bootstrapped clans never passed through /add. One request,
@@ -282,25 +343,31 @@ def _cmd_clans(ctx, chat_id, args):
                 names[clan_tag] = found
         known = names.get(clan_tag)
         label = f'{known} ({clan_tag})' if known else clan_tag
-        lines.append(f'{label} -> {", ".join(chats)}')
-    return [(chat_id, '\n'.join(lines))]
+        for chat in chats:
+            answers.append(Answer(
+                chat_id,
+                _('{clan} in {chat}').format(
+                    clan=label, chat=_where(ctx, chat, chat_id)),
+                ((_('Stop following'), f'/remove {clan_tag} {chat}'),)))
+    return answers
 
 
 def _cmd_add(ctx, chat_id, args):
     if not args:
-        return [(chat_id, _('Usage: /add CLAN_TAG [CHAT_ID]'))]
+        return [Answer(chat_id, _('Usage: /add CLAN_TAG [CHAT_ID]'))]
     clan_tag = _normalise(args[0])
     target = args[1] if len(args) > 1 else chat_id
     name = _clan_name(ctx, clan_tag)
     if name is None:
-        return [(chat_id, _('No clan is tagged {clan}.').format(
-            clan=clan_tag))]
+        return [Answer(chat_id, _('No clan with tag {clan}!').format(
+            clan=_safe(clan_tag)))]
     monitor = ctx.monitors.get(clan_tag)
     war_id = monitor.current_war_id() if monitor else None
     ctx.db.remember_clan_name(clan_tag, name)
     registry.subscribe(ctx.db, clan_tag, target, war_id)
-    return [(chat_id, _('Following {name} ({clan}) in {chat}.').format(
-        name=name, clan=clan_tag, chat=target))]
+    return [Answer(chat_id, _('Following {name} ({clan}) in {chat}.').format(
+        name=_safe(name), clan=_safe(clan_tag),
+        chat=_where(ctx, target, chat_id)))]
 
 
 def _clan_name(ctx, clan_tag):
@@ -312,7 +379,7 @@ def _clan_name(ctx, clan_tag):
     if ctx.coc_api is None:
         return clan_tag
     try:
-        return html.escape(ctx.coc_api.get_claninfo(clan_tag).data['name'])
+        return ctx.coc_api.get_claninfo(clan_tag).data['name']
     except requests.HTTPError as err:
         if err.response.status_code == 404:
             return None
@@ -321,23 +388,41 @@ def _clan_name(ctx, clan_tag):
 
 def _cmd_remove(ctx, chat_id, args):
     if not args:
-        return [(chat_id, _('Usage: /remove CLAN_TAG [CHAT_ID]'))]
+        return [Answer(chat_id, _('Usage: /remove CLAN_TAG [CHAT_ID]'))]
     clan_tag = _normalise(args[0])
     target = args[1] if len(args) > 1 else chat_id
+    where = _where(ctx, target, chat_id)
     if not registry.unsubscribe(ctx.db, clan_tag, target):
-        return [(chat_id, _('{clan} was not followed in {chat}.').format(
-            clan=clan_tag, chat=target))]
-    return [(chat_id, _('Stopped following {clan} in {chat}.').format(
-        clan=clan_tag, chat=target))]
+        return [Answer(chat_id, _('{clan} was not followed in {chat}.').format(
+            clan=_safe(clan_tag), chat=where))]
+    return [Answer(chat_id, _('Stopped following {clan} in {chat}.').format(
+        clan=_safe(clan_tag), chat=where))]
 
 
 def _cmd_requests(ctx, chat_id, args):
+    if args and args[0] in ('open', 'close'):
+        ctx.db.set_setting('open_requests',
+                           'on' if args[0] == 'open' else 'off')
+        return [Answer(chat_id, _('Requests are open.') if args[0] == 'open'
+                       else _('Requests are closed.'))]
+    if args:
+        return [Answer(chat_id, _('Usage: /requests [open|close]'))]
     pending = registry.pending_requests(ctx.db)
     if not pending:
-        return [(chat_id, _('Nothing is waiting.'))]
-    lines = ['{id}. {clan_tag} in {chat_id}'.format(**request)
-             for request in pending]
-    return [(chat_id, '\n'.join(lines))]
+        return [Answer(chat_id, _('Nothing waiting.'))]
+    names = ctx.db.clan_names()
+    return [Answer(chat_id,
+                   _('{who} wants {name} ({clan}) in {chat}.').format(
+                       who=_who(ctx, r['requester_id']),
+                       name=names.get(r['clan_tag'], r['clan_tag']),
+                       clan=r['clan_tag'], chat=_where(ctx, r['chat_id'])),
+                   _settle_choices(r['id']))
+            for r in pending]
+
+
+def _settle_choices(request_id):
+    return ((_('Approve'), f'/approve {request_id}'),
+            (_('Deny'), f'/deny {request_id}'))
 
 
 def _cmd_approve(ctx, chat_id, args):
@@ -350,17 +435,18 @@ def _cmd_deny(ctx, chat_id, args):
 
 def _resolve(ctx, chat_id, args, approved):
     if not args or not args[0].isdigit():
-        return [(chat_id, _('Usage: /approve REQUEST_ID'))]
+        return [Answer(chat_id, _('Usage: /approve REQUEST_ID'))]
     request = registry.resolve_request(ctx.db, int(args[0]), approved)
     if request is None:
-        return [(chat_id, _('No request is waiting under that number.'))]
-    verdict = _('Approved {clan}.') if approved else _('Denied {clan}.')
-    answers = [(chat_id, verdict.format(clan=request['clan_tag']))]
+        return [Answer(chat_id, _('No request with that number.'))]
+    clan = ctx.db.clan_names().get(request['clan_tag'], request['clan_tag'])
     if approved:
-        answers.append((request['chat_id'],
-                        _('Now following {clan} here.').format(
-                            clan=request['clan_tag'])))
-    return answers
+        told = _('{clan} is in! Its wars land here from now on.')
+    else:
+        told = _('{clan} was turned down.')
+    return [Answer(chat_id, (_('Approved {clan}.') if approved
+                             else _('Denied {clan}.')).format(clan=clan)),
+            Answer(request['chat_id'], told.format(clan=clan))]
 
 
 def _cmd_operators(ctx, chat_id, args):
@@ -370,28 +456,29 @@ def _cmd_operators(ctx, chat_id, args):
         return f'{known} ({user_id})' if known else str(user_id)
     lines = [_('{who} (owner)').format(who=label(ctx.admin_id))]
     lines += [label(o) for o in registry.operators(ctx.db)]
-    return [(chat_id, '\n'.join(lines))]
+    return [Answer(chat_id, '\n'.join(lines))]
 
 
 def _cmd_addoperator(ctx, chat_id, args):
     if not args or not args[0].lstrip('-').isdigit():
-        return [(chat_id, _('Usage: /addoperator USER_ID'))]
+        return [Answer(chat_id, _('Usage: /addoperator USER_ID'))]
     if str(args[0]) == str(ctx.admin_id):
-        return [(chat_id, _('That is the owner already.'))]
+        return [Answer(chat_id, _('That is the owner!'))]
     registry.add_operator(ctx.db, args[0])
-    return [(chat_id, _('{who} can now operate.').format(who=args[0])),
-            (args[0], _('You can now operate this bot. Send /help.'))]
+    return [Answer(chat_id, _('{who} can now operate.').format(who=_safe(args[0]))),
+            Answer(args[0],
+                   _('You are an operator now! Send /help.'))]
 
 
 def _cmd_removeoperator(ctx, chat_id, args):
     if not args:
-        return [(chat_id, _('Usage: /removeoperator USER_ID'))]
+        return [Answer(chat_id, _('Usage: /removeoperator USER_ID'))]
     if str(args[0]) == str(ctx.admin_id):
-        return [(chat_id, _('The owner stays.'))]
+        return [Answer(chat_id, _('The owner stays boss!'))]
     if not registry.remove_operator(ctx.db, args[0]):
-        return [(chat_id, _('{who} was not an operator.').format(
-            who=args[0]))]
-    return [(chat_id, _('{who} can no longer operate.').format(who=args[0]))]
+        return [Answer(chat_id, _('{who} was not an operator.').format(
+            who=_safe(args[0])))]
+    return [Answer(chat_id, _('{who} can no longer operate.').format(who=_safe(args[0])))]
 
 
 OWNER_COMMANDS = {
@@ -414,26 +501,29 @@ ADMIN_COMMANDS = {
 # Asking to be followed
 ########################################################################
 
-def _cmd_request(ctx, chat_id, from_id, args):
-    if not ctx.open_requests:
-        return [(chat_id, _('This instance is not taking requests.'))]
+def _cmd_request(ctx, chat_id, from_id, args, from_name=''):
+    if not _requests_open(ctx):
+        return [Answer(chat_id, _('Not taking requests.'))]
     if not args:
-        return [(chat_id, _('Usage: /request CLAN_TAG'))]
+        return [Answer(chat_id, _('Usage: /request CLAN_TAG'))]
     clan_tag = _normalise(args[0])
     name = _clan_name(ctx, clan_tag)
     if name is None:
-        return [(chat_id, _('No clan is tagged {clan}.').format(
-            clan=clan_tag))]
+        return [Answer(chat_id, _('No clan with tag {clan}!').format(
+            clan=_safe(clan_tag)))]
     ctx.db.remember_clan_name(clan_tag, name)
+    # Asking is not passing by: the operator has to know who to answer.
+    if from_name:
+        ctx.db.note_person_name(from_id, from_name)
     request_id = registry.file_request(ctx.db, clan_tag, chat_id, from_id)
     if request_id is None:
-        return [(chat_id, _('That is already waiting.'))]
-    answers = [(chat_id, _('Sent. You will hear back once somebody has '
-                           'looked at it.'))]
+        return [Answer(chat_id, _('Already waiting.'))]
+    answers = [Answer(chat_id, _('Asked! You will hear back.'))]
     if ctx.admin_id is not None:
-        answers.append((ctx.admin_id,
-                        _('{name} ({clan}) was asked for in {chat}.\n'
-                          '/approve {id} or /deny {id}').format(
-                            name=name, clan=clan_tag, chat=chat_id,
-                            id=request_id)))
+        answers.append(Answer(ctx.admin_id,
+                              _('{who} wants {name} ({clan}) in {chat}.').format(who=_who(ctx, from_id),
+                                                  name=_safe(name),
+                                                  clan=_safe(clan_tag),
+                                                  chat=_where(ctx, chat_id)),
+                              _settle_choices(request_id)))
     return answers

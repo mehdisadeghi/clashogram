@@ -137,8 +137,9 @@ def answer_until(ctx, notifier, deadline):
         answered = False
         try:
             for event in notifier.receive():
-                for target, message in commands.handle(ctx, event):
-                    notifier.reply(target, message)
+                for answer in commands.handle(ctx, event):
+                    notifier.reply(answer.chat_id, answer.text,
+                                   answer.choices)
                 answered = True
         except requests.RequestException as err:
             # The status and reason matter: a 409 means something else is

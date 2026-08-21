@@ -23,6 +23,16 @@ spec:
           image: ghcr.io/mehdisadeghi/clashogram:latest
           imagePullPolicy: Always
           args: [--warlog, /data/warlog.db]
+          # The node is small and nothing else here declares any, so
+          # without these one leak evicts the rest of it. Idle is ~26Mi;
+          # the headroom is for a monitor per followed clan, each holding
+          # its war payloads.
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
           envFrom:
             - secretRef:
                 name: clashogram

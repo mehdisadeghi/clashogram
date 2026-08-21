@@ -41,3 +41,47 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv build
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  docker:
+    needs: [lint, test]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    env:
+      # A step-level `if` cannot read the secrets context, so mirror it here.
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tags
+        id: tags
+        run: |
+          image=ghcr.io/$GITHUB_REPOSITORY
+          tags="$image:latest,$image:sha-${GITHUB_SHA::7}"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            version=${GITHUB_REF_NAME#v}
+            tags="$tags,$image:$version"
+            if [ -n "$DOCKERHUB_USERNAME" ]; then
+              tags="$tags,$GITHUB_REPOSITORY:$version,$GITHUB_REPOSITORY:latest"
+            fi
+          fi
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      # GHCR is canonical; Docker Hub stays as legacy and must never gate it.
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - uses: docker/login-action@v3
+        if: github.ref_type == 'tag' && env.DOCKERHUB_USERNAME != ''
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}

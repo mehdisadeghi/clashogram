@@ -240,13 +240,13 @@ class WarMonitor:
     def send_preparation_msg(self):
         self.send_once(
             self.msg_factory.create_preparation_msg,
-            msg_id='preparation_msg')
+            msg_id='preparation_msg', kind='prep')
         self.send_once(
             self.msg_factory.create_players_msg,
-            msg_id='players_msg')
+            msg_id='players_msg', kind='prep')
 
     def send_war_msg(self):
-        self.send_once(self.msg_factory.create_war_msg, 'war_msg')
+        self.send_once(self.msg_factory.create_war_msg, 'war_msg', kind='prep')
 
     def send_attack_msgs(self):
         for order, items in sorted(self.warinfo.ordered_attacks.items()):
@@ -264,12 +264,12 @@ class WarMonitor:
         self.send_once(
             lambda: self.msg_factory.create_clan_attack_msg(
                 attacker, attack, war_stats),
-            msg_id=self.get_attack_id(attack))
+            msg_id=self.get_attack_id(attack), kind='attacks')
         if war_stats['clan_destruction'] == 100:
             self.send_once(
                 lambda: self.msg_factory.create_clan_full_destruction_msg(
                     attacker, attack, war_stats),
-                msg_id='clan_full_destruction')
+                msg_id='clan_full_destruction', kind='attacks')
 
     def is_msg_sent(self, msg_id, chat_id):
         return self.db.is_sent(self.get_war_id(), msg_id, chat_id)
@@ -284,16 +284,17 @@ class WarMonitor:
     def send_opponent_attack_msg(self, attacker, attack, war_stats):
         self.send_once(lambda: self.msg_factory.create_opponent_attack_msg(
             attacker, attack, war_stats),
-            msg_id=self.get_attack_id(attack))
+            msg_id=self.get_attack_id(attack), kind='attacks')
         if war_stats['op_destruction'] == 100:
             self.send_once(
                 lambda: self.msg_factory.create_opponent_full_destruction_msg(
                     attacker, attack, war_stats),
-                msg_id='op_full_destruction')
+                msg_id='op_full_destruction', kind='attacks')
 
     def send_war_over_msg(self):
         self.send_once(
-            self.msg_factory.create_war_over_msg, msg_id='war_over_msg')
+            self.msg_factory.create_war_over_msg, msg_id='war_over_msg',
+            kind='result')
 
     def send_standings_msg(self):
         """Post the table once per round, keyed to the round that ended."""
@@ -302,14 +303,14 @@ class WarMonitor:
         rows = LeagueStandings(self.leagueinfo).rows()
         if rows:
             self.send_once(lambda: create_standings_msg(rows),
-                           msg_id='standings_msg')
+                           msg_id='standings_msg', kind='standings')
 
     def reset(self):
         self.warinfo = None
         self.warstats = None
         self.msg_factory = None
 
-    def send_once(self, build, msg_id):
+    def send_once(self, build, msg_id, kind='war'):
         """Send to every chat that has not had this message yet.
 
         Delivery is recorded per chat, so a chat added part way through a
@@ -319,8 +320,14 @@ class WarMonitor:
         for chat_id in self.chat_ids:
             if self.is_msg_sent(msg_id, chat_id):
                 continue
+            if kind in self.db.muted_kinds(chat_id):
+                # Marked without sending, so a chat that unmutes later
+                # gets what happens next rather than the war it sat out.
+                self.mark_msg_as_sent(msg_id, chat_id)
+                continue
             i18n.activate(self.db.chat_lang(chat_id))
             self.notifier.send(build(), chat_id)
+            # Only now: a send that raised must be tried again.
             self.mark_msg_as_sent(msg_id, chat_id)
 
     def send(self, msg, silent=False):

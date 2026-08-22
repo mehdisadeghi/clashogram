@@ -95,6 +95,8 @@ def answer(ctx, chat_id, from_id, text, chat_type='', from_name=''):
     # after an argument, and it is never part of one.
     args = [part.split('@')[0] for part in parts[1:]]
 
+    if name == 'mute':
+        return _cmd_mute(ctx, chat_id, from_id, args)
     if name == 'lang':
         return _cmd_lang(ctx, chat_id, from_id, args)
     if name == 'chatid':
@@ -136,6 +138,27 @@ def _steward(ctx, chat_id, from_id):
     if from_id is None:
         return False
     return str(from_id) == str(ctx.db.chat_steward(chat_id))
+
+
+# What a war produces, and what a chat can refuse. Attacks are the
+# flood: two per member per war, against a handful for everything else.
+KINDS = ('attacks', 'prep', 'standings', 'result')
+
+
+def _cmd_mute(ctx, chat_id, from_id, args):
+    muted = ctx.db.muted_kinds(chat_id)
+    if args:
+        if args[0] not in KINDS:
+            return [Answer(chat_id, _('I post attacks, prep, standings and '
+                                      'result.'))]
+        if not (_is_admin(ctx, from_id) or _steward(ctx, chat_id, from_id)):
+            return [Answer(chat_id, _('Only an operator or whoever added me '
+                                      'here can change that.'))]
+        muted = muted ^ {args[0]}
+        ctx.db.set_muted_kinds(chat_id, muted)
+    return [Answer(chat_id, _('Tap to turn a kind on or off.'),
+                   tuple((f'{"🔕" if k in muted else "🔔"} {k}',
+                          f'/mute {k}') for k in KINDS))]
 
 
 def _cmd_lang(ctx, chat_id, from_id, args):
@@ -284,6 +307,7 @@ def _usage(ctx, chat_id, from_id, chat_type=''):
               '', _('Anywhere:'),
               _('  /chatid     this chat\'s id, and yours if we talk directly'),
               _('  /lang       pick the language here'),
+              _('  /mute       choose what I post here'),
               _('  /help       this message')]
 
     if _is_owner(ctx, from_id):
@@ -357,7 +381,6 @@ def _cmd_leaders(monitor):
     return '\n'.join(
         (_('Leader {name}') if rank == 0 else _('Co-leader {name}')).format(
             name=_safe(name)) for rank, name in people)
-
 
 
 WAR_COMMANDS = {

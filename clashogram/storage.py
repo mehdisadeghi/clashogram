@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS chat (
     chat_id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     lang TEXT,
+    -- Kinds this chat does not want, comma separated. Empty means all.
+    muted TEXT,
     -- Whoever put the bot here, or asked for it. They may set this
     -- chat's options without being an operator of the instance.
     steward TEXT
@@ -84,6 +86,7 @@ class Storage:
     # A column added to a table that already exists never arrives:
     # CREATE TABLE IF NOT EXISTS leaves the old table alone.
     LATER_COLUMNS = (('chat', 'lang', 'TEXT'),
+                     ('chat', 'muted', 'TEXT'),
                      ('chat', 'steward', 'TEXT'))
 
     def _add_columns(self):
@@ -207,6 +210,18 @@ class Storage:
             'INSERT INTO chat (chat_id, title, lang) VALUES (?, ?, ?) '
             'ON CONFLICT(chat_id) DO UPDATE SET lang = excluded.lang',
             (str(chat_id), '', lang))
+        self._db.commit()
+
+    def muted_kinds(self, chat_id):
+        row = self._db.execute('SELECT muted FROM chat WHERE chat_id = ?',
+                               (str(chat_id),)).fetchone()
+        return set(filter(None, (row[0] or '').split(','))) if row else set()
+
+    def set_muted_kinds(self, chat_id, kinds):
+        self._db.execute(
+            'INSERT INTO chat (chat_id, title, muted) VALUES (?, ?, ?) '
+            'ON CONFLICT(chat_id) DO UPDATE SET muted = excluded.muted',
+            (str(chat_id), '', ','.join(sorted(kinds))))
         self._db.commit()
 
     def chat_steward(self, chat_id):

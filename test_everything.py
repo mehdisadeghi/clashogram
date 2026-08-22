@@ -922,10 +922,46 @@ class PerChatDeliveryTestCase(unittest.TestCase):
         db.set_chat_lang('fa', 'fa_IR')
         db.set_chat_lang('en', 'en')
         monitor = self._monitor(db, ['fa', 'en'])
-        monitor.send_once(lambda: gettext_('Not in a war.'), 'm')
+        monitor.send_once(lambda: gettext_('Not in a war.'), 'm', kind='result')
         said = {c.args[1]: c.args[0] for c in monitor.notifier.send.call_args_list}
         self.assertEqual(said['en'], 'Not in a war.')
         self.assertNotEqual(said['fa'], said['en'])
+
+    def test_a_muted_kind_is_skipped_but_not_replayed_later(self):
+        db = Storage(':memory:')
+        db.set_muted_kinds('quiet', {'attacks'})
+        monitor = self._monitor(db, ['quiet', 'loud'])
+        monitor.send_once(lambda: 'boom', 'a1', kind='attacks')
+        self.assertEqual([c.args[1] for c in monitor.notifier.send.call_args_list],
+                         ['loud'])
+        self.assertTrue(db.is_sent('W1', 'a1', 'quiet'))
+
+
+class ChatColumnsTestCase(unittest.TestCase):
+    def test_a_chat_table_from_before_gains_the_new_columns(self):
+        # This crash-looped the deployed bot: the table already existed,
+        # so CREATE TABLE IF NOT EXISTS never added lang, muted or
+        # steward, and every command died on the first lookup.
+        tmpdir = tempfile.mkdtemp()
+        try:
+            path = os.path.join(tmpdir, 'old.db')
+            old = sqlite3.connect(path)
+            old.executescript("""
+                CREATE TABLE chat (chat_id TEXT PRIMARY KEY,
+                                   title TEXT NOT NULL);
+                INSERT INTO chat VALUES ('c1', 'Clan Chat');
+            """)
+            old.commit()
+            old.close()
+            with Storage(path) as db:
+                self.assertIsNone(db.chat_lang('c1'))
+                self.assertEqual(db.muted_kinds('c1'), set())
+                self.assertIsNone(db.chat_steward('c1'))
+                db.set_chat_lang('c1', 'fa_IR')
+                self.assertEqual(db.chat_lang('c1'), 'fa_IR')
+                self.assertEqual(db.chat_titles(), {'c1': 'Clan Chat'})
+        finally:
+            shutil.rmtree(tmpdir)
 
 
 if __name__ == '__main__':

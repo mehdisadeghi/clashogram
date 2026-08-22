@@ -28,7 +28,8 @@ def run(ctx, build_monitor, notifier):
         now = time.monotonic()
         for clan_tag, monitor in list(ctx.monitors.items()):
             if due.get(clan_tag, 0) <= now:
-                due[clan_tag] = time.monotonic() + poll(monitor, notifier)
+                due[clan_tag] = time.monotonic() + poll(
+                    monitor, notifier, ctx.admin_id)
         deadline = min(due.values(), default=time.monotonic() + IDLE_TICK)
         answer_until(ctx, notifier, deadline)
 
@@ -51,7 +52,7 @@ def sync(ctx, build_monitor, due):
         ctx.monitors[clan_tag].chat_ids = chats
 
 
-def poll(monitor, notifier):
+def poll(monitor, notifier, admin_id=None):
     """Fetch one clan and report it. Returns seconds until it is due again.
 
     A clan that is failing backs itself off and leaves the others alone.
@@ -73,9 +74,10 @@ def poll(monitor, notifier):
                 monitor.update(next_war)
         else:
             monitor.update()
+        _recovered(monitor)
         return POLL_INTERVAL
     except requests.HTTPError as err:
-        return _back_off(monitor, err)
+        return _back_off(monitor, notifier, admin_id, err)
     except requests.RequestException as err:
         # A dropped connection or a dns blip is ordinary for a process
         # that polls for months, and the network is usually back by the
@@ -92,16 +94,32 @@ def _describe(err):
     return f'{response.status_code} {response.json().get("description", "")}'
 
 
-def _tell(monitor, message, silent=False):
-    """Best effort. The network being unreachable is often the very
-    reason there is something to say."""
+_complained = {}
+
+
+def _tell(notifier, admin_id, monitor, message, trouble):
+    """Tell the operator, once per spell of trouble.
+
+    This used to go to every chat of the clan, on every retry: a six
+    hour CoC maintenance was thirty six messages in somebody's channel,
+    about something only the operator can act on."""
+    if _complained.get(monitor.clan_tag) == trouble:
+        return
+    _complained[monitor.clan_tag] = trouble
+    if admin_id is None:
+        return
     try:
-        monitor.send(message, silent=silent)
+        notifier.reply(admin_id, message)
     except requests.RequestException:
-        logger.warning('Could not reach the chats of %s.', monitor.clan_tag)
+        logger.warning('Could not reach the operator about %s.',
+                       monitor.clan_tag)
 
 
-def _back_off(monitor, err):
+def _recovered(monitor):
+    _complained.pop(monitor.clan_tag, None)
+
+
+def _back_off(monitor, notifier, admin_id, err):
     status = err.response.status_code
     if status in (500, 502, 504):
         logger.warning('CoC server error %s for %s, retrying.',
@@ -109,17 +127,20 @@ def _back_off(monitor, err):
         return BACKOFF
     if status == 503:
         logger.warning('CoC maintenance for %s, retrying.', monitor.clan_tag)
-        _tell(monitor, _('CoC maintenance error, retrying in {seconds} '
-                         'seconds.').format(seconds=BACKOFF), silent=True)
+        _tell(notifier, admin_id, monitor,
+              _('CoC maintenance error, retrying in {seconds} '
+                'seconds.').format(seconds=BACKOFF), 'maintenance')
         return BACKOFF
     if status == 404:
         logger.warning('CoC does not know %s, retrying.', monitor.clan_tag)
         return BACKOFF
     if status == 403 and not monitor.coc_api.get_claninfo(
             monitor.clan_tag).is_warlog_public:
-        _tell(monitor, _('Warlog must be public boss! ☠️'))
+        _tell(notifier, admin_id, monitor,
+              _('Warlog must be public boss! ☠️'), 'warlog')
         return BACKOFF
-    _tell(monitor, _('☠️ 😵 App is broken boss! Come over and fix me please!'))
+    _tell(notifier, admin_id, monitor,
+          _('☠️ 😵 App is broken boss! Come over and fix me please!'), 'broken')
     raise err
 
 

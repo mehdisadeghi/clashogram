@@ -993,7 +993,7 @@ class EscapingTestCase(unittest.TestCase):
         db = Storage(':memory:')
         answers = commands.answer(self._ctx(db), 'g1', 7, '/request #US',
                                   'group', self.EVIL)
-        told = [a.text for a in answers if a.chat_id == '42'][0]
+        told = next(a.text for a in answers if a.chat_id == '42')
         self.assertNotIn('<b>', told)
 
     def test_a_clan_named_with_markup_is_escaped(self):

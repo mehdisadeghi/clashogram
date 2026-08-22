@@ -32,6 +32,26 @@ class ClanInfo:
         return self.data['warWinStreak']
 
     @property
+    def leader(self):
+        """Name of the leader, or '' for a clan the roster was not asked
+        for. The clan endpoint carries the whole member list, so this
+        costs nothing beyond what has already been fetched."""
+        for member in self.data.get('memberList', []):
+            if member['role'] == 'leader':
+                return member['name']
+        return ''
+
+    @property
+    def leaders(self):
+        """The leader first, then the co-leaders. Elders are `admin` in
+        the payload and are not leaders."""
+        ranked = {'leader': 0, 'coLeader': 1}
+        found = [(ranked[m['role']], m['name'])
+                 for m in self.data.get('memberList', [])
+                 if m['role'] in ranked]
+        return [(rank, name) for rank, name in sorted(found)]
+
+    @property
     def is_warlog_public(self):
         return self.data['isWarLogPublic']
 

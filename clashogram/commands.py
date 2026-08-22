@@ -265,7 +265,8 @@ def _usage(ctx, chat_id, from_id, chat_type=''):
             _('  /missing    who still has attacks'),
             _('  /standings  the league table'),
             _('  /stats      league attack stats'),
-            _('  /clan       the clan itself')]
+            _('  /clan       the clan itself'),
+            _('  /leaders    who runs it')]
     else:
         lines.append(_('No clan followed here yet.'))
         # The operator is told how to fix that in their own section
@@ -341,8 +342,21 @@ def _cmd_stats(monitor):
 
 def _cmd_clan(monitor):
     claninfo = monitor.coc_api.get_claninfo(monitor.clan_tag)
-    return _('War win streak {streak} {flag}').format(
-        streak=claninfo.winstreak, flag=claninfo.country_flag_imoji)
+    lines = [_('War win streak {streak} {flag}').format(
+        streak=claninfo.winstreak, flag=claninfo.country_flag_imoji)]
+    if claninfo.leader:
+        lines.append(_('Leader {name}').format(
+            name=_safe(claninfo.leader)))
+    return '\n'.join(lines)
+
+
+def _cmd_leaders(monitor):
+    people = monitor.coc_api.get_claninfo(monitor.clan_tag).leaders
+    if not people:
+        return _('Nobody is listed.')
+    return '\n'.join(
+        (_('Leader {name}') if rank == 0 else _('Co-leader {name}')).format(
+            name=_safe(name)) for rank, name in people)
 
 
 
@@ -352,6 +366,7 @@ WAR_COMMANDS = {
     'standings': _cmd_standings,
     'stats': _cmd_stats,
     'clan': _cmd_clan,
+    'leaders': _cmd_leaders,
 }
 
 

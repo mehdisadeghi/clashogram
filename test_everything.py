@@ -15,6 +15,7 @@ from clashogram import commands, registry, runner
 from clashogram.__main__ import WarMonitor
 from clashogram.api import CoCAPI
 from clashogram.formatters import MessageFactory
+from clashogram.i18n import gettext_
 from clashogram.models import (
     ClanInfo,
     LeagueInfo,
@@ -230,7 +231,7 @@ class TelegramNotifierTestCase(unittest.TestCase):
         monitor.warinfo.create_war_id.return_value = 'W1'
         monitor.notifier.send.side_effect = requests.HTTPError('429')
         with self.assertRaises(requests.HTTPError):
-            monitor.send_once('hi', msg_id='m1')
+            monitor.send_once(lambda: 'hi', msg_id='m1')
         self.assertFalse(monitor.is_msg_sent('m1', 'c1'))
 
 
@@ -632,7 +633,7 @@ class TwoClansInOneWarTestCase(unittest.TestCase):
         for monitor in (ours, theirs):
             monitor.warinfo = MagicMock()
             monitor.warinfo.create_war_id.return_value = 'SHARED'
-            monitor.send_once('war is on', msg_id='war_msg')
+            monitor.send_once(lambda: 'war is on', msg_id='war_msg')
         self.assertEqual(
             sorted(call.args[1] for call in notifier.send.call_args_list),
             ['chat_them', 'chat_us'])
@@ -907,6 +908,24 @@ class AnswerShapeTestCase(unittest.TestCase):
             for answer in commands.answer(ctx, 'g1', 42, command, 'group',
                                           'mehdi'):
                 self.assertIsInstance(answer, commands.Answer, command)
+
+
+class PerChatDeliveryTestCase(unittest.TestCase):
+    def _monitor(self, db, chats):
+        monitor = WarMonitor(db, MagicMock(), '#US', MagicMock(), chats)
+        monitor.warinfo = MagicMock()
+        monitor.warinfo.create_war_id.return_value = 'W1'
+        return monitor
+
+    def test_each_chat_is_told_in_its_own_language(self):
+        db = Storage(':memory:')
+        db.set_chat_lang('fa', 'fa_IR')
+        db.set_chat_lang('en', 'en')
+        monitor = self._monitor(db, ['fa', 'en'])
+        monitor.send_once(lambda: gettext_('Not in a war.'), 'm')
+        said = {c.args[1]: c.args[0] for c in monitor.notifier.send.call_args_list}
+        self.assertEqual(said['en'], 'Not in a war.')
+        self.assertNotEqual(said['fa'], said['en'])
 
 
 if __name__ == '__main__':

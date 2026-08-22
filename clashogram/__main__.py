@@ -95,7 +95,8 @@ def main(coc_token, clan_tag, bot_token, chat_id, admin_id, archive,
             return monitor
 
         ctx = commands.Context(db=db, monitors={}, admin_id=admin_id,
-                               open_requests=open_requests, coc_api=coc_api)
+                               open_requests=open_requests, coc_api=coc_api,
+                               is_chat_admin=notifier.is_chat_admin)
         runner.run(ctx, build_monitor, notifier)
 
 

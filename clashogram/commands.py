@@ -47,6 +47,7 @@ class Context:
     admin_id: object = None
     open_requests: bool = False
     coc_api: object = None
+    is_chat_admin: object = None
 
 
 def handle(ctx, event):
@@ -97,10 +98,15 @@ def answer(ctx, chat_id, from_id, text, chat_type='', from_name=''):
     # after an argument, and it is never part of one.
     args = [part.split('@')[0] for part in parts[1:]]
 
+    if name in ('follow', 'unfollow'):
+        if not _runs_this_chat(ctx, chat_id, from_id, chat_type):
+            return [_refuse(ctx, chat_id, from_id)]
+        return (_cmd_follow if name == 'follow' else _cmd_unfollow)(
+            ctx, chat_id, args)
     if name == 'mute':
-        return _cmd_mute(ctx, chat_id, from_id, args)
+        return _cmd_mute(ctx, chat_id, from_id, args, chat_type)
     if name == 'lang':
-        return _cmd_lang(ctx, chat_id, from_id, args)
+        return _cmd_lang(ctx, chat_id, from_id, args, chat_type)
     if name == 'chatid':
         return [Answer(chat_id, _chatid(ctx, chat_id, chat_type, from_id))]
     if name in OWNER_COMMANDS:
@@ -147,15 +153,15 @@ def _steward(ctx, chat_id, from_id):
 KINDS = ('attacks', 'prep', 'standings', 'result')
 
 
-def _cmd_mute(ctx, chat_id, from_id, args):
+def _cmd_mute(ctx, chat_id, from_id, args, chat_type=''):
     muted = ctx.db.muted_kinds(chat_id)
     if args:
         if args[0] not in KINDS:
             return [Answer(chat_id, _('I post attacks, prep, standings and '
                                       'result.'))]
-        if not (_is_admin(ctx, from_id) or _steward(ctx, chat_id, from_id)):
-            return [Answer(chat_id, _('Only an operator or whoever added me '
-                                      'here can change that.'))]
+        if not _runs_this_chat(ctx, chat_id, from_id, chat_type):
+            return [Answer(chat_id, _('Only somebody who runs this chat can '
+                                      'change that.'))]
         muted = muted ^ {args[0]}
         ctx.db.set_muted_kinds(chat_id, muted)
     return [Answer(chat_id, _('Tap to turn a kind on or off.'),
@@ -163,16 +169,31 @@ def _cmd_mute(ctx, chat_id, from_id, args):
                           f'/mute {k}') for k in KINDS))]
 
 
-def _cmd_lang(ctx, chat_id, from_id, args):
+def _runs_this_chat(ctx, chat_id, from_id, chat_type=''):
+    """Who may set this chat's options.
+
+    An operator of the instance, whoever put the bot here, anyone
+    Telegram calls an admin of the chat, and in a direct chat the person
+    it belongs to. Telegram is asked last because it costs a request."""
+    if from_id is None:
+        return False
+    if chat_type == 'private' and str(from_id) == str(chat_id):
+        return True
+    if _is_admin(ctx, from_id) or _steward(ctx, chat_id, from_id):
+        return True
+    return bool(ctx.is_chat_admin and ctx.is_chat_admin(chat_id, from_id))
+
+
+def _cmd_lang(ctx, chat_id, from_id, args, chat_type=''):
     if not args:
         return [Answer(chat_id, _('Which language?'),
                        tuple((name, f'/lang {code}')
                              for code, name in i18n.LANGUAGES.items()))]
     if args[0] not in i18n.LANGUAGES:
         return [Answer(chat_id, _('I do not speak that.'))]
-    if not (_is_admin(ctx, from_id) or _steward(ctx, chat_id, from_id)):
-        return [Answer(chat_id, _('Only an operator or whoever added me '
-                                  'here can change that.'))]
+    if not _runs_this_chat(ctx, chat_id, from_id, chat_type):
+        return [Answer(chat_id, _('Only somebody who runs this chat can '
+                                  'change that.'))]
     ctx.db.set_chat_lang(chat_id, args[0])
     i18n.activate(args[0])
     return [Answer(chat_id, _('Talking {lang} here now.').format(
@@ -654,8 +675,6 @@ OWNER_COMMANDS = {
 ADMIN_COMMANDS = {
     'clans': _cmd_clans,
     'add': _cmd_add,
-    'follow': _cmd_follow,
-    'unfollow': _cmd_unfollow,
     'remove': _cmd_remove,
     'requests': _cmd_requests,
     'approve': _cmd_approve,

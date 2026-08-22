@@ -138,6 +138,21 @@ class TelegramNotifier:
         res = requests.post(f'{self._api}/sendMessage', data=data)
         res.raise_for_status()
 
+    def is_chat_admin(self, chat_id, user_id):
+        """Whether Telegram considers them to run this chat.
+
+        Costs a request, so it is asked only after the cheap checks
+        have said no."""
+        try:
+            res = requests.post(f'{self._api}/getChatMember',
+                                data={'chat_id': chat_id,
+                                      'user_id': user_id}, timeout=15)
+            res.raise_for_status()
+            return res.json()['result']['status'] in ('creator',
+                                                      'administrator')
+        except (requests.RequestException, KeyError):
+            return False
+
     def publish_menu(self, commands, language_code=None, chat_id=None):
         """Put the commands in Telegram's own menu.
 
@@ -182,3 +197,6 @@ class DummyNotifier:
 
     def publish_menu(self, commands, language_code=None, chat_id=None):
         pass
+
+    def is_chat_admin(self, chat_id, user_id):
+        return False

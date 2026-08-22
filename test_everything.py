@@ -854,7 +854,9 @@ class NetworkBlipTestCase(unittest.TestCase):
         monitor = MagicMock()
         monitor.coc_api.get_currentleague.side_effect = \
             requests.ConnectionError('cannot resolve api.clashofclans.com')
-        self.assertEqual(runner.poll(monitor, MagicMock()), runner.BACKOFF)
+        ctx = commands.Context(db=Storage(':memory:'), monitors={})
+        self.assertEqual(runner.poll(ctx, monitor, MagicMock()),
+                         runner.BACKOFF)
 
     def test_telegram_being_unreachable_does_not_kill_the_loop(self):
         notifier = MagicMock()

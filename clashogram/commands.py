@@ -11,6 +11,7 @@ There is no transport in here on purpose: `answer` takes text and
 returns text addressed to a chat, so a notifier for another chat
 service can drive it unchanged."""
 import dataclasses
+import datetime
 import html
 
 import requests
@@ -22,6 +23,7 @@ from .formatters import (
     create_unused_attacks_msg,
 )
 from .i18n import gettext_ as _
+from .i18n import noop as N_
 from .models import LeaguePlayerStats, LeagueStandings, unused_attacks
 from .notifiers import Membership
 
@@ -202,6 +204,42 @@ def _safe(value):
     return html.escape(str(value))
 
 
+# What Telegram shows in its own menu. Kept short: the menu gives one
+# line each, and it is not the place to explain anything.
+PUBLIC_MENU = (
+    ('war', N_('How the war stands')),
+    ('left', N_('How long the war has to run')),
+    ('missing', N_('Who still has attacks')),
+    ('mirror', N_('Who is facing whom')),
+    ('standings', N_('The league table')),
+    ('stats', N_('League attack stats')),
+    ('clan', N_('The clan itself')),
+    ('leaders', N_('Who runs the clan')),
+    ('donors', N_('Who has given the most')),
+    ('lang', N_('Pick the language here')),
+    ('chatid', N_('This chat\'s id')),
+    ('help', N_('What I can do')),
+)
+
+OPERATOR_MENU = (
+    ('clans', N_('What is followed where')),
+    ('add', N_('Follow a clan')),
+    ('remove', N_('Stop following a clan')),
+    ('requests', N_('Who has asked')),
+    ('mute', N_('Choose what I post')),
+    ('operators', N_('Who may operate')),
+    ('addoperator', N_('Let somebody help')),
+    ('removeoperator', N_('Stop letting them')),
+)
+
+
+def menu(for_operator=False):
+    """Rendered in whichever language is active, so it is published
+    once per language rather than once."""
+    listing = PUBLIC_MENU + (OPERATOR_MENU if for_operator else ())
+    return [(name, _(text)) for name, text in listing]
+
+
 def _refuse(ctx, chat_id, from_id, owner_only=False):
     """Say why, and what to do instead.
 
@@ -289,7 +327,10 @@ def _usage(ctx, chat_id, from_id, chat_type=''):
             _('  /standings  the league table'),
             _('  /stats      league attack stats'),
             _('  /clan       the clan itself'),
-            _('  /leaders    who runs it')]
+            _('  /leaders    who runs it'),
+            _('  /left       how long the war has to run'),
+            _('  /mirror     who is facing whom'),
+            _('  /donors     who has given the most')]
     else:
         lines.append(_('No clan followed here yet.'))
         # The operator is told how to fix that in their own section
@@ -364,6 +405,42 @@ def _cmd_stats(monitor):
         LeaguePlayerStats(monitor.leagueinfo).rows())
 
 
+def _cmd_left(monitor):
+    if monitor.warinfo is None:
+        return _('Not in a war.')
+    if monitor.warinfo.is_in_preparation():
+        until, what = monitor.warinfo.start_time, _('until battle day')
+    elif monitor.warinfo.is_in_war():
+        until, what = monitor.warinfo.end_time, _('until the war ends')
+    else:
+        return _('The war is over.')
+    left = (datetime.datetime.strptime(until, '%Y%m%dT%H%M%S.000Z')
+            .replace(tzinfo=datetime.timezone.utc)
+            - datetime.datetime.now(datetime.timezone.utc))
+    if left.total_seconds() <= 0:
+        return _('Any moment now.')
+    hours, seconds = divmod(int(left.total_seconds()), 3600)
+    return _('{hours}h {minutes}m {what}').format(
+        hours=hours, minutes=seconds // 60, what=what)
+
+
+def _cmd_mirror(monitor):
+    if monitor.warinfo is None:
+        return _('Not in a war.')
+    rows = '\n'.join(f'{pos: <3}{_safe(ours)} -> {_safe(theirs)}'
+                      for pos, ours, theirs in monitor.warinfo.mirrors())
+    return _('Everyone against their mirror:') + f'\n<pre>{rows}</pre>'
+
+
+def _cmd_donors(monitor):
+    rows = monitor.coc_api.get_claninfo(monitor.clan_tag).donors()
+    if not rows:
+        return _('Nobody has given anything.')
+    top = '\n'.join(f'{given: >5} {got: >5}  {_safe(name)}'
+                    for name, given, got in rows[:10])
+    return (_('Given, received, name:') + f'\n<pre>{top}</pre>')
+
+
 def _cmd_clan(monitor):
     claninfo = monitor.coc_api.get_claninfo(monitor.clan_tag)
     lines = [_('War win streak {streak} {flag}').format(
@@ -390,6 +467,9 @@ WAR_COMMANDS = {
     'stats': _cmd_stats,
     'clan': _cmd_clan,
     'leaders': _cmd_leaders,
+    'left': _cmd_left,
+    'mirror': _cmd_mirror,
+    'donors': _cmd_donors,
 }
 
 

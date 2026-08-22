@@ -964,5 +964,43 @@ class ChatColumnsTestCase(unittest.TestCase):
             shutil.rmtree(tmpdir)
 
 
+class EscapingTestCase(unittest.TestCase):
+    EVIL = '<b>x</b>'
+
+    def _ctx(self, db, known=True):
+        coc = MagicMock()
+        if known:
+            coc.get_claninfo.return_value = ClanInfo({'name': self.EVIL})
+        else:
+            response = MagicMock()
+            response.status_code = 404
+            coc.get_claninfo.side_effect = requests.HTTPError(
+                '404', response=response)
+        return commands.Context(db=db, monitors={}, admin_id='42',
+                                coc_api=coc, open_requests=True)
+
+    def test_nothing_somebody_typed_comes_back_as_markup(self):
+        # Replies go out with parse_mode=HTML, so an unescaped echo lets
+        # anyone put their own markup, or a link, in the bot's voice.
+        db = Storage(':memory:')
+        for command in (f'/add {self.EVIL}', f'/remove {self.EVIL}',
+                        f'/removeoperator {self.EVIL}'):
+            said = commands.answer(self._ctx(db, known=False), 'c1', '42',
+                                   command)[0].text
+            self.assertNotIn('<b>', said, command)
+
+    def test_a_telegram_first_name_cannot_reach_the_operator_as_markup(self):
+        db = Storage(':memory:')
+        answers = commands.answer(self._ctx(db), 'g1', 7, '/request #US',
+                                  'group', self.EVIL)
+        told = [a.text for a in answers if a.chat_id == '42'][0]
+        self.assertNotIn('<b>', told)
+
+    def test_a_clan_named_with_markup_is_escaped(self):
+        db = Storage(':memory:')
+        said = commands.answer(self._ctx(db), 'c1', '42', '/add #US')[0].text
+        self.assertNotIn('<b>', said)
+
+
 if __name__ == '__main__':
     unittest.main()

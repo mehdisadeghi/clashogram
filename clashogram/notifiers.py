@@ -138,6 +138,22 @@ class TelegramNotifier:
         res = requests.post(f'{self._api}/sendMessage', data=data)
         res.raise_for_status()
 
+    def publish_menu(self, commands, language_code=None, chat_id=None):
+        """Put the commands in Telegram's own menu.
+
+        The list lives beside the input box rather than in the chat, so
+        nothing is posted. A scope of one chat is how the operator sees
+        their commands and nobody else does."""
+        data = {'commands': json.dumps(
+            [{'command': name, 'description': text}
+             for name, text in commands])}
+        if language_code:
+            data['language_code'] = language_code
+        if chat_id is not None:
+            data['scope'] = json.dumps({'type': 'chat', 'chat_id': chat_id})
+        res = requests.post(f'{self._api}/setMyCommands', data=data)
+        res.raise_for_status()
+
     def _settle(self, tap):
         """Stop Telegram's spinner and take the buttons away, so a
         settled request cannot be tapped a second time."""
@@ -163,3 +179,6 @@ class DummyNotifier:
 
     def reply(self, chat_id, msg, choices=()):
         print(msg)
+
+    def publish_menu(self, commands, language_code=None, chat_id=None):
+        pass

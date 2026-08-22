@@ -11,7 +11,7 @@ import time
 
 import requests
 
-from . import commands, registry
+from . import commands, i18n, registry
 from .i18n import gettext_ as _
 
 POLL_INTERVAL = 60
@@ -20,8 +20,30 @@ BACKOFF = POLL_INTERVAL * 10
 logger = logging.getLogger(__name__)
 
 
+def publish_menu(ctx, notifier):
+    """Put the commands in Telegram's own menu, once per language.
+
+    Nothing is posted to any chat. The operator's own menu is scoped to
+    their chat, so nobody else is offered commands they cannot run."""
+    try:
+        for lang in i18n.LANGUAGES:
+            i18n.activate(lang)
+            notifier.publish_menu(commands.menu(),
+                                  language_code=None if lang == i18n.DEFAULT
+                                  else lang.split('_')[0])
+        if ctx.admin_id is not None:
+            i18n.activate(ctx.db.chat_lang(ctx.admin_id))
+            notifier.publish_menu(commands.menu(for_operator=True),
+                                  chat_id=ctx.admin_id)
+    except requests.RequestException as err:
+        logger.warning('Could not publish the menu (%s).', _describe(err))
+    finally:
+        i18n.activate(i18n.DEFAULT)
+
+
 def run(ctx, build_monitor, notifier):
     """Poll every followed clan and answer whoever asks, forever."""
+    publish_menu(ctx, notifier)
     due = {}
     while True:
         sync(ctx, build_monitor, due)

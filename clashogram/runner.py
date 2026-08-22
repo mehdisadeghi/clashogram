@@ -6,6 +6,7 @@
 `WarMonitor` owned the loop while there was one of them. One long poll
 cannot run once per monitor, so the loop lives here and asks each
 monitor in turn."""
+import datetime
 import logging
 import time
 
@@ -51,7 +52,7 @@ def run(ctx, build_monitor, notifier):
         for clan_tag, monitor in list(ctx.monitors.items()):
             if due.get(clan_tag, 0) <= now:
                 due[clan_tag] = time.monotonic() + poll(
-                    monitor, notifier, ctx.admin_id)
+                    ctx, monitor, notifier)
         deadline = min(due.values(), default=time.monotonic() + IDLE_TICK)
         answer_until(ctx, notifier, deadline)
 
@@ -74,7 +75,7 @@ def sync(ctx, build_monitor, due):
         ctx.monitors[clan_tag].chat_ids = chats
 
 
-def poll(monitor, notifier, admin_id=None):
+def poll(ctx, monitor, notifier):
     """Fetch one clan and report it. Returns seconds until it is due again.
 
     A failing clan backs itself off and leaves the others alone. One
@@ -96,9 +97,10 @@ def poll(monitor, notifier, admin_id=None):
         else:
             monitor.update()
         _recovered(monitor)
+        _left_maintenance(ctx, notifier)
         return POLL_INTERVAL
     except requests.HTTPError as err:
-        return _back_off(monitor, notifier, admin_id, err)
+        return _back_off(ctx, monitor, notifier, err)
     except requests.RequestException as err:
         # A dropped connection or dns blip is ordinary for a process
         # that polls for months. Dying costs a restart and fixes
@@ -136,11 +138,52 @@ def _tell(notifier, admin_id, monitor, message, trouble):
                        monitor.clan_tag)
 
 
+def _entered_maintenance(ctx, notifier, err):
+    """Maintenance is the API's, not a clan's, so it is said once for the
+    instance and kept across a restart. A long window usually means a
+    game update; the API carries no version to compare."""
+    if ctx.db.setting('maintenance_since'):
+        return
+    ctx.db.set_setting('maintenance_since',
+                       datetime.datetime.now(datetime.timezone.utc)
+                       .isoformat(timespec='seconds'))
+    said = ''
+    try:
+        said = err.response.json().get('message') or ''
+    except ValueError:
+        pass
+    _say(ctx, notifier, _('CoC went into maintenance.{detail}').format(
+        detail=f' {said}' if said else ''))
+
+
+def _left_maintenance(ctx, notifier):
+    since = ctx.db.setting('maintenance_since')
+    if not since:
+        return
+    ctx.db.set_setting('maintenance_since', '')
+    began = datetime.datetime.fromisoformat(since)
+    minutes = int((datetime.datetime.now(datetime.timezone.utc) - began)
+                  .total_seconds() // 60)
+    _say(ctx, notifier, _('CoC is back. Maintenance ran {hours}h {minutes}m '
+                          'from {began}.').format(
+        hours=minutes // 60, minutes=minutes % 60,
+        began=began.strftime('%Y-%m-%d %H:%M UTC')))
+
+
+def _say(ctx, notifier, message):
+    if ctx.admin_id is None:
+        return
+    try:
+        notifier.reply(ctx.admin_id, message)
+    except requests.RequestException as err:
+        logger.warning('Could not tell the operator (%s).', _describe(err))
+
+
 def _recovered(monitor):
     _complained.pop(monitor.clan_tag, None)
 
 
-def _back_off(monitor, notifier, admin_id, err):
+def _back_off(ctx, monitor, notifier, err):
     status = err.response.status_code
     if status in (500, 502, 504):
         logger.warning('CoC server error %s for %s, retrying.',
@@ -148,19 +191,17 @@ def _back_off(monitor, notifier, admin_id, err):
         return BACKOFF
     if status == 503:
         logger.warning('CoC maintenance for %s, retrying.', monitor.clan_tag)
-        _tell(notifier, admin_id, monitor,
-              _('CoC maintenance error, retrying in {seconds} '
-                'seconds.').format(seconds=BACKOFF), 'maintenance')
+        _entered_maintenance(ctx, notifier, err)
         return BACKOFF
     if status == 404:
         logger.warning('CoC does not know %s, retrying.', monitor.clan_tag)
         return BACKOFF
     if status == 403 and not monitor.coc_api.get_claninfo(
             monitor.clan_tag).is_warlog_public:
-        _tell(notifier, admin_id, monitor,
+        _tell(notifier, ctx.admin_id, monitor,
               _('Warlog must be public boss! ☠️'), 'warlog')
         return BACKOFF
-    _tell(notifier, admin_id, monitor,
+    _tell(notifier, ctx.admin_id, monitor,
           _('☠️ 😵 App is broken boss! Come over and fix me please!'), 'broken')
     raise err
 

@@ -223,7 +223,9 @@ PUBLIC_MENU = (
 
 OPERATOR_MENU = (
     ('clans', N_('What is followed where')),
-    ('add', N_('Follow a clan')),
+    ('follow', N_('Follow a clan here')),
+    ('unfollow', N_('Stop following a clan here')),
+    ('add', N_('Follow a clan in another chat')),
     ('remove', N_('Stop following a clan')),
     ('requests', N_('Who has asked')),
     ('mute', N_('Choose what I post')),
@@ -361,7 +363,9 @@ def _usage(ctx, chat_id, from_id, chat_type=''):
     if _is_admin(ctx, from_id):
         lines += ['', _('Operator:'),
                   _('  /clans                     what is followed where'),
-                  _('  /add CLAN_TAG [CHAT]       follow a clan'),
+                  _('  /follow CLAN_TAG           follow a clan here'),
+                  _('  /unfollow CLAN_TAG         stop following here'),
+                  _('  /add CLAN_TAG [CHAT]       follow one in CHAT'),
                   _('  /remove CLAN_TAG [CHAT]    stop following')]
         # Advertising them while nobody can file one describes a
         # workflow that cannot happen.
@@ -536,6 +540,16 @@ def _clan_name(ctx, clan_tag):
         raise
 
 
+def _cmd_follow(ctx, chat_id, args):
+    """/add for the chat you are standing in, which is nearly always
+    the one meant. An operator in their own direct chat is a user too."""
+    return _cmd_add(ctx, chat_id, args[:1])
+
+
+def _cmd_unfollow(ctx, chat_id, args):
+    return _cmd_remove(ctx, chat_id, args[:1])
+
+
 def _cmd_remove(ctx, chat_id, args):
     if not args:
         return [Answer(chat_id, _('Usage: /remove CLAN_TAG [CHAT_ID]'))]
@@ -640,6 +654,8 @@ OWNER_COMMANDS = {
 ADMIN_COMMANDS = {
     'clans': _cmd_clans,
     'add': _cmd_add,
+    'follow': _cmd_follow,
+    'unfollow': _cmd_unfollow,
     'remove': _cmd_remove,
     'requests': _cmd_requests,
     'approve': _cmd_approve,

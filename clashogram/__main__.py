@@ -1,27 +1,17 @@
 #!/usr/bin/env python
 """clashogram - Clash of Clans war moniting for telegram channels."""
-import gettext
-import hashlib
 import json
 import logging
-import os
 
 import click
 
-from . import commands, registry, runner
+from . import commands, i18n, registry, runner
 from .api import CoCAPI
 from .formatters import MessageFactory, create_standings_msg
 from .models import LeagueStandings, WarStats
 from .notifiers import DummyNotifier, TelegramNotifier
 from .storage import Storage
 from .storage import import_shelve as import_shelve_warlog
-
-gettext.bindtextdomain('messages',
-                       localedir=os.path.join(
-                           os.path.dirname(os.path.realpath(__file__)),
-                           'locales'))
-gettext.textdomain('messages')
-_ = gettext.gettext
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +69,8 @@ def main(coc_token, clan_tag, bot_token, chat_id, admin_id, archive,
     """Publish war updates to telegram chats."""
     if loglevel:
         logging.basicConfig(level=loglevel)
+    # Every chat picks its own; this is only what an unset chat gets.
+    i18n.activate(i18n.DEFAULT)
 
     if bool(clan_tag) != bool(chat_id):
         raise click.UsageError(
@@ -247,14 +239,14 @@ class WarMonitor:
 
     def send_preparation_msg(self):
         self.send_once(
-            self.msg_factory.create_preparation_msg(),
+            self.msg_factory.create_preparation_msg,
             msg_id='preparation_msg')
         self.send_once(
-            self.msg_factory.create_players_msg(),
+            self.msg_factory.create_players_msg,
             msg_id='players_msg')
 
     def send_war_msg(self):
-        self.send_once(self.msg_factory.create_war_msg(), 'war_msg')
+        self.send_once(self.msg_factory.create_war_msg, 'war_msg')
 
     def send_attack_msgs(self):
         for order, items in sorted(self.warinfo.ordered_attacks.items()):
@@ -270,12 +262,12 @@ class WarMonitor:
 
     def send_clan_attack_msg(self, attacker, attack, war_stats):
         self.send_once(
-            self.msg_factory.create_clan_attack_msg(
+            lambda: self.msg_factory.create_clan_attack_msg(
                 attacker, attack, war_stats),
             msg_id=self.get_attack_id(attack))
         if war_stats['clan_destruction'] == 100:
             self.send_once(
-                self.msg_factory.create_clan_full_destruction_msg(
+                lambda: self.msg_factory.create_clan_full_destruction_msg(
                     attacker, attack, war_stats),
                 msg_id='clan_full_destruction')
 
@@ -290,18 +282,18 @@ class WarMonitor:
                                    attack['defenderTag'][1:])
 
     def send_opponent_attack_msg(self, attacker, attack, war_stats):
-        self.send_once(self.msg_factory.create_opponent_attack_msg(
+        self.send_once(lambda: self.msg_factory.create_opponent_attack_msg(
             attacker, attack, war_stats),
             msg_id=self.get_attack_id(attack))
         if war_stats['op_destruction'] == 100:
             self.send_once(
-                self.msg_factory.create_opponent_full_destruction_msg(
+                lambda: self.msg_factory.create_opponent_full_destruction_msg(
                     attacker, attack, war_stats),
                 msg_id='op_full_destruction')
 
     def send_war_over_msg(self):
         self.send_once(
-            self.msg_factory.create_war_over_msg(), msg_id='war_over_msg')
+            self.msg_factory.create_war_over_msg, msg_id='war_over_msg')
 
     def send_standings_msg(self):
         """Post the table once per round, keyed to the round that ended."""
@@ -309,27 +301,27 @@ class WarMonitor:
             return
         rows = LeagueStandings(self.leagueinfo).rows()
         if rows:
-            self.send_once(create_standings_msg(rows), msg_id='standings_msg')
+            self.send_once(lambda: create_standings_msg(rows),
+                           msg_id='standings_msg')
 
     def reset(self):
         self.warinfo = None
         self.warstats = None
         self.msg_factory = None
 
-    def send_once(self, msg, msg_id=None):
+    def send_once(self, build, msg_id):
         """Send to every chat that has not had this message yet.
 
         Delivery is recorded per chat, so a chat added part way through a
         war is not held to what the others have already seen, and two
         clans meeting in the same war do not mark each other's messages
         as sent."""
-        if not msg_id:
-            msg_id = hashlib.md5(msg.encode('utf-8')).hexdigest()
-
         for chat_id in self.chat_ids:
-            if not self.is_msg_sent(msg_id, chat_id):
-                self.notifier.send(msg, chat_id)
-                self.mark_msg_as_sent(msg_id, chat_id)
+            if self.is_msg_sent(msg_id, chat_id):
+                continue
+            i18n.activate(self.db.chat_lang(chat_id))
+            self.notifier.send(build(), chat_id)
+            self.mark_msg_as_sent(msg_id, chat_id)
 
     def send(self, msg, silent=False):
         """Tell every chat, without recording it. For news about the bot

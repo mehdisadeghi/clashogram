@@ -11,21 +11,19 @@ There is no transport in here on purpose: `answer` takes text and
 returns text addressed to a chat, so a notifier for another chat
 service can drive it unchanged."""
 import dataclasses
-import gettext
 import html
 
 import requests
 
-from . import registry
+from . import i18n, registry
 from .formatters import (
     create_player_stats_msg,
     create_standings_msg,
     create_unused_attacks_msg,
 )
+from .i18n import gettext_ as _
 from .models import LeaguePlayerStats, LeagueStandings, unused_attacks
 from .notifiers import Membership
-
-_ = gettext.gettext
 
 
 @dataclasses.dataclass
@@ -67,6 +65,8 @@ def on_membership(ctx, event):
         return []
     if event.joined and event.title:
         ctx.db.remember_chat_title(event.chat_id, event.title)
+    if event.joined and event.by_id is not None:
+        ctx.db.set_chat_steward(event.chat_id, event.by_id)
     where = f'{event.chat_type} «{_safe(event.title)}»' if event.title \
         else str(event.chat_type)
     if not event.joined:
@@ -84,6 +84,7 @@ def answer(ctx, chat_id, from_id, text, chat_type='', from_name=''):
 
     More than one pair because approving a request tells both the
     operator and the chat that asked."""
+    i18n.activate(ctx.db.chat_lang(chat_id))
     # Free, since they are talking to us anyway. Only for people whose
     # name gets shown, so passers-by leave nothing behind.
     if from_name and _is_admin(ctx, from_id):
@@ -94,6 +95,8 @@ def answer(ctx, chat_id, from_id, text, chat_type='', from_name=''):
     # after an argument, and it is never part of one.
     args = [part.split('@')[0] for part in parts[1:]]
 
+    if name == 'lang':
+        return _cmd_lang(ctx, chat_id, from_id, args)
     if name == 'chatid':
         return [Answer(chat_id, _chatid(ctx, chat_id, chat_type, from_id))]
     if name in OWNER_COMMANDS:
@@ -125,6 +128,30 @@ def answer(ctx, chat_id, from_id, text, chat_type='', from_name=''):
         return [Answer(chat_id, handler(monitors[0]))]
     return [Answer(chat_id, '\n\n'.join(f'{m.clan_tag}\n{handler(m)}'
                                   for m in monitors))]
+
+
+def _steward(ctx, chat_id, from_id):
+    """Whoever put the bot in this chat, or asked for it. They decide
+    this chat's options without operating the whole instance."""
+    if from_id is None:
+        return False
+    return str(from_id) == str(ctx.db.chat_steward(chat_id))
+
+
+def _cmd_lang(ctx, chat_id, from_id, args):
+    if not args:
+        return [Answer(chat_id, _('Which language?'),
+                       tuple((name, f'/lang {code}')
+                             for code, name in i18n.LANGUAGES.items()))]
+    if args[0] not in i18n.LANGUAGES:
+        return [Answer(chat_id, _('I do not speak that.'))]
+    if not (_is_admin(ctx, from_id) or _steward(ctx, chat_id, from_id)):
+        return [Answer(chat_id, _('Only an operator or whoever added me '
+                                  'here can change that.'))]
+    ctx.db.set_chat_lang(chat_id, args[0])
+    i18n.activate(args[0])
+    return [Answer(chat_id, _('Talking {lang} here now.').format(
+        lang=i18n.LANGUAGES[args[0]]))]
 
 
 def _chatid(ctx, chat_id, chat_type, from_id):
@@ -167,6 +194,8 @@ def _refuse(ctx, chat_id, from_id, owner_only=False):
 
 
 def _who(ctx, user_id):
+    if user_id is None:
+        return _('somebody')
     known = ctx.db.person_names().get(str(user_id))
     return f'{_safe(known)} ({user_id})' if known else str(user_id)
 
@@ -250,8 +279,10 @@ def _usage(ctx, chat_id, from_id, chat_type=''):
 
     if chat_type == 'channel':
         lines += ['', _('No names on channel posts, so I cannot tell who you are here. Anything that changes things, send to me directly and add this chat ({chat}).').format(chat=chat_id)]
-    lines += ['', _('Anywhere:'),
+    lines += ['', _('You can add me to a group or a channel too.'),
+              '', _('Anywhere:'),
               _('  /chatid     this chat\'s id, and yours if we talk directly'),
+              _('  /lang       pick the language here'),
               _('  /help       this message')]
 
     if _is_owner(ctx, from_id):
@@ -312,6 +343,7 @@ def _cmd_clan(monitor):
     claninfo = monitor.coc_api.get_claninfo(monitor.clan_tag)
     return _('War win streak {streak} {flag}').format(
         streak=claninfo.winstreak, flag=claninfo.country_flag_imoji)
+
 
 
 WAR_COMMANDS = {

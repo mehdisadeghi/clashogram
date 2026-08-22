@@ -35,6 +35,9 @@ class Membership:
     title: str
     chat_type: str
     joined: bool
+    by_id: object = None
+
+
 # Long enough that a quiet chat costs one request per interval, short
 # enough that the war poll is not held up waiting behind it.
 LONG_POLL = 10
@@ -106,10 +109,12 @@ class TelegramNotifier:
         if membership:
             chat = membership['chat']
             status = membership['new_chat_member']['status']
+            actor = membership.get('from') or {}
             return Membership(chat_id=chat['id'],
                               title=chat.get('title') or '',
                               chat_type=chat.get('type') or '',
-                              joined=status in PRESENT)
+                              joined=status in PRESENT,
+                              by_id=actor.get('id'))
         message = update.get('message') or update.get('channel_post') or {}
         if message.get('text', '').startswith('/'):
             sender = message.get('from') or {}

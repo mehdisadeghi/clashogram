@@ -6,18 +6,17 @@
 `WarMonitor` used to own the loop, which worked while there was one of
 them. A single long poll cannot be run once per monitor, so the loop
 lives here instead and the monitors are asked in turn."""
-import gettext
 import logging
 import time
 
 import requests
 
 from . import commands, registry
+from .i18n import gettext_ as _
 
 POLL_INTERVAL = 60
 IDLE_TICK = 1
 BACKOFF = POLL_INTERVAL * 10
-_ = gettext.gettext
 logger = logging.getLogger(__name__)
 
 

@@ -31,7 +31,11 @@ CREATE TABLE IF NOT EXISTS person (
 -- for them at listing time would spend a request to relabel a row.
 CREATE TABLE IF NOT EXISTS chat (
     chat_id TEXT PRIMARY KEY,
-    title TEXT NOT NULL
+    title TEXT NOT NULL,
+    lang TEXT,
+    -- Whoever put the bot here, or asked for it. They may set this
+    -- chat's options without being an operator of the instance.
+    steward TEXT
 );
 CREATE TABLE IF NOT EXISTS setting (
     key TEXT PRIMARY KEY,
@@ -74,7 +78,21 @@ class Storage:
         self._db.execute('PRAGMA journal_mode=WAL')
         self._migrate_sent(bootstrap_chat_id)
         self._db.executescript(SCHEMA)
+        self._add_columns()
         self._db.commit()
+
+    # A column added to a table that already exists never arrives:
+    # CREATE TABLE IF NOT EXISTS leaves the old table alone.
+    LATER_COLUMNS = (('chat', 'lang', 'TEXT'),
+                     ('chat', 'steward', 'TEXT'))
+
+    def _add_columns(self):
+        for table, column, decl in self.LATER_COLUMNS:
+            columns = [row[1] for row in
+                       self._db.execute(f'PRAGMA table_info({table})')]
+            if columns and column not in columns:
+                self._db.execute(
+                    f'ALTER TABLE {table} ADD COLUMN {column} {decl}')
 
     def _migrate_sent(self, bootstrap_chat_id):
         """Give an old `sent` table its chat column.
@@ -179,6 +197,30 @@ class Storage:
             (str(chat_id), title))
         self._db.commit()
 
+    def chat_lang(self, chat_id):
+        row = self._db.execute('SELECT lang FROM chat WHERE chat_id = ?',
+                               (str(chat_id),)).fetchone()
+        return row[0] if row else None
+
+    def set_chat_lang(self, chat_id, lang):
+        self._db.execute(
+            'INSERT INTO chat (chat_id, title, lang) VALUES (?, ?, ?) '
+            'ON CONFLICT(chat_id) DO UPDATE SET lang = excluded.lang',
+            (str(chat_id), '', lang))
+        self._db.commit()
+
+    def chat_steward(self, chat_id):
+        row = self._db.execute('SELECT steward FROM chat WHERE chat_id = ?',
+                               (str(chat_id),)).fetchone()
+        return row[0] if row else None
+
+    def set_chat_steward(self, chat_id, user_id):
+        self._db.execute(
+            'INSERT INTO chat (chat_id, title, steward) VALUES (?, ?, ?) '
+            'ON CONFLICT(chat_id) DO UPDATE SET steward = excluded.steward',
+            (str(chat_id), '', str(user_id)))
+        self._db.commit()
+
     def chat_titles(self):
         return dict(self._db.execute('SELECT chat_id, title FROM chat'))
 
@@ -262,14 +304,15 @@ class Storage:
     def resolve_request(self, request_id, state):
         """Mark one pending request, returning it, or None if there is none."""
         row = self._db.execute(
-            'SELECT clan_tag, chat_id FROM request '
+            'SELECT clan_tag, chat_id, requester_id FROM request '
             "WHERE id = ? AND state = 'pending'", (request_id,)).fetchone()
         if row is None:
             return None
         self._db.execute('UPDATE request SET state = ? WHERE id = ?',
                          (state, request_id))
         self._db.commit()
-        return {'id': request_id, 'clan_tag': row[0], 'chat_id': row[1]}
+        return {'id': request_id, 'clan_tag': row[0], 'chat_id': row[1],
+                'requester_id': row[2]}
 
     def close(self):
         self._db.close()

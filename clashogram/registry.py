@@ -77,4 +77,6 @@ def resolve_request(db, request_id, approved):
                                  'approved' if approved else 'denied')
     if request and approved:
         subscribe(db, request['clan_tag'], request['chat_id'])
+        if not db.chat_steward(request['chat_id']):
+            db.set_chat_steward(request['chat_id'], request['requester_id'])
     return request

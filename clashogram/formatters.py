@@ -1,7 +1,6 @@
 ########################################################################
 # Message formatters
 ########################################################################
-import gettext
 import locale
 import os
 
@@ -9,9 +8,8 @@ import jdatetime
 import pytz
 from dateutil.parser import parse as dateutil_parse
 
+from .i18n import gettext_ as _
 from .models import WarStats
-
-_ = gettext.gettext
 
 
 def create_standings_msg(rows):

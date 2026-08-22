@@ -34,3 +34,11 @@ def activate(lang):
 
 def gettext_(message):
     return _current.gettext(message)
+
+
+def noop(message):
+    """Mark a string for translation without translating it yet.
+
+    A menu entry is written once and rendered per language, so the
+    catalogue needs it before it is used."""
+    return message

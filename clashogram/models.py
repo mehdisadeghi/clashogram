@@ -41,6 +41,13 @@ class ClanInfo:
                 return member['name']
         return ''
 
+    def donors(self):
+        """Members by what they have given, most first."""
+        return sorted(((m['name'], m.get('donations', 0),
+                        m.get('donationsReceived', 0))
+                       for m in self.data.get('memberList', [])),
+                      key=lambda row: -row[1])
+
     @property
     def leaders(self):
         """The leader first, then the co-leaders. Elders are `admin` in
@@ -131,6 +138,25 @@ class WarInfo:
     @property
     def start_time(self):
         return self.data['startTime']
+
+    @property
+    def end_time(self):
+        return self.data['endTime']
+
+    def mirrors(self):
+        """Each of our members against the base facing them.
+
+        The mirror is the opponent holding the same map position, which
+        is the base a member is expected to hit."""
+        theirs = {m['mapPosition']: m
+                  for m in self.data[self.them]['members']}
+        pairs = []
+        for member in sorted(self.data[self.us]['members'],
+                             key=lambda m: m['mapPosition']):
+            facing = theirs.get(member['mapPosition'])
+            pairs.append((member['mapPosition'], member['name'],
+                          facing['name'] if facing else ''))
+        return pairs
 
     @property
     def team_size(self):

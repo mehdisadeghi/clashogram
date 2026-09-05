@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Clashogram 1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-05 12:32+0200\n"
+"POT-Creation-Date: 2026-09-05 12:33+0200\n"
 "PO-Revision-Date: 2018-01-27 16:47+0100\n"
 "Last-Translator: \n"
 "Language: fa_IR\n"
@@ -388,10 +388,10 @@ msgstr "درخواست‌ها بسته‌ست، پس اضافه کردن قبی�
 #: clashogram/commands.py:460
 msgid ""
 "I cannot tell who posts in a channel. Add me there, then send /add here "
-"with the id I report."
+"with the id I post in it."
 msgstr ""
 "تو کانال نمی‌فهمم کی پست می‌ذاره. اونجا اضافه‌م کن، بعد با شناسه‌ای که "
-"می‌گم اینجا /add بزن."
+"همون‌جا می‌ذارم اینجا /add بزن."
 
 #: clashogram/commands.py:470 clashogram/commands.py:476
 #: clashogram/commands.py:495 clashogram/commands.py:514
@@ -871,4 +871,13 @@ msgstr "رئیس من ترکیدم! با آدمتون تماس بگیرید بی
 
 #~ msgid "To {count} chats, as it stands:"
 #~ msgstr "به {count} چت، همین‌طوری که هست:"
+
+#~ msgid ""
+#~ "I cannot tell who posts in a "
+#~ "channel. Add me there, then send "
+#~ "/add here with the id I report."
+#~ msgstr ""
+#~ "تو کانال نمی‌فهمم کی پست می‌ذاره. "
+#~ "اونجا اضافه‌م کن، بعد با شناسه‌ای "
+#~ "که می‌گم اینجا /add بزن."
 

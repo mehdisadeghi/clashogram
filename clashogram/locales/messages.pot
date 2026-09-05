@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Clashogram 0.9.1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-05 12:32+0200\n"
+"POT-Creation-Date: 2026-09-05 12:33+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -381,7 +381,7 @@ msgstr ""
 #: clashogram/commands.py:460
 msgid ""
 "I cannot tell who posts in a channel. Add me there, then send /add here "
-"with the id I report."
+"with the id I post in it."
 msgstr ""
 
 #: clashogram/commands.py:470 clashogram/commands.py:476

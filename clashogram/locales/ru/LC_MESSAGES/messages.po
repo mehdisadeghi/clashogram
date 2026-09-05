@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  Clashogram\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-05 12:32+0200\n"
+"POT-Creation-Date: 2026-09-05 12:33+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -385,10 +385,10 @@ msgstr "Заявки закрыты, так что кланы добавляеш
 #: clashogram/commands.py:460
 msgid ""
 "I cannot tell who posts in a channel. Add me there, then send /add here "
-"with the id I report."
+"with the id I post in it."
 msgstr ""
 "В канале я не вижу кто пишет. Добавь меня туда, потом пришли сюда /add с "
-"тем ID, который я назову."
+"тем ID, который я напишу в нём."
 
 #: clashogram/commands.py:470 clashogram/commands.py:476
 #: clashogram/commands.py:495 clashogram/commands.py:514
@@ -869,4 +869,13 @@ msgstr "☠️ 😵 Приложение упало, босс! Приди и п�
 
 #~ msgid "To {count} chats, as it stands:"
 #~ msgstr "В {count} чатов, вот так:"
+
+#~ msgid ""
+#~ "I cannot tell who posts in a "
+#~ "channel. Add me there, then send "
+#~ "/add here with the id I report."
+#~ msgstr ""
+#~ "В канале я не вижу кто пишет. "
+#~ "Добавь меня туда, потом пришли сюда "
+#~ "/add с тем ID, который я назову."
 

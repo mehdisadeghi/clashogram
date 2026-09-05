@@ -447,7 +447,7 @@ def _usage(ctx, chat_id, from_id, chat_type=''):
             lines.append(
                 _('Requests are closed, so clans are yours to add.'))
         lines += ['',
-                  _('I cannot tell who posts in a channel. Add me there, then send /add here with the id I report.')]
+                  _('I cannot tell who posts in a channel. Add me there, then send /add here with the id I post in it.')]
     return '\n'.join(lines)
 
 

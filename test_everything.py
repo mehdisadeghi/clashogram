@@ -707,6 +707,19 @@ class RequestTestCase(unittest.TestCase):
         self.assertEqual(self.db.subscriptions(), [('#US', 'c1')])
 
 
+class AnnounceTestCase(unittest.TestCase):
+    def test_nothing_goes_out_until_it_is_confirmed(self):
+        db = Storage(':memory:')
+        registry.subscribe(db, '#US', 'c1')
+        registry.subscribe(db, '#US', 'c2')
+        ctx = commands.Context(db=db, monitors={}, admin_id='42')
+        drafted = commands.answer(ctx, '42', '42', '/announce down at 9')
+        self.assertEqual([a.chat_id for a in drafted], ['42'])
+        sent = commands.answer(ctx, '42', '42', '/announce send')
+        self.assertEqual([a.chat_id for a in sent], ['42', 'c1', 'c2'])
+        self.assertIn('down at 9', sent[1].text)
+
+
 class ActivityTestCase(unittest.TestCase):
     def test_a_chat_that_has_asked_for_anything_is_listed(self):
         db = Storage(':memory:')

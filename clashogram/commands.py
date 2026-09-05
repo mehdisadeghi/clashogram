@@ -116,6 +116,12 @@ def answer(ctx, chat_id, from_id, text, chat_type='', from_name=''):
         if not _is_owner(ctx, from_id):
             return [_refuse(ctx, chat_id, from_id, owner_only=True)]
         return OWNER_COMMANDS[name](ctx, chat_id, args)
+    if name == 'announce':
+        if not _is_admin(ctx, from_id):
+            return [_refuse(ctx, chat_id, from_id)]
+        # Not split into arguments like the rest: it is a sentence, and
+        # a mention in it is somebody's name rather than the bot's.
+        return _cmd_announce(ctx, chat_id, text.partition(' ')[2].strip())
     if name in ADMIN_COMMANDS:
         if not _is_admin(ctx, from_id):
             return [_refuse(ctx, chat_id, from_id)]
@@ -251,6 +257,7 @@ PUBLIC_MENU = (
 OPERATOR_MENU = (
     ('clans', N_('What is followed where')),
     ('activity', N_('Who is using me')),
+    ('announce', N_('Tell every chat something')),
     ('follow', N_('Follow a clan here')),
     ('unfollow', N_('Stop following a clan here')),
     ('add', N_('Follow a clan in another chat')),
@@ -424,6 +431,7 @@ def _usage(ctx, chat_id, from_id, chat_type=''):
         lines += ['', _('Operator:'),
                   _('  /clans                     what is followed where'),
                   _('  /activity                  who is using me'),
+                  _('  /announce WHAT             tell every chat'),
                   _('  /follow CLAN_TAG           follow a clan here'),
                   _('  /unfollow CLAN_TAG         stop following here'),
                   _('  /add CLAN_TAG [CHAT]       follow one in CHAT'),
@@ -771,6 +779,46 @@ ADMIN_COMMANDS = {
     'approve': _cmd_approve,
     'deny': _cmd_deny,
 }
+
+
+########################################################################
+# Announcements
+########################################################################
+
+# One draft at a time, instance wide. Announcements are rare.
+DRAFT = 'announcement'
+
+
+def _cmd_announce(ctx, chat_id, said):
+    """Say something to every chat that follows a clan.
+
+    Sent in the operator's own words and language. Translating it
+    would put words they did not write into two other languages.
+
+    Shown back first, because there is no unsending it."""
+    targets = registry.subscribed_chats(ctx.db)
+    if said == 'send':
+        draft = ctx.db.setting(DRAFT)
+        if not draft:
+            return [Answer(chat_id, _('Nothing written to send.'))]
+        ctx.db.set_setting(DRAFT, '')
+        heading = _('From the operator:')
+        return [Answer(chat_id, _('Sent to {count} chats.').format(
+            count=len(targets)))] + [
+                Answer(target, f'{heading}\n{draft}') for target in targets]
+    if said == 'cancel':
+        ctx.db.set_setting(DRAFT, '')
+        return [Answer(chat_id, _('Dropped it.'))]
+    if not said:
+        return [Answer(chat_id, _('Usage: /announce WHAT YOU WANT TO SAY'))]
+    if not targets:
+        return [Answer(chat_id, _('Nobody follows anything yet.'))]
+    ctx.db.set_setting(DRAFT, _safe(said))
+    return [Answer(chat_id,
+                   _('To {count} chats, as it stands:').format(
+                       count=len(targets)) + f'\n\n{_safe(said)}',
+                   ((_('Send it'), '/announce send'),
+                    (_('Drop it'), '/announce cancel')))]
 
 
 ########################################################################

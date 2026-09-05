@@ -73,7 +73,9 @@ def remove_operator(db, user_id):
 
 
 def file_request(db, clan_tag, chat_id, requester_id):
-    return db.file_request(clan_tag, chat_id, requester_id, _now())
+    """Record a request. A channel post has no author, so it is filed
+    without a requester rather than with the word None as one."""
+    return db.file_request(clan_tag, chat_id, requester_id or '', _now())
 
 
 def pending_requests(db):
@@ -86,6 +88,6 @@ def resolve_request(db, request_id, approved):
                                  'approved' if approved else 'denied')
     if request and approved:
         subscribe(db, request['clan_tag'], request['chat_id'])
-        if not db.chat_steward(request['chat_id']):
+        if request['requester_id'] and not db.chat_steward(request['chat_id']):
             db.set_chat_steward(request['chat_id'], request['requester_id'])
     return request

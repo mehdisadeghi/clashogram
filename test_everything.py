@@ -699,6 +699,12 @@ class RequestTestCase(unittest.TestCase):
         self.assertEqual(len(self.db.pending_requests()), 1)
         self.assertEqual(self.db.subscriptions(), [])
 
+    def test_a_request_from_a_channel_is_nobodys(self):
+        ctx = self._ctx(True)
+        commands.answer(ctx, 'c1', None, '/request #US', 'channel')
+        self.assertIn('somebody',
+                      commands.answer(ctx, '42', '42', '/requests')[0].text)
+
     def test_approving_is_what_grants_it(self):
         ctx = self._ctx(True)
         commands.answer(ctx, 'c1', '7', '/request #US')

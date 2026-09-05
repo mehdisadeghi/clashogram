@@ -328,7 +328,9 @@ def _tell_operators(ctx, build):
 
 
 def _who(ctx, user_id):
-    if user_id is None:
+    # A channel post has no author. Storage keeps that as the empty
+    # string.
+    if not user_id:
         return _('somebody')
     known = ctx.db.person_names().get(str(user_id))
     return f'{_safe(known)} ({user_id})' if known else str(user_id)

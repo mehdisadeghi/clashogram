@@ -753,14 +753,18 @@ class MembershipTestCase(unittest.TestCase):
         self.db = Storage(':memory:')
         self.ctx = commands.Context(db=self.db, monitors={}, admin_id='42')
 
-    def test_joining_hands_the_operator_the_id(self):
-        # The only way to learn a channel's id, since nobody can be
-        # recognised as the operator inside one.
+    def test_joining_a_channel_hands_it_its_own_id(self):
+        # The only way to learn it, since nobody can be recognised
+        # inside a channel.
         answer = commands.handle(self.ctx, Membership(
             -100448, 'Clan Wars', 'channel', joined=True))[0]
-        target, message = answer.chat_id, answer.text
-        self.assertEqual(target, '42')
-        self.assertIn('-100448', message)
+        self.assertEqual(answer.chat_id, -100448)
+        self.assertIn('-100448', answer.text)
+
+    def test_the_operator_is_not_told_who_added_the_bot_where(self):
+        answers = commands.handle(self.ctx, Membership(
+            -100448, 'Clan Wars', 'group', joined=True))
+        self.assertEqual([a.chat_id for a in answers], [-100448])
 
     def test_being_removed_stops_the_posting(self):
         registry.subscribe(self.db, '#US', '-100448')

@@ -54,27 +54,34 @@ def handle(ctx, event):
 
 
 def on_membership(ctx, event):
-    """Tell the operator where the bot has just been put, or taken from.
+    """Say hello where the bot has just been put.
 
-    A channel post has no author, so the operator can never run a command
-    inside a channel. Being handed the id here is what makes one usable
-    at all."""
-    if ctx.admin_id is None:
-        return []
-    if event.joined and event.title:
-        ctx.db.remember_chat_title(event.chat_id, event.title)
-    if event.joined and event.by_id is not None:
-        ctx.db.set_chat_steward(event.chat_id, event.by_id)
-    where = f'{event.chat_type} «{_safe(event.title)}»' if event.title \
-        else str(event.chat_type)
+    The greeting carries the chat's id, which is the only way to learn
+    a channel's. It went to the operator before, which made a log of
+    what other people were doing."""
     if not event.joined:
-        dropped = ctx.db.forget_chat(event.chat_id)
-        return [Answer(ctx.admin_id,
-                 _('Out of {where} ({chat}). Dropped {count} clan(s).').format(where=where, chat=event.chat_id,
-                                            count=dropped))]
-    return [Answer(ctx.admin_id,
-             _('I am in {where} ({chat}).\nFollow a clan there:\n/add CLAN_TAG {chat}').format(where=where,
-                                                chat=event.chat_id))]
+        ctx.db.forget_chat(event.chat_id)
+        return []
+    if event.title:
+        ctx.db.remember_chat_title(event.chat_id, event.title)
+    if event.by_id is not None:
+        ctx.db.set_chat_steward(event.chat_id, event.by_id)
+    return [_addressed(ctx, event.chat_id, lambda: Answer(
+        event.chat_id, _greeting(event.chat_id, event.chat_type)))]
+
+
+def _greeting(chat_id, chat_type):
+    lines = [_('I follow Clash of Clans wars and post them here.'), '']
+    if chat_type == 'channel':
+        # No one is recognised in a channel, so say the id they need
+        # elsewhere.
+        lines += [_('No names on channel posts, so I cannot tell who you are here. Send me this directly instead:'),
+                  _('/add CLAN_TAG {chat}').format(chat=chat_id)]
+    else:
+        lines += [_('Whoever runs this chat can start me off:'),
+                  _('/follow CLAN_TAG')]
+    lines += ['', _('/help for the rest.')]
+    return '\n'.join(lines)
 
 
 def answer(ctx, chat_id, from_id, text, chat_type='', from_name=''):

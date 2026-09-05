@@ -44,7 +44,7 @@ dryrun:
 i18n:
 	uv run --extra i18n pybabel extract -k N_ clashogram/ -o $(POT) \
 		--project Clashogram --version $(VERSION)
-	uv run --extra i18n pybabel update -i $(POT) -d $(LOCALES)
+	uv run --extra i18n pybabel update --no-fuzzy-matching -i $(POT) -d $(LOCALES)
 	uv run --extra i18n pybabel compile -d $(LOCALES)
 
 docker:

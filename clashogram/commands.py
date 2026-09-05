@@ -19,6 +19,7 @@ from .formatters import (
     create_unused_attacks_msg,
 )
 from .i18n import gettext_ as _
+from .i18n import ngettext_ as _n
 from .i18n import noop as N_
 from .models import LeaguePlayerStats, LeagueStandings, unused_attacks
 from .notifiers import Membership
@@ -119,9 +120,11 @@ def answer(ctx, chat_id, from_id, text, chat_type='', from_name=''):
     if name == 'announce':
         if not _is_admin(ctx, from_id):
             return [_refuse(ctx, chat_id, from_id)]
-        # Not split into arguments like the rest: it is a sentence, and
-        # a mention in it is somebody's name rather than the bot's.
-        return _cmd_announce(ctx, chat_id, text.partition(' ')[2].strip())
+        # Not split like the rest: it is a sentence, so line breaks
+        # are kept and an @ in it is a name, not the bot's.
+        said = text.split(maxsplit=1)
+        return _cmd_announce(ctx, chat_id,
+                             said[1].strip() if len(said) > 1 else '')
     if name in ADMIN_COMMANDS:
         if not _is_admin(ctx, from_id):
             return [_refuse(ctx, chat_id, from_id)]
@@ -598,8 +601,8 @@ def _cmd_activity(ctx, chat_id, args):
             who=_safe(row['title'] or row['chat_id']))
         for age, row in zip(ages, listed))
     return [Answer(chat_id, '\n'.join([
-        _('{chats} chats, {clans} clans, {operators} operators, '
-          '{waiting} waiting.').format(
+        _('Chats {chats} · clans {clans} · operators {operators} · '
+          'waiting {waiting}').format(
               chats=len(chats), clans=len(registry.clans_with_chats(ctx.db)),
               operators=len(operator_ids(ctx)),
               waiting=len(registry.pending_requests(ctx.db))),
@@ -803,7 +806,9 @@ def _cmd_announce(ctx, chat_id, said):
             return [Answer(chat_id, _('Nothing written to send.'))]
         ctx.db.set_setting(DRAFT, '')
         heading = _('From the operator:')
-        return [Answer(chat_id, _('Sent to {count} chats.').format(
+        return [Answer(chat_id, _n('Sent to {count} chat.',
+                                   'Sent to {count} chats.',
+                                   len(targets)).format(
             count=len(targets)))] + [
                 Answer(target, f'{heading}\n{draft}') for target in targets]
     if said == 'cancel':
@@ -815,8 +820,10 @@ def _cmd_announce(ctx, chat_id, said):
         return [Answer(chat_id, _('Nobody follows anything yet.'))]
     ctx.db.set_setting(DRAFT, _safe(said))
     return [Answer(chat_id,
-                   _('To {count} chats, as it stands:').format(
-                       count=len(targets)) + f'\n\n{_safe(said)}',
+                   _n('To {count} chat, as it stands:',
+                      'To {count} chats, as it stands:',
+                      len(targets)).format(count=len(targets))
+                   + f'\n\n{_safe(said)}',
                    ((_('Send it'), '/announce send'),
                     (_('Drop it'), '/announce cancel')))]
 

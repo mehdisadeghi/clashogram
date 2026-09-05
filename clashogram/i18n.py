@@ -44,6 +44,12 @@ def gettext_(message):
     return _current.gettext(message)
 
 
+def ngettext_(singular, plural, count):
+    """One or many. Russian has three forms, so a number in front of an
+    english plural is not enough."""
+    return _current.ngettext(singular, plural, count)
+
+
 def noop(message):
     """Mark a string for translation without translating it yet.
 

@@ -42,7 +42,7 @@ dryrun:
 	uv run clashogram --dryrun --loglevel DEBUG
 
 i18n:
-	uv run --extra i18n pybabel extract -k N_ clashogram/ -o $(POT) \
+	uv run --extra i18n pybabel extract -k N_ -k _n:1,2 clashogram/ -o $(POT) \
 		--project Clashogram --version $(VERSION)
 	uv run --extra i18n pybabel update --no-fuzzy-matching -i $(POT) -d $(LOCALES)
 	uv run --extra i18n pybabel compile -d $(LOCALES)

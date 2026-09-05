@@ -583,6 +583,12 @@ def _cmd_activity(ctx, chat_id, args):
     A chat quiet for months usually means a clan polled for no one,
     which nothing else reports."""
     chats = ctx.db.chats()
+    known = {str(row['chat_id']) for row in chats}
+    # A chat can be followed without ever having said anything, and
+    # that is the chat worth seeing here.
+    chats += [{'chat_id': chat, 'title': '', 'lang': None, 'seen_at': None}
+              for chat in registry.subscribed_chats(ctx.db)
+              if str(chat) not in known]
     if not chats:
         return [Answer(chat_id, _('Nobody has said anything yet.'))]
     followed = {}

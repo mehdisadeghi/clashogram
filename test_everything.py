@@ -721,12 +721,14 @@ class AnnounceTestCase(unittest.TestCase):
 
 
 class ActivityTestCase(unittest.TestCase):
-    def test_a_chat_that_has_asked_for_anything_is_listed(self):
+    def test_a_chat_is_listed_whether_it_has_spoken_or_only_follows(self):
         db = Storage(':memory:')
+        registry.subscribe(db, '#US', 'quiet')
         ctx = commands.Context(db=db, monitors={}, admin_id='42')
         commands.answer(ctx, 'c1', '9', '/war')
-        self.assertIn('c1', commands.answer(ctx, '42', '42',
-                                            '/activity')[0].text)
+        listed = commands.answer(ctx, '42', '42', '/activity')[0].text
+        self.assertIn('c1', listed)
+        self.assertIn('quiet', listed)
 
 
 class OperatorLanguageTestCase(unittest.TestCase):

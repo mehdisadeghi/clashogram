@@ -32,10 +32,10 @@ def publish_menu(ctx, notifier):
             notifier.publish_menu(commands.menu(),
                                   language_code=None if lang == i18n.DEFAULT
                                   else lang.split('_')[0])
-        if ctx.admin_id is not None:
-            i18n.activate(ctx.db.chat_lang(ctx.admin_id))
+        for operator in commands.operator_ids(ctx):
+            i18n.activate(ctx.db.chat_lang(operator))
             notifier.publish_menu(commands.menu(for_operator=True),
-                                  chat_id=ctx.admin_id)
+                                  chat_id=operator)
     except requests.RequestException as err:
         logger.warning('Could not publish the menu (%s).', _describe(err))
     finally:
@@ -120,8 +120,8 @@ def _describe(err):
 _complained = {}
 
 
-def _tell(notifier, admin_id, monitor, message, trouble):
-    """Tell the operator, once per spell of trouble.
+def _tell(ctx, notifier, monitor, build, trouble):
+    """Tell the operators, once per spell of trouble.
 
     This went to every chat of the clan on every retry before: a six
     hour CoC maintenance meant thirty six messages in a channel, about
@@ -129,13 +129,7 @@ def _tell(notifier, admin_id, monitor, message, trouble):
     if _complained.get(monitor.clan_tag) == trouble:
         return
     _complained[monitor.clan_tag] = trouble
-    if admin_id is None:
-        return
-    try:
-        notifier.reply(admin_id, message)
-    except requests.RequestException:
-        logger.warning('Could not reach the operator about %s.',
-                       monitor.clan_tag)
+    _say(ctx, notifier, build)
 
 
 def _entered_maintenance(ctx, notifier, err):
@@ -152,7 +146,7 @@ def _entered_maintenance(ctx, notifier, err):
         said = err.response.json().get('message') or ''
     except ValueError:
         pass
-    _say(ctx, notifier, _('CoC went into maintenance.{detail}').format(
+    _say(ctx, notifier, lambda: _('CoC went into maintenance.{detail}').format(
         detail=f' {said}' if said else ''))
 
 
@@ -164,19 +158,25 @@ def _left_maintenance(ctx, notifier):
     began = datetime.datetime.fromisoformat(since)
     minutes = int((datetime.datetime.now(datetime.timezone.utc) - began)
                   .total_seconds() // 60)
-    _say(ctx, notifier, _('CoC is back. Maintenance ran {hours}h {minutes}m '
-                          'from {began}.').format(
-        hours=minutes // 60, minutes=minutes % 60,
-        began=began.strftime('%Y-%m-%d %H:%M UTC')))
+    _say(ctx, notifier,
+         lambda: _('CoC is back. Maintenance ran {hours}h {minutes}m '
+                   'from {began}.').format(
+             hours=minutes // 60, minutes=minutes % 60,
+             began=began.strftime('%Y-%m-%d %H:%M UTC')))
 
 
-def _say(ctx, notifier, message):
-    if ctx.admin_id is None:
-        return
-    try:
-        notifier.reply(ctx.admin_id, message)
-    except requests.RequestException as err:
-        logger.warning('Could not tell the operator (%s).', _describe(err))
+def _say(ctx, notifier, build):
+    """Each operator in their own language, so the wording is built once
+    per reader."""
+    here = i18n.active()
+    for operator in commands.operator_ids(ctx):
+        i18n.activate(ctx.db.chat_lang(operator))
+        try:
+            notifier.reply(operator, build())
+        except requests.RequestException as err:
+            logger.warning('Could not tell the operator (%s).',
+                           _describe(err))
+    i18n.activate(here)
 
 
 def _recovered(monitor):
@@ -198,12 +198,23 @@ def _back_off(ctx, monitor, notifier, err):
         return BACKOFF
     if status == 403 and not monitor.coc_api.get_claninfo(
             monitor.clan_tag).is_warlog_public:
-        _tell(notifier, ctx.admin_id, monitor,
-              _('Warlog must be public boss! ☠️'), 'warlog')
+        _tell(ctx, notifier, monitor,
+              lambda: _('Warlog must be public boss! ☠️'), 'warlog')
         return BACKOFF
-    _tell(notifier, ctx.admin_id, monitor,
-          _('☠️ 😵 App is broken boss! Come over and fix me please!'), 'broken')
+    _tell(ctx, notifier, monitor,
+          lambda: _('☠️ 😵 App is broken boss! Come over and fix me please!'),
+          'broken')
     raise err
+
+
+def _reply(notifier, answer):
+    """A chat we cannot post to must not swallow the answers meant for
+    the others. An announcement goes to every chat at once."""
+    try:
+        notifier.reply(answer.chat_id, answer.text, answer.choices)
+    except requests.RequestException as err:
+        logger.warning('Telegram refused us for %s (%s).',
+                       answer.chat_id, _describe(err))
 
 
 def answer_until(ctx, notifier, deadline):
@@ -219,8 +230,7 @@ def answer_until(ctx, notifier, deadline):
         try:
             for event in notifier.receive():
                 for answer in commands.handle(ctx, event):
-                    notifier.reply(answer.chat_id, answer.text,
-                                   answer.choices)
+                    _reply(notifier, answer)
                 answered = True
         except requests.RequestException as err:
             # The status matters: 409 is something else polling the

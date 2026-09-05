@@ -707,6 +707,22 @@ class RequestTestCase(unittest.TestCase):
         self.assertEqual(self.db.subscriptions(), [('#US', 'c1')])
 
 
+class OperatorLanguageTestCase(unittest.TestCase):
+    def test_each_operator_reads_a_request_in_their_own_language(self):
+        db = Storage(':memory:')
+        db.set_chat_lang('c1', 'fa_IR')
+        db.set_chat_lang('42', 'en')
+        registry.add_operator(db, '7')
+        db.set_chat_lang('7', 'fa_IR')
+        ctx = commands.Context(db=db, monitors={}, admin_id='42',
+                               open_requests=True)
+        asked, owner, helper = commands.answer(ctx, 'c1', '9', '/request #US')
+        self.assertNotIn('You will hear back', asked.text)
+        self.assertEqual((owner.chat_id, helper.chat_id), ('42', '7'))
+        self.assertIn('wants', owner.text)
+        self.assertNotIn('wants', helper.text)
+
+
 class AddValidationTestCase(unittest.TestCase):
     def setUp(self):
         self.db = Storage(':memory:')

@@ -272,6 +272,39 @@ def _refuse(ctx, chat_id, from_id, owner_only=False):
     return Answer(chat_id, _('Operators only! Ask one to add your clan here.'))
 
 
+def _addressed(ctx, chat_id, build):
+    """Build something in the language of the chat it goes to.
+
+    One command can answer two chats, and the asker and the operator
+    need not read the same language."""
+    here = i18n.active()
+    i18n.activate(ctx.db.chat_lang(chat_id))
+    try:
+        return build()
+    finally:
+        i18n.activate(here)
+
+
+def operator_ids(ctx):
+    """The owner, then whoever they have let help. No repeats."""
+    if ctx.admin_id is None:
+        return []
+    return [ctx.admin_id] + [user_id for user_id in registry.operators(ctx.db)
+                             if str(user_id) != str(ctx.admin_id)]
+
+
+def _tell_operators(ctx, build):
+    """Say it to every operator, each in their own language.
+
+    `build` returns the words and the choices. It is called once per
+    operator, because the wording differs."""
+    answers = []
+    for operator in operator_ids(ctx):
+        text, choices = _addressed(ctx, operator, build)
+        answers.append(Answer(operator, text, choices))
+    return answers
+
+
 def _who(ctx, user_id):
     if user_id is None:
         return _('somebody')
@@ -617,13 +650,17 @@ def _resolve(ctx, chat_id, args, approved):
     if request is None:
         return [Answer(chat_id, _('No request with that number.'))]
     clan = ctx.db.clan_names().get(request['clan_tag'], request['clan_tag'])
-    if approved:
-        told = _('{clan} is in! Its wars land here from now on.')
-    else:
-        told = _('{clan} was turned down.')
+
+    def told():
+        if approved:
+            return _('{clan} is in! Its wars land here from now on.').format(
+                clan=clan)
+        return _('{clan} was turned down.').format(clan=clan)
+
     return [Answer(chat_id, (_('Approved {clan}.') if approved
                              else _('Denied {clan}.')).format(clan=clan)),
-            Answer(request['chat_id'], told.format(clan=clan))]
+            Answer(request['chat_id'],
+                   _addressed(ctx, request['chat_id'], told))]
 
 
 def _cmd_operators(ctx, chat_id, args):
@@ -643,8 +680,8 @@ def _cmd_addoperator(ctx, chat_id, args):
         return [Answer(chat_id, _('That is the owner!'))]
     registry.add_operator(ctx.db, args[0])
     return [Answer(chat_id, _('{who} can now operate.').format(who=_safe(args[0]))),
-            Answer(args[0],
-                   _('You are an operator now! Send /help.'))]
+            Answer(args[0], _addressed(ctx, args[0], lambda: _(
+                'You are an operator now! Send /help.')))]
 
 
 def _cmd_removeoperator(ctx, chat_id, args):
@@ -695,12 +732,9 @@ def _cmd_request(ctx, chat_id, from_id, args, from_name=''):
     request_id = registry.file_request(ctx.db, clan_tag, chat_id, from_id)
     if request_id is None:
         return [Answer(chat_id, _('Already waiting.'))]
-    answers = [Answer(chat_id, _('Asked! You will hear back.'))]
-    if ctx.admin_id is not None:
-        answers.append(Answer(ctx.admin_id,
-                              _('{who} wants {name} ({clan}) in {chat}.').format(who=_who(ctx, from_id),
-                                                  name=_safe(name),
-                                                  clan=_safe(clan_tag),
-                                                  chat=_where(ctx, chat_id)),
-                              _settle_choices(request_id)))
-    return answers
+    return [Answer(chat_id, _('Asked! You will hear back.'))] \
+        + _tell_operators(ctx, lambda: (
+            _('{who} wants {name} ({clan}) in {chat}.').format(
+                who=_who(ctx, from_id), name=_safe(name),
+                clan=_safe(clan_tag), chat=_where(ctx, chat_id)),
+            _settle_choices(request_id)))

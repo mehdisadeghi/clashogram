@@ -18,6 +18,7 @@ LANGUAGES = {'en': 'English', 'fa_IR': 'فارسی', 'ru': 'Русский'}
 
 _loaded = {}
 _current = gettext.NullTranslations()
+_active = DEFAULT
 
 
 def translation(lang):
@@ -28,8 +29,15 @@ def translation(lang):
 
 
 def activate(lang):
-    global _current
-    _current = translation(lang if lang in LANGUAGES else DEFAULT)
+    global _active, _current
+    _active = lang if lang in LANGUAGES else DEFAULT
+    _current = translation(_active)
+
+
+def active():
+    """The language in force, for putting back after answering another
+    chat."""
+    return _active
 
 
 def gettext_(message):

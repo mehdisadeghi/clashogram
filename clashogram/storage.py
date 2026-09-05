@@ -37,7 +37,9 @@ CREATE TABLE IF NOT EXISTS chat (
     muted TEXT,
     -- Whoever put the bot here, or asked for it. They may set this
     -- chat's options without operating the instance.
-    steward TEXT
+    steward TEXT,
+    -- Last time anything was asked from here.
+    seen_at TEXT
 );
 CREATE TABLE IF NOT EXISTS setting (
     key TEXT PRIMARY KEY,
@@ -87,7 +89,8 @@ class Storage:
     # CREATE TABLE IF NOT EXISTS leaves the old table alone.
     LATER_COLUMNS = (('chat', 'lang', 'TEXT'),
                      ('chat', 'muted', 'TEXT'),
-                     ('chat', 'steward', 'TEXT'))
+                     ('chat', 'steward', 'TEXT'),
+                     ('chat', 'seen_at', 'TEXT'))
 
     def _add_columns(self):
         for table, column, decl in self.LATER_COLUMNS:
@@ -235,6 +238,18 @@ class Storage:
             'ON CONFLICT(chat_id) DO UPDATE SET steward = excluded.steward',
             (str(chat_id), '', str(user_id)))
         self._db.commit()
+
+    def note_chat_seen(self, chat_id, at):
+        self._db.execute(
+            'INSERT INTO chat (chat_id, title, seen_at) VALUES (?, ?, ?) '
+            'ON CONFLICT(chat_id) DO UPDATE SET seen_at = excluded.seen_at',
+            (str(chat_id), '', at))
+        self._db.commit()
+
+    def chats(self):
+        return [dict(zip(('chat_id', 'title', 'lang', 'seen_at'), row))
+                for row in self._db.execute(
+                    'SELECT chat_id, title, lang, seen_at FROM chat')]
 
     def chat_titles(self):
         return dict(self._db.execute('SELECT chat_id, title FROM chat'))

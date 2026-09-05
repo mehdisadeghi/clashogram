@@ -90,6 +90,7 @@ def answer(ctx, chat_id, from_id, text, chat_type='', from_name=''):
     More than one pair because approving a request tells both the
     operator and the chat that asked."""
     i18n.activate(ctx.db.chat_lang(chat_id))
+    registry.note_seen(ctx.db, chat_id)
     # Free, since they are talking to us anyway. Only for people whose
     # name is shown later on.
     if from_name and _is_admin(ctx, from_id):
@@ -149,6 +150,9 @@ def _steward(ctx, chat_id, from_id):
         return False
     return str(from_id) == str(ctx.db.chat_steward(chat_id))
 
+
+# Enough rows to see what is going on, without a wall of them.
+LISTED = 20
 
 # What a war produces, and what a chat can refuse. Attacks are the
 # bulk of it: two per member per war, against a handful of the rest.
@@ -246,6 +250,7 @@ PUBLIC_MENU = (
 
 OPERATOR_MENU = (
     ('clans', N_('What is followed where')),
+    ('activity', N_('Who is using me')),
     ('follow', N_('Follow a clan here')),
     ('unfollow', N_('Stop following a clan here')),
     ('add', N_('Follow a clan in another chat')),
@@ -418,6 +423,7 @@ def _usage(ctx, chat_id, from_id, chat_type=''):
     if _is_admin(ctx, from_id):
         lines += ['', _('Operator:'),
                   _('  /clans                     what is followed where'),
+                  _('  /activity                  who is using me'),
                   _('  /follow CLAN_TAG           follow a clan here'),
                   _('  /unfollow CLAN_TAG         stop following here'),
                   _('  /add CLAN_TAG [CHAT]       follow one in CHAT'),
@@ -558,6 +564,54 @@ def _cmd_clans(ctx, chat_id, args):
                     clan=label, chat=_where(ctx, chat, chat_id)),
                 ((_('Stop following'), f'/remove {clan_tag} {chat}'),)))
     return answers
+
+
+def _cmd_activity(ctx, chat_id, args):
+    """The numbers, and the chats that have gone quiet.
+
+    A chat quiet for months usually means a clan polled for no one,
+    which nothing else reports."""
+    chats = ctx.db.chats()
+    if not chats:
+        return [Answer(chat_id, _('Nobody has said anything yet.'))]
+    followed = {}
+    for clan_tag, chats_of_clan in registry.clans_with_chats(ctx.db).items():
+        for chat in chats_of_clan:
+            followed.setdefault(str(chat), []).append(clan_tag)
+    listed = sorted(chats, key=lambda row: row['seen_at'] or '')[:LISTED]
+    ages = [_since(row['seen_at']) for row in listed]
+    # Width from the rendered values, so the rows line up in any
+    # language.
+    width = max(len(age) for age in ages)
+    rows = '\n'.join(
+        '{age: >{width}}  {lang: <5} {clans: >2}  {who}'.format(
+            age=age, width=width, lang=row['lang'] or i18n.DEFAULT,
+            clans=len(followed.get(str(row['chat_id']), ())),
+            who=_safe(row['title'] or row['chat_id']))
+        for age, row in zip(ages, listed))
+    return [Answer(chat_id, '\n'.join([
+        _('{chats} chats, {clans} clans, {operators} operators, '
+          '{waiting} waiting.').format(
+              chats=len(chats), clans=len(registry.clans_with_chats(ctx.db)),
+              operators=len(operator_ids(ctx)),
+              waiting=len(registry.pending_requests(ctx.db))),
+        _('Last seen, language, clans. Quietest first:'),
+        f'<pre>{rows}</pre>']))]
+
+
+def _since(when):
+    """Roughly how long ago. Minutes say nothing about a chat that has
+    been quiet for months."""
+    if not when:
+        return _('never')
+    ago = (datetime.datetime.now(datetime.timezone.utc)
+           - datetime.datetime.fromisoformat(when))
+    hours = int(ago.total_seconds() // 3600)
+    if hours >= 24:
+        return _('{count}d').format(count=hours // 24)
+    if hours:
+        return _('{count}h').format(count=hours)
+    return _('{count}m').format(count=int(ago.total_seconds() // 60))
 
 
 def _cmd_add(ctx, chat_id, args):
@@ -710,6 +764,7 @@ OWNER_COMMANDS = {
 
 ADMIN_COMMANDS = {
     'clans': _cmd_clans,
+    'activity': _cmd_activity,
     'add': _cmd_add,
     'remove': _cmd_remove,
     'requests': _cmd_requests,

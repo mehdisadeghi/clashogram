@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Clashogram 1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-05 12:26+0200\n"
+"POT-Creation-Date: 2026-09-05 12:28+0200\n"
 "PO-Revision-Date: 2018-01-27 16:47+0100\n"
 "Last-Translator: \n"
 "Language: fa_IR\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: clashogram/commands.py:80 clashogram/commands.py:384
+#: clashogram/commands.py:80 clashogram/commands.py:389
 msgid "I follow Clash of Clans wars and post them here."
 msgstr "من جنگ‌های کلش رو دنبال می‌کنم و اینجا می‌ذارم."
 
@@ -30,7 +30,7 @@ msgstr ""
 "رو پست‌های کانال اسمی نیست، پس نمی‌فهمم تو کی هستی. این رو مستقیم برام "
 "بفرست:"
 
-#: clashogram/commands.py:85 clashogram/commands.py:219
+#: clashogram/commands.py:85 clashogram/commands.py:223
 #, python-brace-format
 msgid "/add CLAN_TAG {chat}"
 msgstr "/add CLAN_TAG {chat}"
@@ -47,149 +47,153 @@ msgstr "/follow CLAN_TAG"
 msgid "/help for the rest."
 msgstr "بقیه‌ش با /help."
 
-#: clashogram/commands.py:141
+#: clashogram/commands.py:142
 msgid "Unknown command. Try /help."
 msgstr "این دستور رو نمی‌شناسم. /help رو بزن."
 
-#: clashogram/commands.py:144 clashogram/commands.py:400
+#: clashogram/commands.py:145 clashogram/commands.py:405
 msgid "No clan followed here yet."
 msgstr "هنوز هیچ قبیله‌ای اینجا دنبال نمی‌شه."
 
-#: clashogram/commands.py:168
+#: clashogram/commands.py:172
 msgid "I post attacks, prep, standings and result."
 msgstr "من حمله، آماده‌سازی، جدول و نتیجه می‌ذارم."
 
-#: clashogram/commands.py:171 clashogram/commands.py:203
+#: clashogram/commands.py:175 clashogram/commands.py:207
 msgid "Only somebody who runs this chat can change that."
 msgstr "فقط کسی که این چت رو می‌گردونه می‌تونه این رو عوض کنه."
 
-#: clashogram/commands.py:175
+#: clashogram/commands.py:179
 msgid "Tap to turn a kind on or off."
 msgstr "بزن تا هر کدوم رو روشن یا خاموش کنی."
 
-#: clashogram/commands.py:197
+#: clashogram/commands.py:201
 msgid "Which language?"
 msgstr "کدوم زبان؟"
 
-#: clashogram/commands.py:201
+#: clashogram/commands.py:205
 msgid "I do not speak that."
 msgstr "این زبون رو بلد نیستم."
 
-#: clashogram/commands.py:207
+#: clashogram/commands.py:211
 #, python-brace-format
 msgid "Talking {lang} here now."
 msgstr "از این به بعد اینجا {lang} حرف می‌زنم."
 
-#: clashogram/commands.py:214
+#: clashogram/commands.py:218
 #, python-brace-format
 msgid "This chat is {chat}."
 msgstr "شناسه این چت {chat} است."
 
-#: clashogram/commands.py:216
+#: clashogram/commands.py:220
 msgid "That is your own user id too."
 msgstr "همین شناسه خودتم هست."
 
-#: clashogram/commands.py:218
+#: clashogram/commands.py:222
 msgid "To follow a clan here:"
 msgstr "برای اضافه کردن قبیله اینجا:"
 
-#: clashogram/commands.py:221
+#: clashogram/commands.py:225
 msgid "To ask for a clan here:"
 msgstr "برای درخواست قبیله اینجا:"
 
-#: clashogram/commands.py:222
+#: clashogram/commands.py:226
 msgid "/request CLAN_TAG"
 msgstr "/request CLAN_TAG"
 
-#: clashogram/commands.py:239
+#: clashogram/commands.py:243
 msgid "How the war stands"
 msgstr "وضعیت جنگ"
 
-#: clashogram/commands.py:240
+#: clashogram/commands.py:244
 msgid "How long the war has to run"
 msgstr "چقدر از جنگ مونده"
 
-#: clashogram/commands.py:241
+#: clashogram/commands.py:245
 msgid "Who still has attacks"
 msgstr "کی حمله نزده"
 
-#: clashogram/commands.py:242
+#: clashogram/commands.py:246
 msgid "Who is facing whom"
 msgstr "کی مقابل کیه"
 
-#: clashogram/commands.py:243
+#: clashogram/commands.py:247
 msgid "The league table"
 msgstr "جدول لیگ"
 
-#: clashogram/commands.py:244
+#: clashogram/commands.py:248
 msgid "League attack stats"
 msgstr "آمار حمله‌های لیگ"
 
-#: clashogram/commands.py:245
+#: clashogram/commands.py:249
 msgid "The clan itself"
 msgstr "خود قبیله"
 
-#: clashogram/commands.py:246
+#: clashogram/commands.py:250
 msgid "Who runs the clan"
 msgstr "کیا قبیله رو می‌گردونن"
 
-#: clashogram/commands.py:247
+#: clashogram/commands.py:251
 msgid "Who has given the most"
 msgstr "کی بیشتر داده"
 
-#: clashogram/commands.py:248
+#: clashogram/commands.py:252
 msgid "Pick the language here"
 msgstr "انتخاب زبان اینجا"
 
-#: clashogram/commands.py:249
+#: clashogram/commands.py:253
 msgid "This chat's id"
 msgstr "شناسه این چت"
 
-#: clashogram/commands.py:250
+#: clashogram/commands.py:254
 msgid "What I can do"
 msgstr "کارهایی که بلدم"
 
-#: clashogram/commands.py:254
+#: clashogram/commands.py:258
 msgid "What is followed where"
 msgstr "چی کجا دنبال می‌شه"
 
-#: clashogram/commands.py:255
+#: clashogram/commands.py:259
+msgid "Who is using me"
+msgstr "کی ازم استفاده می‌کنه"
+
+#: clashogram/commands.py:260
 msgid "Follow a clan here"
 msgstr "دنبال کردن یه قبیله اینجا"
 
-#: clashogram/commands.py:256
+#: clashogram/commands.py:261
 msgid "Stop following a clan here"
 msgstr "ول کردن یه قبیله اینجا"
 
-#: clashogram/commands.py:257
+#: clashogram/commands.py:262
 msgid "Follow a clan in another chat"
 msgstr "دنبال کردن یه قبیله تو یه چت دیگه"
 
-#: clashogram/commands.py:258
+#: clashogram/commands.py:263
 msgid "Stop following a clan"
 msgstr "ول کردن قبیله"
 
-#: clashogram/commands.py:259
+#: clashogram/commands.py:264
 msgid "Who has asked"
 msgstr "کی درخواست داده"
 
-#: clashogram/commands.py:260
+#: clashogram/commands.py:265
 msgid "Choose what I post"
 msgstr "انتخاب چیزی که می‌ذارم"
 
-#: clashogram/commands.py:261
+#: clashogram/commands.py:266
 msgid "Who may operate"
 msgstr "اپراتورها کی‌ان"
 
-#: clashogram/commands.py:262
+#: clashogram/commands.py:267
 msgid "Let somebody help"
 msgstr "اپراتور کردن یکی"
 
-#: clashogram/commands.py:263
+#: clashogram/commands.py:268
 msgid "Stop letting them"
 msgstr "گرفتن اپراتوری"
 
-#: clashogram/commands.py:280
+#: clashogram/commands.py:285
 #, python-brace-format
 msgid ""
 "No names on channel posts, so I cannot tell it is you boss! Send it to me"
@@ -198,85 +202,85 @@ msgstr ""
 "رئیس، پست‌های کانال اسم ندارن، نمی‌فهمم تویی! مستقیم به خودم بگو و این چت"
 " رو هم بنویس: {chat}"
 
-#: clashogram/commands.py:282
+#: clashogram/commands.py:287
 msgid "Owner only boss! Ask them."
 msgstr "رئیس، این فقط کار مالکه! ازش بخواه."
 
-#: clashogram/commands.py:284
+#: clashogram/commands.py:289
 msgid "Operators only! Ask for your clan instead: /request CLAN_TAG"
 msgstr "فقط اپراتورها! به جاش قبیله‌ت رو درخواست بده: /request CLAN_TAG"
 
-#: clashogram/commands.py:285
+#: clashogram/commands.py:290
 msgid "Operators only! Ask one to add your clan here."
 msgstr "فقط اپراتورها! از یکی‌شون بخواه قبیله‌ت رو اضافه کنه."
 
-#: clashogram/commands.py:324
+#: clashogram/commands.py:329
 msgid "somebody"
 msgstr "یکی"
 
-#: clashogram/commands.py:333
+#: clashogram/commands.py:338
 #, python-brace-format
 msgid "this chat ({chat})"
 msgstr "همین چت ({chat})"
 
-#: clashogram/commands.py:387
+#: clashogram/commands.py:392
 #, python-brace-format
 msgid "Following {clans} here."
 msgstr "اینجا {clans} دنبال می‌شه."
 
-#: clashogram/commands.py:389
+#: clashogram/commands.py:394
 msgid "About the war:"
 msgstr "درباره جنگ:"
 
-#: clashogram/commands.py:390
+#: clashogram/commands.py:395
 msgid "  /war        how it stands"
 msgstr "  /war        وضعیت جنگ"
 
-#: clashogram/commands.py:391
+#: clashogram/commands.py:396
 msgid "  /missing    who still has attacks"
 msgstr "  /missing    کی حمله نزده"
 
-#: clashogram/commands.py:392
+#: clashogram/commands.py:397
 msgid "  /standings  the league table"
 msgstr "  /standings  جدول لیگ"
 
-#: clashogram/commands.py:393
+#: clashogram/commands.py:398
 msgid "  /stats      league attack stats"
 msgstr "  /stats      آمار حمله‌های لیگ"
 
-#: clashogram/commands.py:394
+#: clashogram/commands.py:399
 msgid "  /clan       the clan itself"
 msgstr "  /clan       خود قبیله"
 
-#: clashogram/commands.py:395
+#: clashogram/commands.py:400
 msgid "  /leaders    who runs it"
 msgstr "  /leaders    کیا می‌گردوننش"
 
-#: clashogram/commands.py:396
+#: clashogram/commands.py:401
 msgid "  /left       how long the war has to run"
 msgstr "  /left       چقدر از جنگ مونده"
 
-#: clashogram/commands.py:397
+#: clashogram/commands.py:402
 msgid "  /mirror     who is facing whom"
 msgstr "  /mirror     کی مقابل کیه"
 
-#: clashogram/commands.py:398
+#: clashogram/commands.py:403
 msgid "  /donors     who has given the most"
 msgstr "  /donors     کی بیشتر داده"
 
-#: clashogram/commands.py:405
+#: clashogram/commands.py:410
 msgid "To ask for one:"
 msgstr "برای درخواست:"
 
-#: clashogram/commands.py:406
+#: clashogram/commands.py:411
 msgid "  /request CLAN_TAG    ask for a clan here"
 msgstr "  /request CLAN_TAG    درخواست قبیله برای اینجا"
 
-#: clashogram/commands.py:408
+#: clashogram/commands.py:413
 msgid "Requests are closed. Ask an operator!"
 msgstr "درخواست‌ها بسته‌ست. از یه اپراتور بخواه!"
 
-#: clashogram/commands.py:411
+#: clashogram/commands.py:416
 #, python-brace-format
 msgid ""
 "No names on channel posts, so I cannot tell who you are here. Anything "
@@ -285,91 +289,95 @@ msgstr ""
 "پست‌های کانال اسم ندارن، پس نمی‌فهمم کی هستی. هر چیزی که تغییری می‌ده رو "
 "مستقیم به خودم بگو و این چت ({chat}) رو هم بنویس."
 
-#: clashogram/commands.py:412
+#: clashogram/commands.py:417
 msgid "You can add me to a group or a channel too."
 msgstr "منو به گروه یا کانال هم می‌تونی اضافه کنی."
 
-#: clashogram/commands.py:413
+#: clashogram/commands.py:418
 msgid "Anywhere:"
 msgstr "همه‌جا:"
 
-#: clashogram/commands.py:414
+#: clashogram/commands.py:419
 msgid "  /chatid     this chat's id, and yours if we talk directly"
 msgstr "  /chatid     شناسه این چت، و شناسه خودت اگه مستقیم حرف بزنیم"
 
-#: clashogram/commands.py:415
+#: clashogram/commands.py:420
 msgid "  /lang       pick the language here"
 msgstr "  /lang       انتخاب زبان اینجا"
 
-#: clashogram/commands.py:416
+#: clashogram/commands.py:421
 msgid "  /mute       choose what I post here"
 msgstr "  /mute       انتخاب چیزی که اینجا می‌ذارم"
 
-#: clashogram/commands.py:417
+#: clashogram/commands.py:422
 msgid "  /help       this message"
 msgstr "  /help       همین پیام"
 
-#: clashogram/commands.py:420
+#: clashogram/commands.py:425
 msgid "Owner:"
 msgstr "مالک:"
 
-#: clashogram/commands.py:421
+#: clashogram/commands.py:426
 msgid "  /operators              who may operate"
 msgstr "  /operators              اپراتورها کی‌ان"
 
-#: clashogram/commands.py:422
+#: clashogram/commands.py:427
 msgid "  /addoperator USER_ID    let somebody help"
 msgstr "  /addoperator USER_ID    یکی رو اپراتور کن"
 
-#: clashogram/commands.py:423
+#: clashogram/commands.py:428
 msgid "  /removeoperator USER_ID stop letting them"
 msgstr "  /removeoperator USER_ID اپراتوریش رو بگیر"
 
-#: clashogram/commands.py:424
+#: clashogram/commands.py:429
 msgid "  /requests open|close    take requests, or stop"
 msgstr "  /requests open|close    درخواست‌ها رو باز یا بسته کن"
 
-#: clashogram/commands.py:425
+#: clashogram/commands.py:430
 msgid "They send me /chatid directly to find their user id."
 msgstr "شناسه‌شون رو با زدن /chatid به صورت مستقیم به من پیدا می‌کنن."
 
-#: clashogram/commands.py:427
+#: clashogram/commands.py:432
 msgid "Operator:"
 msgstr "اپراتور:"
 
-#: clashogram/commands.py:428
+#: clashogram/commands.py:433
 msgid "  /clans                     what is followed where"
 msgstr "  /clans                     چی کجا دنبال می‌شه"
 
-#: clashogram/commands.py:429
+#: clashogram/commands.py:434
+msgid "  /activity                  who is using me"
+msgstr "  /activity                  کی ازم استفاده می‌کنه"
+
+#: clashogram/commands.py:435
 msgid "  /follow CLAN_TAG           follow a clan here"
 msgstr "  /follow CLAN_TAG           دنبال کردن قبیله اینجا"
 
-#: clashogram/commands.py:430
+#: clashogram/commands.py:436
 msgid "  /unfollow CLAN_TAG         stop following here"
 msgstr "  /unfollow CLAN_TAG         ول کردن قبیله اینجا"
 
-#: clashogram/commands.py:431
+#: clashogram/commands.py:437
 msgid "  /add CLAN_TAG [CHAT]       follow one in CHAT"
 msgstr "  /add CLAN_TAG [CHAT]       دنبال کردن قبیله تو CHAT"
 
-#: clashogram/commands.py:432
+#: clashogram/commands.py:438
 msgid "  /remove CLAN_TAG [CHAT]    stop following"
 msgstr "  /remove CLAN_TAG [CHAT]    ول کردن قبیله"
 
-#: clashogram/commands.py:436
+#: clashogram/commands.py:442
 msgid "  /requests                  who has asked"
 msgstr "  /requests                  کی درخواست داده"
 
-#: clashogram/commands.py:437
+#: clashogram/commands.py:443
 msgid "  /approve ID, /deny ID      settle a request"
 msgstr "  /approve ID, /deny ID      قبول یا رد درخواست"
 
-#: clashogram/commands.py:440
+#: clashogram/commands.py:446
 msgid "Requests are closed, so clans are yours to add."
 msgstr "درخواست‌ها بسته‌ست، پس اضافه کردن قبیله با خودته."
 
-#: clashogram/commands.py:442
+#: clashogram/commands.py:448
 msgid ""
 "I cannot tell who posts in a channel. Add me there, then send /add here "
 "with the id I report."
@@ -377,218 +385,250 @@ msgstr ""
 "تو کانال نمی‌فهمم کی پست می‌ذاره. اونجا اضافه‌م کن، بعد با شناسه‌ای که "
 "می‌گم اینجا /add بزن."
 
-#: clashogram/commands.py:452 clashogram/commands.py:458
-#: clashogram/commands.py:477 clashogram/commands.py:496
+#: clashogram/commands.py:458 clashogram/commands.py:464
+#: clashogram/commands.py:483 clashogram/commands.py:502
 msgid "Not in a war."
 msgstr "الان جنگی نیست."
 
-#: clashogram/commands.py:464 clashogram/commands.py:470
+#: clashogram/commands.py:470 clashogram/commands.py:476
 msgid "Not in a league war."
 msgstr "الان جنگ لیگ نیست."
 
-#: clashogram/commands.py:479
+#: clashogram/commands.py:485
 msgid "until battle day"
 msgstr "تا روز جنگ"
 
-#: clashogram/commands.py:481
+#: clashogram/commands.py:487
 msgid "until the war ends"
 msgstr "تا آخر جنگ"
 
-#: clashogram/commands.py:483
+#: clashogram/commands.py:489
 msgid "The war is over."
 msgstr "جنگ تموم شده."
 
-#: clashogram/commands.py:488
+#: clashogram/commands.py:494
 msgid "Any moment now."
 msgstr "همین الاناست."
 
-#: clashogram/commands.py:490
+#: clashogram/commands.py:496
 #, python-brace-format
 msgid "{hours}h {minutes}m {what}"
 msgstr "{hours} ساعت و {minutes} دقیقه {what}"
 
-#: clashogram/commands.py:499
+#: clashogram/commands.py:505
 msgid "Everyone against their mirror:"
 msgstr "هر کی مقابل قرینه‌ش:"
 
-#: clashogram/commands.py:505
+#: clashogram/commands.py:511
 msgid "Nobody has given anything."
 msgstr "هیچ‌کس چیزی نداده."
 
-#: clashogram/commands.py:508
+#: clashogram/commands.py:514
 msgid "Given, received, name:"
 msgstr "داده، گرفته، نام:"
 
-#: clashogram/commands.py:513
+#: clashogram/commands.py:519
 #, python-brace-format
 msgid "War win streak {streak} {flag}"
 msgstr "برد پشت سر هم {streak} {flag}"
 
-#: clashogram/commands.py:516 clashogram/commands.py:526
+#: clashogram/commands.py:522 clashogram/commands.py:532
 #, python-brace-format
 msgid "Leader {name}"
 msgstr "رئیس قبیله {name}"
 
-#: clashogram/commands.py:524
+#: clashogram/commands.py:530
 msgid "Nobody is listed."
 msgstr "هیچ‌کس ثبت نشده."
 
-#: clashogram/commands.py:526
+#: clashogram/commands.py:532
 #, python-brace-format
 msgid "Co-leader {name}"
 msgstr "معاون {name}"
 
-#: clashogram/commands.py:550
+#: clashogram/commands.py:556
 msgid "No clans followed."
 msgstr "هیچ قبیله‌ای دنبال نمی‌شه."
 
-#: clashogram/commands.py:566
+#: clashogram/commands.py:572
 #, python-brace-format
 msgid "{clan} in {chat}"
 msgstr "{clan} در {chat}"
 
-#: clashogram/commands.py:568
+#: clashogram/commands.py:574
 msgid "Stop following"
 msgstr "ولش کن"
 
-#: clashogram/commands.py:574
+#: clashogram/commands.py:585
+msgid "Nobody has said anything yet."
+msgstr "هنوز کسی چیزی نگفته."
+
+#: clashogram/commands.py:602
+#, python-brace-format
+msgid "{chats} chats, {clans} clans, {operators} operators, {waiting} waiting."
+msgstr "{chats} چت، {clans} قبیله، {operators} اپراتور، {waiting} تا در انتظار."
+
+#: clashogram/commands.py:607
+msgid "Last seen, language, clans. Quietest first:"
+msgstr "آخرین بار، زبان، تعداد قبیله. ساکت‌ترین‌ها اول:"
+
+#: clashogram/commands.py:615
+msgid "never"
+msgstr "هیچ‌وقت"
+
+#: clashogram/commands.py:620
+#, python-brace-format
+msgid "{count}d"
+msgstr "{count} روز"
+
+#: clashogram/commands.py:622
+#, python-brace-format
+msgid "{count}h"
+msgstr "{count} ساعت"
+
+#: clashogram/commands.py:623
+#, python-brace-format
+msgid "{count}m"
+msgstr "{count} دقیقه"
+
+#: clashogram/commands.py:628
 msgid "Usage: /add CLAN_TAG [CHAT_ID]"
 msgstr "طرز استفاده: /add CLAN_TAG [CHAT_ID]"
 
-#: clashogram/commands.py:579 clashogram/commands.py:743
+#: clashogram/commands.py:633 clashogram/commands.py:798
 #, python-brace-format
 msgid "No clan with tag {clan}!"
 msgstr "قبیله‌ای با تگ {clan} نیست!"
 
-#: clashogram/commands.py:585
+#: clashogram/commands.py:639
 #, python-brace-format
 msgid "Following {name} ({clan}) in {chat}."
 msgstr "{name} ({clan}) تو {chat} دنبال می‌شه."
 
-#: clashogram/commands.py:618
+#: clashogram/commands.py:672
 msgid "Usage: /remove CLAN_TAG [CHAT_ID]"
 msgstr "طرز استفاده: /remove CLAN_TAG [CHAT_ID]"
 
-#: clashogram/commands.py:623
+#: clashogram/commands.py:677
 #, python-brace-format
 msgid "{clan} was not followed in {chat}."
 msgstr "{clan} تو {chat} دنبال نمی‌شد."
 
-#: clashogram/commands.py:625
+#: clashogram/commands.py:679
 #, python-brace-format
 msgid "Stopped following {clan} in {chat}."
 msgstr "{clan} تو {chat} ول شد."
 
-#: clashogram/commands.py:633
+#: clashogram/commands.py:687
 msgid "Requests are open."
 msgstr "درخواست‌ها بازه."
 
-#: clashogram/commands.py:634
+#: clashogram/commands.py:688
 msgid "Requests are closed."
 msgstr "درخواست‌ها بسته‌ست."
 
-#: clashogram/commands.py:636
+#: clashogram/commands.py:690
 msgid "Usage: /requests [open|close]"
 msgstr "طرز استفاده: /requests [open|close]"
 
-#: clashogram/commands.py:639
+#: clashogram/commands.py:693
 msgid "Nothing waiting."
 msgstr "چیزی در انتظار نیست."
 
-#: clashogram/commands.py:642 clashogram/commands.py:754
+#: clashogram/commands.py:696 clashogram/commands.py:809
 #, python-brace-format
 msgid "{who} wants {name} ({clan}) in {chat}."
 msgstr "{who} می‌خواد {name} ({clan}) تو {chat} باشه."
 
-#: clashogram/commands.py:651
+#: clashogram/commands.py:705
 msgid "Approve"
 msgstr "قبول"
 
-#: clashogram/commands.py:652
+#: clashogram/commands.py:706
 msgid "Deny"
 msgstr "رد"
 
-#: clashogram/commands.py:665
+#: clashogram/commands.py:719
 msgid "Usage: /approve REQUEST_ID"
 msgstr "طرز استفاده: /approve REQUEST_ID"
 
-#: clashogram/commands.py:668
+#: clashogram/commands.py:722
 msgid "No request with that number."
 msgstr "درخواستی با این شماره نیست."
 
-#: clashogram/commands.py:673
+#: clashogram/commands.py:727
 #, python-brace-format
 msgid "{clan} is in! Its wars land here from now on."
 msgstr "{clan} اومد! از این به بعد جنگ‌هاش اینجا میاد."
 
-#: clashogram/commands.py:675
+#: clashogram/commands.py:729
 #, python-brace-format
 msgid "{clan} was turned down."
 msgstr "{clan} رد شد."
 
-#: clashogram/commands.py:677
+#: clashogram/commands.py:731
 #, python-brace-format
 msgid "Approved {clan}."
 msgstr "{clan} قبول شد."
 
-#: clashogram/commands.py:678
+#: clashogram/commands.py:732
 #, python-brace-format
 msgid "Denied {clan}."
 msgstr "{clan} رد شد."
 
-#: clashogram/commands.py:688
+#: clashogram/commands.py:742
 #, python-brace-format
 msgid "{who} (owner)"
 msgstr "{who} (مالک)"
 
-#: clashogram/commands.py:695
+#: clashogram/commands.py:749
 msgid "Usage: /addoperator USER_ID"
 msgstr "طرز استفاده: /addoperator USER_ID"
 
-#: clashogram/commands.py:697
+#: clashogram/commands.py:751
 msgid "That is the owner!"
 msgstr "خودش که مالکه!"
 
-#: clashogram/commands.py:699
+#: clashogram/commands.py:753
 #, python-brace-format
 msgid "{who} can now operate."
 msgstr "{who} حالا اپراتوره."
 
-#: clashogram/commands.py:701
+#: clashogram/commands.py:755
 msgid "You are an operator now! Send /help."
 msgstr "حالا اپراتوری! /help رو بزن."
 
-#: clashogram/commands.py:706
+#: clashogram/commands.py:760
 msgid "Usage: /removeoperator USER_ID"
 msgstr "طرز استفاده: /removeoperator USER_ID"
 
-#: clashogram/commands.py:708
+#: clashogram/commands.py:762
 msgid "The owner stays boss!"
 msgstr "رئیس، مالک سر جاش می‌مونه!"
 
-#: clashogram/commands.py:710
+#: clashogram/commands.py:764
 #, python-brace-format
 msgid "{who} was not an operator."
 msgstr "{who} اپراتور نبود."
 
-#: clashogram/commands.py:712
+#: clashogram/commands.py:766
 #, python-brace-format
 msgid "{who} can no longer operate."
 msgstr "{who} دیگه اپراتور نیست."
 
-#: clashogram/commands.py:737
+#: clashogram/commands.py:792
 msgid "Not taking requests."
 msgstr "درخواست قبول نمی‌کنم."
 
-#: clashogram/commands.py:739
+#: clashogram/commands.py:794
 msgid "Usage: /request CLAN_TAG"
 msgstr "طرز استفاده: /request CLAN_TAG"
 
-#: clashogram/commands.py:751
+#: clashogram/commands.py:806
 msgid "Already waiting."
 msgstr "قبلاً درخواستش رو دادی."
 
-#: clashogram/commands.py:752
+#: clashogram/commands.py:807
 msgid "Asked! You will hear back."
 msgstr "درخواست ثبت شد! خبرت می‌کنم."
 

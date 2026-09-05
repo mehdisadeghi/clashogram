@@ -707,6 +707,15 @@ class RequestTestCase(unittest.TestCase):
         self.assertEqual(self.db.subscriptions(), [('#US', 'c1')])
 
 
+class ActivityTestCase(unittest.TestCase):
+    def test_a_chat_that_has_asked_for_anything_is_listed(self):
+        db = Storage(':memory:')
+        ctx = commands.Context(db=db, monitors={}, admin_id='42')
+        commands.answer(ctx, 'c1', '9', '/war')
+        self.assertIn('c1', commands.answer(ctx, '42', '42',
+                                            '/activity')[0].text)
+
+
 class OperatorLanguageTestCase(unittest.TestCase):
     def test_each_operator_reads_a_request_in_their_own_language(self):
         db = Storage(':memory:')

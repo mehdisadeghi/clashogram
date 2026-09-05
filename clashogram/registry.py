@@ -50,6 +50,16 @@ def unsubscribe(db, clan_tag, chat_id):
     return db.unsubscribe(clan_tag, chat_id)
 
 
+def note_seen(db, chat_id):
+    """A chat has just asked for something."""
+    db.note_chat_seen(chat_id, _now())
+
+
+def subscribed_chats(db):
+    """Every chat something is followed in, once each."""
+    return sorted({chat_id for _, chat_id in db.subscriptions()})
+
+
 def operators(db):
     return db.operators()
 

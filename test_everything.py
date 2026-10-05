@@ -229,10 +229,29 @@ class TelegramNotifierTestCase(unittest.TestCase):
                              MagicMock(), ['c1'])
         monitor.warinfo = MagicMock()
         monitor.warinfo.create_war_id.return_value = 'W1'
-        monitor.notifier.send.side_effect = requests.HTTPError('429')
+        monitor.notifier.send.side_effect = requests.HTTPError(
+            '429', response=self._response(429))
         with self.assertRaises(requests.HTTPError):
             monitor.send_once(lambda: 'hi', msg_id='m1')
         self.assertFalse(monitor.is_msg_sent('m1', 'c1'))
+
+
+class BlockedChatTestCase(unittest.TestCase):
+    def test_a_chat_that_blocks_us_is_dropped_and_the_rest_are_told(self):
+        response = MagicMock()
+        response.status_code = 403
+        db = Storage(':memory:')
+        registry.subscribe(db, '#TAG', 'blocked')
+        registry.subscribe(db, '#TAG', 'fine')
+        monitor = WarMonitor(db, MagicMock(), '#TAG', MagicMock(),
+                             ['blocked', 'fine'])
+        monitor.warinfo = MagicMock()
+        monitor.warinfo.create_war_id.return_value = 'W1'
+        monitor.notifier.send.side_effect = [
+            requests.HTTPError('403', response=response), None]
+        monitor.send_once(lambda: 'hi', msg_id='m1')
+        self.assertEqual(db.subscriptions(), [('#TAG', 'fine')])
+        self.assertTrue(monitor.is_msg_sent('m1', 'fine'))
 
 
 class StorageTestCase(unittest.TestCase):

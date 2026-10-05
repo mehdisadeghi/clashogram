@@ -4,6 +4,7 @@ import json
 import logging
 
 import click
+import requests
 
 from . import commands, i18n, registry, runner
 from .api import CoCAPI
@@ -317,7 +318,7 @@ class WarMonitor:
         Delivery is recorded per chat. A chat added during a war is not
         held to what the others have seen, and two subscribed clans in
         the same war do not mark each other's messages as sent."""
-        for chat_id in self.chat_ids:
+        for chat_id in list(self.chat_ids):
             if self.is_msg_sent(msg_id, chat_id):
                 continue
             if kind in self.db.muted_kinds(chat_id):
@@ -326,9 +327,22 @@ class WarMonitor:
                 self.mark_msg_as_sent(msg_id, chat_id)
                 continue
             i18n.activate(self.db.chat_lang(chat_id))
-            self.notifier.send(build(), chat_id)
+            try:
+                self.notifier.send(build(), chat_id)
+            except requests.HTTPError as err:
+                # 403 is blocked, kicked or deleted. Retrying never helps.
+                if err.response.status_code != 403:
+                    raise
+                self.drop_chat(chat_id)
+                continue
             # Only after a send that worked, so a failed one is retried.
             self.mark_msg_as_sent(msg_id, chat_id)
+
+    def drop_chat(self, chat_id):
+        """Stop following everything in a chat we cannot post to."""
+        logger.warning('Dropped %s, cannot post there.', chat_id)
+        self.db.forget_chat(chat_id)
+        self.chat_ids.remove(chat_id)
 
     def send(self, msg, silent=False):
         """Tell every chat without recording it. For news about the bot

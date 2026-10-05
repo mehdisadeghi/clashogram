@@ -96,7 +96,7 @@ def poll(ctx, monitor, notifier):
                 monitor.update(next_war)
         else:
             monitor.update()
-        _recovered(monitor)
+        _recovered(ctx, monitor)
         _left_maintenance(ctx, notifier)
         return POLL_INTERVAL
     except requests.HTTPError as err:
@@ -117,18 +117,19 @@ def _describe(err):
     return f'{response.status_code} {response.json().get("description", "")}'
 
 
-_complained = {}
-
-
 def _tell(ctx, notifier, monitor, build, trouble):
     """Tell the operators, once per spell of trouble.
 
     This went to every chat of the clan on every retry before: a six
     hour CoC maintenance meant thirty six messages in a channel, about
-    something only the operator can act on."""
-    if _complained.get(monitor.clan_tag) == trouble:
+    something only the operator can act on.
+
+    The spell is kept in the database because this trouble ends the
+    process, and a restart is not a new spell."""
+    key = f'complained:{monitor.clan_tag}'
+    if ctx.db.setting(key) == trouble:
         return
-    _complained[monitor.clan_tag] = trouble
+    ctx.db.set_setting(key, trouble)
     _say(ctx, notifier, build)
 
 
@@ -179,8 +180,8 @@ def _say(ctx, notifier, build):
     i18n.activate(here)
 
 
-def _recovered(monitor):
-    _complained.pop(monitor.clan_tag, None)
+def _recovered(ctx, monitor):
+    ctx.db.set_setting(f'complained:{monitor.clan_tag}', '')
 
 
 def _back_off(ctx, monitor, notifier, err):
